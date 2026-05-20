@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Análise Inteligente de Solo - Cycle Sown</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:wght@400;600;700&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --forest-green: #2D5016;
+            --terracotta: #B85450;
+            --golden-wheat: #E6B17A;
+            --sage-green: #87A96B;
+            --cream-white: #FAF8F5;
+            --charcoal-gray: #3A3A3A;
+            --medium-gray: #6B6B6B;
+            --light-gray: #E8E6E3;
+        }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--cream-white);
+            color: var(--charcoal-gray);
+            line-height: 1.6;
+        }
+        
+        .font-display { font-family: 'Crimson Pro', serif; }
+        .font-mono { font-family: 'JetBrains Mono', monospace; }
+        
+        .hero-bg {
+            background: linear-gradient(rgba(45, 80, 22, 0.3), rgba(45, 80, 22, 0.3)), url('resources/hero-agriculture.jpg');
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+        }
+        
+        .nutrient-optimal { background-color: var(--forest-green); }
+        .nutrient-adequate { background-color: var(--sage-green); }
+        .nutrient-low { background-color: var(--golden-wheat); }
+        .nutrient-deficient { background-color: var(--terracotta); }
+        
+        .glass-effect {
+            backdrop-filter: blur(10px);
+            background: rgba(250, 248, 245, 0.9);
+        }
+        
+        .card-hover {
+            transition: all 0.3s ease;
+        }
+        
+        .card-hover:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 20px 40px rgba(45, 80, 22, 0.15);
+        }
+        
+        .input-focus {
+            transition: all 0.3s ease;
+        }
+        
+        .input-focus:focus {
+            border-color: var(--forest-green);
+            box-shadow: 0 0 0 3px rgba(45, 80, 22, 0.1);
+        }
+        
+        .animate-fade-in {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        
+        .ph-indicator {
+            background: linear-gradient(to right, 
+                var(--terracotta) 0%, 
+                var(--golden-wheat) 30%, 
+                var(--sage-green) 60%, 
+                var(--forest-green) 100%);
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="fixed top-0 w-full z-50 glass-effect border-b border-gray-200">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center gap-3">
+                    <button type="button" aria-label="Abrir menu" onclick="toggleMenu(true)" class="p-2 rounded-md text-gray-700 hover:bg-gray-100">
+                        <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" xmlns="http://www.w3.org/2000/svg">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+                        </svg>
+                    </button>
+                </div>
+                <div class="hidden md:block">
+                    <div class="ml-10 flex items-baseline space-x-8">
+                        <a href="#analysis" class="text-gray-900 hover:text-green-700 px-3 py-2 text-sm font-medium transition-colors">Análise</a>
+                        <a href="recommendations.html" class="text-gray-600 hover:text-green-700 px-3 py-2 text-sm font-medium transition-colors">Recomendações</a>
+                        <a href="relatorio.html" class="text-gray-600 hover:text-green-700 px-3 py-2 text-sm font-medium transition-colors">Relatório</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div id="slideMenu" class="fixed inset-0 z-40 hidden">
+        <div class="absolute inset-0 bg-black/40" onclick="toggleMenu(false)"></div>
+        <div class="absolute left-0 top-0 h-full w-72 bg-white border-r shadow-xl overflow-y-auto">
+            <div class="flex items-center justify-between p-5 border-b border-gray-200">
+                <span class="text-lg font-semibold text-gray-900">Menu</span>
+                <button type="button" aria-label="Fechar menu" onclick="toggleMenu(false)" class="text-gray-600 hover:text-gray-900">
+                    <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" xmlns="http://www.w3.org/2000/svg">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+            <nav class="p-5 space-y-3">
+                <a href="#analysis" onclick="toggleMenu(false)" class="block text-gray-900 px-4 py-3 rounded-lg hover:bg-green-50 transition-colors">Análise</a>
+                <a href="recommendations.html" onclick="toggleMenu(false)" class="block text-gray-900 px-4 py-3 rounded-lg hover:bg-green-50 transition-colors">Recomendações</a>
+                <a href="relatorio.html" onclick="toggleMenu(false)" class="block text-gray-900 px-4 py-3 rounded-lg hover:bg-green-50 transition-colors">Relatório</a>
+                <a href="calendar.html" onclick="toggleMenu(false)" class="block text-gray-900 px-4 py-3 rounded-lg hover:bg-green-50 transition-colors">📅 Calendário</a>
+                <a href="catalog.html" onclick="toggleMenu(false)" class="block text-gray-900 px-4 py-3 rounded-lg hover:bg-green-50 transition-colors">🛒 Catálogo</a>
+                <a href="empresas/index.html" onclick="toggleMenu(false)" class="block text-gray-900 px-4 py-3 rounded-lg hover:bg-green-50 transition-colors">💼 Vender Produção</a>
+                <a href="relatorio.html" onclick="toggleMenu(false)" class="block w-full text-center px-4 py-3 bg-green-700 text-white rounded-lg hover:bg-green-800 transition-colors">Ver Relatório</a>
+            </nav>
+        </div>
+    </div>
+
+    <div class="pt-16">
+        <!-- Hero Section -->
+        <section class="hero-bg min-h-screen flex items-center justify-center relative">
+        <div class="absolute inset-0 bg-gradient-to-b from-transparent to-black opacity-20"></div>
+        <div class="relative z-10 text-center text-white px-4 max-w-4xl mx-auto">
+            <h1 class="font-display text-5xl md:text-7xl font-bold mb-6 animate-fade-in">
+                Análise Inteligente de Solo
+            </h1>
+            <p class="text-xl md:text-2xl mb-8 font-light animate-fade-in">
+                Descubra o potencial real do seu solo com análises baseadas em dados científicos e recomendações personalizadas para maximizar sua produção agrícola.
+            </p>
+            <button onclick="scrollToAnalysis()" class="bg-white text-green-800 px-8 py-4 rounded-lg text-lg font-semibold hover:bg-gray-100 transition-all transform hover:scale-105 animate-fade-in">
+                Começar Análise
+            </button>
+        </div>
+    </section>
+
+    <!-- Main Analysis Section -->
+    <section id="analysis" class="py-20 px-4">
+        <div class="max-w-7xl mx-auto">
+            <div class="text-center mb-16">
+                <h2 class="font-display text-4xl font-bold mb-6" style="color: var(--forest-green);">Análise do Seu Solo</h2>
+                <p class="text-xl text-gray-600 max-w-3xl mx-auto">
+                    Insira os dados do seu teste de solo e receba análises em tempo real com recomendações personalizadas para otimizar a produção da sua propriedade.
+                </p>
+            </div>
+
+            <div class="grid lg:grid-cols-3 gap-8">
+                <!-- Input Form -->
+                <div class="lg:col-span-2">
+                    <div class="bg-white rounded-2xl shadow-lg p-8 card-hover">
+                        <h3 class="font-display text-2xl font-semibold mb-8" style="color: var(--forest-green);">Dados do Solo</h3>
+                        
+                        <!-- Photo Upload Section -->
+                        <div class="mb-8 p-6 bg-green-50 rounded-lg border-2 border-dashed border-green-300">
+                            <h4 class="font-semibold text-lg mb-4 text-green-800">Upload do Laudo de Solo</h4>
+                            <p class="text-sm text-green-700 mb-4">
+                                Envie uma foto do seu laudo de análise de solo e nossa IA preencherá os dados automaticamente.
+                            </p>
+                            <div class="flex items-center justify-center">
+                                <label for="photoUpload" class="cursor-pointer bg-white px-6 py-3 rounded-lg border-2 border-green-300 text-green-700 font-medium hover:bg-green-50 transition-colors">
+                                    📷 Adicionar Foto do Laudo
+                                </label>
+                                <input type="file" id="photoUpload" accept="image/*" class="hidden" onchange="handlePhotoUpload(event)">
+                            </div>
+                            <div id="photoPreview" class="mt-4 hidden">
+                                <img id="previewImage" class="max-w-xs mx-auto rounded-lg shadow-lg">
+                                <div class="text-center mt-2">
+                                    <span class="text-sm text-green-600">✓ Foto carregada com sucesso!</span>
+                                </div>
+                            </div>
+                            <div class="mt-4 text-xs text-green-600">
+                                <strong>Em breve:</strong> IA extrairá automaticamente todos os dados do laudo
+                            </div>
+                        </div>
+                        
+                        <!-- Basic Soil Info -->
+                        <div class="mb-8">
+                            <h4 class="text-lg font-semibold mb-4 text-gray-800">Informações Básicas</h4>
+                            <div class="grid md:grid-cols-2 gap-6">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">pH do Solo</label>
+                                    <input type="number" id="soilPH" min="0" max="14" step="0.1" placeholder="6.5" 
+                                           class="w-full px-4 py-3 border border-gray-300 rounded-lg input-focus font-mono text-lg"
+                                           oninput="updateAnalysis()">
+                                    <div class="mt-2 h-2 rounded-full ph-indicator" id="phIndicator"></div>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Matéria Orgânica (%)</label>
+                                    <input type="number" id="organicMatter" min="0" max="10" step="0.1" placeholder="3.0" 
+                                           class="w-full px-4 py-3 border border-gray-300 rounded-lg input-focus font-mono text-lg"
+                                           oninput="updateAnalysis()">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Macronutrients -->
+                        <div class="mb-8">
+                            <h4 class="text-lg font-semibold mb-4 text-gray-800">Macronutrientes (ppm)</h4>
+                            <div class="grid md:grid-cols-3 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Nitrogênio (N)</label>
+                                    <input type="number" id="nitrogen" min="0" max="200" step="1" placeholder="25" 
+                                           class="w-full px-4 py-3 border border-gray-300 rounded-lg input-focus font-mono"
+                                           oninput="updateAnalysis()">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Fósforo (P)</label>
+                                    <input type="number" id="phosphorus" min="0" max="200" step="1" placeholder="15" 
+                                           class="w-full px-4 py-3 border border-gray-300 rounded-lg input-focus font-mono"
+                                           oninput="updateAnalysis()">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Potássio (K)</label>
+                                    <input type="number" id="potassium" min="0" max="500" step="1" placeholder="120" 
+                                           class="w-full px-4 py-3 border border-gray-300 rounded-lg input-focus font-mono"
+                                           oninput="updateAnalysis()">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Cálcio (Ca)</label>
+                                    <input type="number" id="calcium" min="0" max="5000" step="1" placeholder="800" 
+                                           class="w-full px-4 py-3 border border-gray-300 rounded-lg input-focus font-mono"
+                                           oninput="updateAnalysis()">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Magnésio (Mg)</label>
+                                    <input type="number" id="magnesium" min="0" max="1000" step="1" placeholder="120" 
+                                           class="w-full px-4 py-3 border border-gray-300 rounded-lg input-focus font-mono"
+                                           oninput="updateAnalysis()">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Enxofre (S)</label>
+                                    <input type="number" id="sulfur" min="0" max="100" step="1" placeholder="12" 
+                                           class="w-full px-4 py-3 border border-gray-300 rounded-lg input-focus font-mono"
+                                           oninput="updateAnalysis()">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Micronutrients -->
+                        <div class="mb-8">
+                            <h4 class="text-lg font-semibold mb-4 text-gray-800">Micronutrientes (ppm)</h4>
+                            <div class="grid md:grid-cols-3 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Ferro (Fe)</label>
+                                    <input type="number" id="iron" min="0" max="200" step="0.1" placeholder="45" 
+                                           class="w-full px-4 py-3 border border-gray-300 rounded-lg input-focus font-mono"
+                                           oninput="updateAnalysis()">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Manganês (Mn)</label>
+                                    <input type="number" id="manganese" min="0" max="200" step="0.1" placeholder="25" 
+                                           class="w-full px-4 py-3 border border-gray-300 rounded-lg input-focus font-mono"
+                                           oninput="updateAnalysis()">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Zinco (Zn)</label>
+                                    <input type="number" id="zinc" min="0" max="50" step="0.1" placeholder="2.5" 
+                                           class="w-full px-4 py-3 border border-gray-300 rounded-lg input-focus font-mono"
+                                           oninput="updateAnalysis()">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Cobre (Cu)</label>
+                                    <input type="number" id="copper" min="0" max="20" step="0.1" placeholder="1.2" 
+                                           class="w-full px-4 py-3 border border-gray-300 rounded-lg input-focus font-mono"
+                                           oninput="updateAnalysis()">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Boro (B)</label>
+                                    <input type="number" id="boron" min="0" max="5" step="0.1" placeholder="0.8" 
+                                           class="w-full px-4 py-3 border border-gray-300 rounded-lg input-focus font-mono"
+                                           oninput="updateAnalysis()">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Molibdênio (Mo)</label>
+                                    <input type="number" id="molybdenum" min="0" max="2" step="0.01" placeholder="0.15" 
+                                           class="w-full px-4 py-3 border border-gray-300 rounded-lg input-focus font-mono"
+                                           oninput="updateAnalysis()">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Analysis Dashboard -->
+                <div class="lg:col-span-1">
+                    <div class="bg-white rounded-2xl shadow-lg p-6 card-hover mb-6">
+                        <h3 class="font-display text-xl font-semibold mb-6" style="color: var(--forest-green);">Análise em Tempo Real</h3>
+                        
+                        <!-- Soil Health Score -->
+                        <div class="mb-6">
+                            <div class="text-center">
+                                <div class="text-4xl font-bold mb-2 font-mono" id="healthScore">--</div>
+                                <div class="text-sm text-gray-600">Saúde do Solo</div>
+                                <div class="w-full bg-gray-200 rounded-full h-2 mt-3">
+                                    <div class="h-2 rounded-full transition-all duration-500" id="healthBar"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- pH Compatibility -->
+                        <div class="mb-6">
+                            <h4 class="font-semibold mb-3 text-gray-800">Compatibilidade pH</h4>
+                            <div id="phCompatibility" class="space-y-2">
+                                <div class="flex justify-between items-center">
+                                    <span class="text-sm">Ácidos (5.0-6.0)</span>
+                                    <div class="w-16 h-2 bg-gray-200 rounded">
+                                        <div class="h-2 bg-gray-400 rounded" id="acidCrops" style="width: 0%"></div>
+                                    </div>
+                                </div>
+                                <div class="flex justify-between items-center">
+                                    <span class="text-sm">Neutros (6.0-7.0)</span>
+                                    <div class="w-16 h-2 bg-gray-200 rounded">
+                                        <div class="h-2 bg-gray-400 rounded" id="neutralCrops" style="width: 0%"></div>
+                                    </div>
+                                </div>
+                                <div class="flex justify-between items-center">
+                                    <span class="text-sm">Alcalinos (7.0-8.0)</span>
+                                    <div class="w-16 h-2 bg-gray-200 rounded">
+                                        <div class="h-2 bg-gray-400 rounded" id="alkalineCrops" style="width: 0%"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Nutrient Status -->
+                        <div class="mb-6">
+                            <h4 class="font-semibold mb-3 text-gray-800">Status de Nutrientes</h4>
+                            <div id="nutrientStatus" class="space-y-2">
+                                <!-- Dynamic nutrient status will be inserted here -->
+                            </div>
+                        </div>
+
+                        <!-- Quick Recommendations -->
+                        <div class="mb-6">
+                            <h4 class="font-semibold mb-3 text-gray-800">Recomendações Rápidas</h4>
+                            <div id="quickRecommendations" class="text-sm text-gray-600">
+                                Insira os dados do solo para receber recomendações personalizadas.
+                            </div>
+                        </div>
+
+                        <!-- Action Buttons -->
+                        <div class="space-y-3">
+                                <button onclick="saveReportAndRedirect('relatorio.html')" class="w-full bg-green-700 text-white py-3 rounded-lg font-semibold hover:bg-green-800 transition-colors">
+                                    Gerar Relatório Completo
+                                </button>
+                                <button onclick="saveReport()" class="w-full border-2 border-green-700 text-green-700 py-3 rounded-lg font-semibold hover:bg-green-50 transition-colors">
+                                    Salvar Relatório
+                                </button>
+                                <button onclick="window.location.href='relatorio.html?report=last'" class="w-full bg-white text-green-700 border-2 border-green-700 py-3 rounded-lg font-semibold hover:bg-green-50 transition-colors">
+                                    Ver Relatórios Salvos
+                                </button>
+                        </div>
+                            <div class="mt-4 text-sm text-gray-600">
+                                Relatórios salvos: <span id="savedReportCount">0</span>
+                            </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    </div>
+
+
+
+    <script src="main.js"></script>
+    <script>
+        // Initialize animations
+        document.addEventListener('DOMContentLoaded', function() {
+            // Animate fade-in elements
+            anime({
+                targets: '.animate-fade-in',
+                opacity: [0, 1],
+                translateY: [20, 0],
+                delay: anime.stagger(200),
+                duration: 800,
+                easing: 'easeOutQuart'
+            });
+
+            // Initialize analysis
+            initializeAnalysis();
+        });
+
+        function scrollToAnalysis() {
+            document.getElementById('analysis').scrollIntoView({ 
+                behavior: 'smooth' 
+            });
+        }
+
+        function handlePhotoUpload(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    document.getElementById('previewImage').src = e.target.result;
+                    document.getElementById('photoPreview').classList.remove('hidden');
+                    
+                    // Simulate AI processing (for demo purposes)
+                    setTimeout(() => {
+                        alert('IA: Analisando laudo... Dados serão preenchidos automaticamente em breve!');
+                    }, 1000);
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        function toggleMenu(open) {
+            const menu = document.getElementById('slideMenu');
+            if (!menu) return;
+            menu.classList.toggle('hidden', !open);
+            document.body.style.overflow = open ? 'hidden' : '';
+        }
+    </script>
+</body>
+</html>

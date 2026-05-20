@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Relatório Premium de Solo - Cycle Sown</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:wght@400;700&family=Inter:wght@300;400;600;700&family=JetBrains+Mono&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --forest-green: #2D5016;
+            --cream-white: #FAF8F5;
+        }
+        body { font-family: 'Inter', sans-serif; background: #f4f6f8; }
+        .font-display { font-family: 'Crimson Pro', serif; }
+        .glass-effect { backdrop-filter: blur(10px); background: rgba(250, 248, 245, 0.95); }
+        
+        .gradient-header { background: linear-gradient(135deg, #1e3a0a 0%, #2d5016 100%); }
+        
+        /* Estilização das "Pills" de Dados */
+        .data-pill {
+            @apply px-4 py-2 rounded-2xl font-mono font-bold inline-block;
+        }
+        
+        .card-nutrient {
+            transition: all 0.3s ease;
+        }
+        .card-nutrient:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+        }
+
+        @media print {
+            .no-print { display: none !important; }
+            body { background: white; }
+        }
+    </style>
+</head>
+<body class="pt-20">
+
+    <nav class="fixed top-0 w-full z-50 glass-effect border-b border-gray-200 no-print">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        
+                    </div>
+                </div>
+                <div class="hidden md:block">
+                    <div class="ml-10 flex items-baseline space-x-8">
+                        <a href="index.html#analysis" class="text-gray-900 hover:text-green-700 px-3 py-2 text-sm font-medium transition-colors">Análise</a>
+                        <a href="recommendations.html" class="text-gray-600 hover:text-green-700 px-3 py-2 text-sm font-medium transition-colors">Recomendações</a>
+                        <a href="relatorio.html" class="text-gray-600 hover:text-green-700 px-3 py-2 text-sm font-medium transition-colors">Relatório</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+        <!-- Sidebar + Main wrapper -->
+        <aside class="hidden md:block fixed left-0 top-16 h-full w-64 bg-white border-r z-40 shadow-sm">
+            <div class="p-4 flex flex-col items-center">
+                <nav class="w-full mt-2">
+                    <a href="calendar.html" class="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-green-50 hover:translate-x-1 transition-all">
+                        <span class="text-xl">📅</span>
+                        <span class="font-medium text-sm">Calendário</span>
+                    </a>
+                    <a href="catalog.html" class="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-green-50 hover:translate-x-1 transition-all mt-2">
+                        <span class="text-xl">🛒</span>
+                        <span class="font-medium text-sm">Catálogo</span>
+                    </a>
+                    <a href="empresas/index.html" class="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-green-50 hover:translate-x-1 transition-all mt-2">
+                        <span class="text-xl">💼</span>
+                        <span class="font-medium text-sm">Vender Produção</span>
+                    </a>
+                </nav>
+
+                <div class="mt-auto w-full pt-4">
+                    <a href="relatorio.html" class="block w-full text-center px-4 py-3 bg-green-700 text-white rounded-lg hover:bg-green-800">Ver Relatório</a>
+                </div>
+            </div>
+        </aside>
+
+        <div class="md:ml-56">
+
+    <main class="max-w-6xl mx-auto px-4 pb-20">
+        <div class="bg-white shadow-2xl rounded-[2.5rem] overflow-hidden">
+            
+            <div class="gradient-header p-10 text-white flex flex-col md:flex-row justify-between items-center">
+                <div class="text-center md:text-left">
+                    <span class="bg-white/10 text-white px-4 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest mb-3 inline-block">Documento Gerado por IA</span>
+                    <h2 class="font-display text-4xl md:text-5xl font-bold">Laudo de Fertilidade</h2>
+                </div>
+                <div class="mt-6 md:mt-0 bg-white/10 p-6 rounded-[2rem] backdrop-blur-sm text-center">
+                    <p class="text-xs font-bold uppercase opacity-60">Data de Emissão</p>
+                    <p class="text-xl font-bold" id="currentDate">--</p>
+                </div>
+            </div>
+
+            <div class="p-6 md:p-8 bg-white shadow rounded-[2rem] -mt-10 mx-4 md:mx-8">
+                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                    <div class="flex-1">
+                        <label for="reportSelector" class="block text-xs font-bold uppercase text-gray-500 mb-2">Relatório salvo</label>
+                        <select id="reportSelector" class="w-full sm:w-auto px-4 py-3 border border-gray-300 rounded-2xl focus:outline-none focus:ring-2 focus:ring-green-500" onchange="switchReport()">
+                            <option value="">Carregando relatórios...</option>
+                        </select>
+                    </div>
+                    <button onclick="window.location.href='index.html'" class="bg-stone-900 text-white px-6 py-3 rounded-2xl font-semibold hover:bg-black transition-all text-sm">Voltar para Análise</button>
+                </div>
+            </div>
+
+            <div class="p-8 md:p-12">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+                    
+                    <div class="bg-stone-900 rounded-[2rem] p-8 text-white text-center">
+                        <p class="text-xs font-bold text-green-400 uppercase tracking-widest mb-2">Saúde Geral</p>
+                        <div class="inline-block bg-white/10 px-6 py-2 rounded-2xl">
+                            <span class="text-5xl font-black" id="resHealth">--%</span>
+                        </div>
+                        <div class="mt-6 w-full bg-white/10 h-2 rounded-full overflow-hidden">
+                            <div id="healthBar" class="bg-green-500 h-full transition-all duration-1000" style="width: 0%"></div>
+                        </div>
+                    </div>
+
+                    <div class="bg-blue-50 rounded-[2rem] p-8 border border-blue-100 text-center">
+                        <p class="text-xs font-bold text-blue-600 uppercase mb-3">Potencial Hidrogeniônico (pH)</p>
+                        <div class="bg-white px-8 py-3 rounded-2xl inline-block shadow-sm border border-blue-100 mb-4">
+                            <span class="text-5xl font-black text-blue-900" id="resPH">--</span>
+                        </div>
+                        <br>
+                        <span id="resPHStatus" class="px-4 py-1 rounded-full text-[10px] font-black uppercase text-white">Detectando...</span>
+                    </div>
+
+                    <div class="bg-orange-50 rounded-[2rem] p-8 border border-orange-100 text-center">
+                        <p class="text-xs font-bold text-orange-600 uppercase mb-3">Matéria Orgânica</p>
+                        <div class="bg-white px-8 py-3 rounded-2xl inline-block shadow-sm border border-orange-100 mb-4">
+                            <span class="text-5xl font-black text-orange-900" id="resMO">--%</span>
+                        </div>
+                        <p class="text-[10px] text-orange-400 font-bold uppercase">Qualidade do Carbono</p>
+                    </div>
+                </div>
+
+                <div class="space-y-16">
+                    <div>
+                        <h3 class="font-display text-3xl font-bold mb-8 text-gray-800 border-l-4 border-green-600 pl-4">Macronutrientes</h3>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6" id="macroContainer"></div>
+                    </div>
+
+                    <div>
+                        <h3 class="font-display text-3xl font-bold mb-8 text-gray-800 border-l-4 border-amber-500 pl-4">Micronutrientes</h3>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6" id="microContainer"></div>
+                    </div>
+                </div>
+
+                <div class="mt-16 bg-white rounded-[2.5rem] p-10 border-2 border-dashed border-gray-200 relative overflow-hidden">
+                    <div class="absolute top-0 right-0 p-8 opacity-5">
+                        <svg width="100" height="100" viewBox="0 0 24 24" fill="currentColor"><path d="M14,17H17L19,13V7H13V13H16M6,17H9L11,13V7H5V13H8L6,17Z" /></svg>
+                    </div>
+                    <h4 class="text-green-700 font-black text-xs uppercase tracking-[0.3em] mb-4">Parecer Técnico Cycle AI</h4>
+                    <p id="aiVerdict" class="text-gray-700 text-xl font-medium leading-relaxed italic relative z-10">
+                        Processando dados...
+                    </p>
+                    <div class="mt-8 bg-green-50 p-6 rounded-lg border border-green-100" id="recommendationBlock">
+                        <h5 class="text-green-700 font-bold mb-3">Recomendações</h5>
+                        <div id="reportRecommendations" class="text-gray-700 text-base">
+                            Gerando recomendações...
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-gray-50 p-8 flex flex-col sm:flex-row justify-between items-center gap-6 no-print">
+                <button onclick="window.history.back()" class="text-xs font-black text-gray-400 hover:text-green-700 uppercase tracking-widest transition-all">
+                    ← Reajustar Análise
+                </button>
+                <div class="flex gap-4">
+                    <button onclick="window.print()" class="bg-stone-900 text-white px-10 py-4 rounded-2xl font-bold hover:shadow-xl transition-all uppercase text-xs tracking-widest">
+                        Imprimir Laudo
+                    </button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('currentDate').innerText = new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' });
+
+            const reports = getSavedReports();
+            const selectedIndex = resolveSelectedReportIndex(reports);
+            populateReportSelector(reports, selectedIndex);
+
+            const report = reports[selectedIndex] || getLatestAnalysisReport();
+            const data = normalizeReportData(report);
+
+            renderReport(data);
+        });
+
+        function getSavedReports() {
+            return JSON.parse(localStorage.getItem('soilAnalysisReports') || '[]');
+        }
+
+        function getLatestAnalysisReport() {
+            const latest = localStorage.getItem('soilAnalysisData');
+            return latest ? JSON.parse(latest) : null;
+        }
+
+        function resolveSelectedReportIndex(reports) {
+            const params = new URLSearchParams(window.location.search);
+            const reportParam = params.get('report');
+
+            if (reportParam === 'last') {
+                return Math.max(reports.length - 1, 0);
+            }
+
+            const index = parseInt(reportParam, 10);
+            if (!isNaN(index) && index >= 0 && index < reports.length) {
+                return index;
+            }
+
+            return Math.max(reports.length - 1, 0);
+        }
+
+        function populateReportSelector(reports, selectedIndex) {
+            const selector = document.getElementById('reportSelector');
+            if (!selector) return;
+
+            if (reports.length === 0) {
+                selector.innerHTML = '<option value="">Nenhum relatório salvo</option>';
+                selector.disabled = true;
+                return;
+            }
+
+            selector.disabled = false;
+            selector.innerHTML = reports.map((report, index) => {
+                const label = report.title || `Relatório ${index + 1}`;
+                const date = new Date(report.timestamp).toLocaleString('pt-BR');
+                return `<option value="${index}">${label} — ${date}</option>`;
+            }).join('');
+            selector.value = selectedIndex;
+        }
+
+        function switchReport() {
+            const selector = document.getElementById('reportSelector');
+            if (!selector) return;
+            const index = parseInt(selector.value, 10);
+            const reports = getSavedReports();
+            const report = reports[index];
+            if (report) {
+                renderReport(normalizeReportData(report));
+            }
+        }
+
+        function normalizeReportData(rawData) {
+            const defaultData = {
+                ph: 6.2, mo: 3.5,
+                nutrients: {
+                    'Nitrogênio (N)': { val: 28, ref: 30 },
+                    'Fósforo (P)': { val: 18, ref: 20 },
+                    'Potássio (K)': { val: 160, ref: 150 },
+                    'Cálcio (Ca)': { val: 950, ref: 1000 },
+                    'Magnésio (Mg)': { val: 140, ref: 120 },
+                    'Enxofre (S)': { val: 12, ref: 15 },
+                    'Ferro (Fe)': { val: 55, ref: 50 },
+                    'Zinco (Zn)': { val: 2.4, ref: 2.0 },
+                    'Boro (B)': { val: 0.8, ref: 1.0 },
+                    'Cobre (Cu)': { val: 1.1, ref: 1.0 }
+                }
+            };
+
+            if (!rawData) {
+                return defaultData;
+            }
+
+            let parsed;
+            if (typeof rawData === 'string') {
+                try {
+                    parsed = JSON.parse(rawData);
+                } catch (e) {
+                    parsed = null;
+                }
+            } else {
+                parsed = rawData;
+            }
+
+            const soilData = parsed && (parsed.soilData || parsed);
+            if (!soilData || !soilData.nutrients) {
+                return defaultData;
+            }
+
+            const nutrientNameMap = {
+                nitrogen: 'Nitrogênio (N)',
+                phosphorus: 'Fósforo (P)',
+                potassium: 'Potássio (K)',
+                calcium: 'Cálcio (Ca)',
+                magnesium: 'Magnésio (Mg)',
+                sulfur: 'Enxofre (S)',
+                iron: 'Ferro (Fe)',
+                manganese: 'Manganês (Mn)',
+                zinc: 'Zinco (Zn)',
+                copper: 'Cobre (Cu)',
+                boron: 'Boro (B)',
+                molybdenum: 'Molibdênio (Mo)'
+            };
+
+            const referenceValues = {
+                'Nitrogênio (N)': 30,
+                'Fósforo (P)': 20,
+                'Potássio (K)': 150,
+                'Cálcio (Ca)': 1000,
+                'Magnésio (Mg)': 120,
+                'Enxofre (S)': 15,
+                'Ferro (Fe)': 50,
+                'Manganês (Mn)': 25,
+                'Zinco (Zn)': 2.0,
+                'Cobre (Cu)': 1.0,
+                'Boro (B)': 1.0,
+                'Molibdênio (Mo)': 0.15
+            };
+
+            const nutrients = {};
+            Object.entries(soilData.nutrients).forEach(([key, value]) => {
+                const label = nutrientNameMap[key] || key;
+                const refValue = referenceValues[label] || Math.max(value || 0, 1);
+
+                nutrients[label] = {
+                    val: value,
+                    ref: refValue
+                };
+            });
+
+            const phVal = (
+                (soilData && (soilData.ph !== undefined && soilData.ph !== null) ? soilData.ph : undefined) ??
+                (soilData && (soilData.pH !== undefined && soilData.pH !== null) ? soilData.pH : undefined) ??
+                (soilData && (soilData.soilPH !== undefined && soilData.soilPH !== null) ? soilData.soilPH : undefined) ??
+                (parsed && (parsed.ph !== undefined && parsed.ph !== null) ? parsed.ph : undefined) ??
+                (parsed && (parsed.pH !== undefined && parsed.pH !== null) ? parsed.pH : undefined) ??
+                defaultData.ph
+            );
+
+            return {
+                ph: phVal,
+                mo: soilData.organicMatter ?? defaultData.mo,
+                nutrients
+            };
+        }
+
+        function renderReport(data) {
+            document.getElementById('macroContainer').innerHTML = '';
+            document.getElementById('microContainer').innerHTML = '';
+            const phNum = (data.ph !== undefined && data.ph !== null) ? parseFloat(data.ph) : NaN;
+            document.getElementById('resPH').innerText = !isNaN(phNum) ? phNum.toFixed(1) : '--';
+            document.getElementById('resMO').innerText = data.mo;
+            
+            const phStatus = document.getElementById('resPHStatus');
+            if(!isNaN(phNum)){
+                if(phNum < 6) { phStatus.innerText = "ÁCIDO"; phStatus.style.background = "#ef4444"; }
+                else if(phNum <= 7) { phStatus.innerText = "IDEAL"; phStatus.style.background = "#22c55e"; }
+                else { phStatus.innerText = "ALCALINO"; phStatus.style.background = "#f59e0b"; }
+            } else {
+                phStatus.innerText = 'Detectando...';
+            }
+
+            const macroKeys = ['Nitrogênio (N)', 'Fósforo (P)', 'Potássio (K)', 'Cálcio (Ca)', 'Magnésio (Mg)', 'Enxofre (S)'];
+            let totalPoints = 0;
+
+            Object.entries(data.nutrients).forEach(([name, info]) => {
+                const isMacro = macroKeys.includes(name);
+                const container = isMacro ? document.getElementById('macroContainer') : document.getElementById('microContainer');
+                
+                const percent = Math.min((info.val / info.ref) * 100, 100);
+                let bgColor = "bg-amber-50", textColor = "text-amber-700", statusLabel = "Alerta", dotColor = "bg-amber-500";
+                
+                if(percent >= 90) { 
+                    bgColor = "bg-green-50"; textColor = "text-green-700"; statusLabel = "Ideal"; dotColor = "bg-green-500";
+                    totalPoints++;
+                } else if(percent < 60) {
+                    bgColor = "bg-red-50"; textColor = "text-red-700"; statusLabel = "Baixo"; dotColor = "bg-red-500";
+                }
+
+                container.innerHTML += `
+                    <div class="bg-white border border-gray-100 p-6 rounded-[2rem] card-nutrient shadow-sm">
+                        <div class="flex justify-between items-center mb-4">
+                            <span class="text-[10px] font-black text-gray-400 uppercase tracking-tighter">${name}</span>
+                            <span class="px-3 py-1 rounded-full text-[9px] font-bold uppercase ${bgColor} ${textColor}">${statusLabel}</span>
+                        </div>
+                        <div class="${bgColor} ${textColor} px-4 py-2 rounded-xl inline-block mb-4">
+                            <span class="text-2xl font-black">${info.val}</span> <span class="text-[10px] uppercase opacity-60">ppm</span>
+                        </div>
+                        <div class="w-full bg-gray-100 h-1 rounded-full overflow-hidden">
+                            <div class="${dotColor} h-full" style="width: ${percent}%"></div>
+                        </div>
+                    </div>
+                `;
+            });
+
+            const score = Math.round((totalPoints / Object.keys(data.nutrients).length) * 100);
+            document.getElementById('resHealth').innerText = score + '%';
+            document.getElementById('healthBar').style.width = score + '%';
+            
+            document.getElementById('aiVerdict').innerText = score > 80 ? 
+                "Análise conclui um solo de altíssima produtividade. O equilíbrio químico permite o plantio imediato com foco apenas na adubação de arranque." : 
+                "Atenção necessária em pontos específicos de deficiência. Recomenda-se a correção pontual dos nutrientes marcados em vermelho antes do início do ciclo vegetativo.";
+
+            renderRecommendations(data);
+        }
+
+        function renderRecommendations(data) {
+            const container = document.getElementById('reportRecommendations');
+            if (!container) return;
+
+            const recs = [];
+
+            // pH recommendations
+            if (data.ph !== undefined && data.ph !== null) {
+                if (data.ph < 5.5) recs.push('Solo ácido: aplicar calcário para corrigir acidez.');
+                else if (data.ph > 7.5) recs.push('Solo alcalino: considerar aplicação de enxofre para reduzir pH.');
+                else recs.push('pH dentro da faixa adequada para muitas culturas.');
+            }
+
+            // Organic matter
+            if (data.mo !== undefined && data.mo !== null) {
+                if (data.mo < 2) recs.push('Baixa matéria orgânica: adicionar composto ou esterco para melhorar estrutura e retenção de água.');
+                else recs.push('Matéria orgânica adequada. Continue manejos que aumentem conteúdo orgânico.');
+            }
+
+            // Nutrient-specific recommendations
+            Object.entries(data.nutrients || {}).forEach(([label, info]) => {
+                const val = parseFloat(info.val);
+                const ref = parseFloat(info.ref) || 1;
+                if (isNaN(val)) return;
+
+                if (val < ref * 0.6) {
+                    const short = label.split(' (')[0];
+                    recs.push(`${short}: nível muito baixo (${val} ppm). Recomenda-se correção pontual antes do plantio.`);
+                } else if (val < ref * 0.9) {
+                    const short = label.split(' (')[0];
+                    recs.push(`${short}: nível moderadamente baixo (${val} ppm). Monitorar e, se necessário, corrigir.`);
+                }
+            });
+
+            if (recs.length === 0) {
+                container.innerHTML = '<div>Sem recomendações necessárias — solo em boas condições.</div>';
+                return;
+            }
+
+            container.innerHTML = recs.map(r => `<div class="mb-2">• ${r}</div>`).join('');
+        }
+    </div>
+
+    </script>
+</body>
+</html>

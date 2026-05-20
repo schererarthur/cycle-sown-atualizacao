@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Catálogo de Insumos - Cycle Sown</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:wght@400;600;700&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --forest-green: #2D5016;
+            --terracotta: #B85450;
+            --golden-wheat: #E6B17A;
+            --sage-green: #87A96B;
+            --cream-white: #FAF8F5;
+            --charcoal-gray: #3A3A3A;
+            --light-border: #E5E7EB;
+        }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--cream-white);
+            color: var(--charcoal-gray);
+        }
+
+        .font-display { font-family: 'Crimson Pro', serif; }
+        .font-mono { font-family: 'JetBrains Mono', monospace; }
+
+        .glass-effect {
+            backdrop-filter: blur(10px);
+            background: rgba(250, 248, 245, 0.9);
+        }
+
+        .product-card {
+            transition: all 0.3s ease;
+            border: 1px solid var(--light-border);
+            background: white;
+        }
+
+        .product-card:hover {
+            border-color: var(--sage-green);
+            box-shadow: 0 10px 20px rgba(45, 80, 22, 0.05);
+        }
+
+        .category-tag {
+            font-size: 0.65rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-weight: 700;
+        }
+    </style>
+</head>
+<body class="pt-20">
+    <nav class="fixed top-0 w-full z-50 glass-effect border-b border-gray-200">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        
+                    </div>
+                </div>
+                <div class="hidden md:block">
+                    <div class="ml-10 flex items-baseline space-x-8">
+                        <a href="index.html#analysis" class="text-gray-900 hover:text-green-700 px-3 py-2 text-sm font-medium transition-colors">Análise</a>
+                        <a href="recommendations.html" class="text-gray-600 hover:text-green-700 px-3 py-2 text-sm font-medium transition-colors">Recomendações</a>
+                        <a href="relatorio.html" class="text-gray-600 hover:text-green-700 px-3 py-2 text-sm font-medium transition-colors">Relatório</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+        <!-- Sidebar + Main wrapper -->
+        <aside class="hidden md:block fixed left-0 top-16 h-full w-64 bg-white border-r z-40 shadow-sm">
+            <div class="p-4 flex flex-col items-center">
+                <nav class="w-full mt-2">
+                    <a href="calendar.html" class="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-green-50 hover:translate-x-1 transition-all">
+                        <span class="text-xl">📅</span>
+                        <span class="font-medium text-sm">Calendário</span>
+                    </a>
+                    <a href="catalog.html" class="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-green-50 hover:translate-x-1 transition-all mt-2">
+                        <span class="text-xl">🛒</span>
+                        <span class="font-medium text-sm">Catálogo</span>
+                    </a>
+                    <a href="empresas/index.html" class="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-green-50 hover:translate-x-1 transition-all mt-2">
+                        <span class="text-xl">💼</span>
+                        <span class="font-medium text-sm">Vender Produção</span>
+                    </a>
+                </nav>
+
+                <div class="mt-auto w-full pt-4">
+                    <a href="relatorio.html" class="block w-full text-center px-4 py-3 bg-green-700 text-white rounded-lg hover:bg-green-800">Ver Relatório</a>
+                </div>
+            </div>
+        </aside>
+
+        <div class="md:ml-56">
+
+    <header class="py-12 bg-white border-b border-gray-100">
+        <div class="max-w-7xl mx-auto px-4 text-center">
+            <h2 class="font-display text-4xl font-bold mb-4" style="color: var(--forest-green);">Referência de Insumos</h2>
+            <p class="text-gray-500 max-w-2xl mx-auto italic">Preços médios de mercado e especificações técnicas para planejamento agrícola.</p>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-4 py-16">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            
+            <div class="product-card rounded-xl p-6 animate-card">
+                <span class="category-tag bg-green-100 text-green-800">Corretivo</span>
+                <h3 class="font-display text-xl font-bold mt-3 mb-2">Calcário Dolomítico</h3>
+                <p class="text-sm text-gray-600 mb-6">Utilizado para elevar o pH do solo e fornecer Cálcio e Magnésio. Essencial para a correção de acidez.</p>
+                <div class="flex flex-col border-t pt-4">
+                    <span class="text-xs text-gray-400 uppercase font-bold">Preço Médio</span>
+                    <span class="text-2xl font-mono font-bold text-gray-800">R$ 42,00 <small class="text-sm font-normal">/ 50kg</small></span>
+                </div>
+            </div>
+
+            <div class="product-card rounded-xl p-6 animate-card">
+                <span class="category-tag bg-green-100 text-green-800">Mineral</span>
+                <h3 class="font-display text-xl font-bold mt-3 mb-2">Cloreto de Potássio (KCl)</h3>
+                <p class="text-sm text-gray-600 mb-6">Principal fonte de Potássio para as culturas, essencial para o transporte de açúcares e resistência à seca.</p>
+                <div class="flex flex-col border-t pt-4">
+                    <span class="text-xs text-gray-400 uppercase font-bold">Preço Médio</span>
+                    <span class="text-2xl font-mono font-bold text-gray-800">R$ 185,00 <small class="text-sm font-normal">/ 50kg</small></span>
+                </div>
+            </div>
+
+            <div class="product-card rounded-xl p-6 animate-card">
+                <span class="category-tag bg-blue-100 text-blue-800">Fertilizante</span>
+                <h3 class="font-display text-xl font-bold mt-3 mb-2">Superfosfato Simples</h3>
+                <p class="text-sm text-gray-600 mb-6">Fonte de Fósforo, Enxofre e Cálcio. Recomendado para a fundação e desenvolvimento radicular.</p>
+                <div class="flex flex-col border-t pt-4">
+                    <span class="text-xs text-gray-400 uppercase font-bold">Preço Médio</span>
+                    <span class="text-2xl font-mono font-bold text-gray-800">R$ 140,00 <small class="text-sm font-normal">/ 50kg</small></span>
+                </div>
+            </div>
+
+            <div class="product-card rounded-xl p-6 animate-card">
+                <span class="category-tag bg-amber-100 text-amber-800">Substrato</span>
+                <h3 class="font-display text-xl font-bold mt-3 mb-2">Turfa de Sphagnum fibra fina</h3>
+                <p class="text-sm text-gray-600 mb-6">Material orgânico com excelente capacidade de retenção hídrica e aeração para bandejas de mudas.</p>
+                <div class="flex flex-col border-t pt-4">
+                    <span class="text-xs text-gray-400 uppercase font-bold">Preço Médio</span>
+                    <span class="text-2xl font-mono font-bold text-gray-800">R$ 95,00 <small class="text-sm font-normal">/ 40kg</small></span>
+                </div>
+            </div>
+
+            <div class="product-card rounded-xl p-6 animate-card">
+                <span class="category-tag bg-amber-100 text-amber-800">Substrato</span>
+                <h3 class="font-display text-xl font-bold mt-3 mb-2">Casca de Arroz Carbonizada</h3>
+                <p class="text-sm text-gray-600 mb-6">Condicionador de solo que melhora a drenagem. Livre de sementes de plantas daninhas e patógenos.</p>
+                <div class="flex flex-col border-t pt-4">
+                    <span class="text-xs text-gray-400 uppercase font-bold">Preço Médio</span>
+                    <span class="text-2xl font-mono font-bold text-gray-800">R$ 38,00 <small class="text-sm font-normal">/ 100L</small></span>
+                </div>
+            </div>
+
+            <div class="product-card rounded-xl p-6 animate-card">
+                <span class="category-tag bg-red-100 text-red-800">Defensivo</span>
+                <h3 class="font-display text-xl font-bold mt-3 mb-2">Fungicida Cúprico</h3>
+                <p class="text-sm text-gray-600 mb-6">Utilizado no controle preventivo de doenças fúngicas e bacterianas. Baixa toxicidade residual.</p>
+                <div class="flex flex-col border-t pt-4">
+                    <span class="text-xs text-gray-400 uppercase font-bold">Preço Médio</span>
+                    <span class="text-2xl font-mono font-bold text-gray-800">R$ 55,00 <small class="text-sm font-normal">/ kg</small></span>
+                </div>
+            </div>
+
+            <div class="product-card rounded-xl p-6 animate-card">
+                <span class="category-tag bg-red-100 text-red-800">Defensivo Biológico</span>
+                <h3 class="font-display text-xl font-bold mt-3 mb-2">Bacillus thuringiensis</h3>
+                <p class="text-sm text-gray-600 mb-6">Inseticida biológico altamente eficaz contra lagartas. Não afeta inimigos naturais.</p>
+                <div class="flex flex-col border-t pt-4">
+                    <span class="text-xs text-gray-400 uppercase font-bold">Preço Médio</span>
+                    <span class="text-2xl font-mono font-bold text-gray-800">R$ 110,00 <small class="text-sm font-normal">/ Litro</small></span>
+                </div>
+            </div>
+
+            <div class="product-card rounded-xl p-6 animate-card">
+                <span class="category-tag bg-emerald-100 text-emerald-800">Fertilizante Orgânico</span>
+                <h3 class="font-display text-xl font-bold mt-3 mb-2">Esterco de Galinha Curtido</h3>
+                <p class="text-sm text-gray-600 mb-6">Fonte rica de Nitrogênio e matéria orgânica para rápida mineralização e nutrição vegetal.</p>
+                <div class="flex flex-col border-t pt-4">
+                    <span class="text-xs text-gray-400 uppercase font-bold">Preço Médio</span>
+                    <span class="text-2xl font-mono font-bold text-gray-800">R$ 15,00 <small class="text-sm font-normal">/ 20kg</small></span>
+                </div>
+            </div>
+
+            <div class="product-card rounded-xl p-6 animate-card">
+                <span class="category-tag bg-blue-100 text-blue-800">Fertilizante NPK</span>
+                <h3 class="font-display text-xl font-bold mt-3 mb-2">Formulação NPK 10-10-10</h3>
+                <p class="text-sm text-gray-600 mb-6">Fertilizante balanceado de manutenção para diversas culturas e plantas ornamentais.</p>
+                <div class="flex flex-col border-t pt-4">
+                    <span class="text-xs text-gray-400 uppercase font-bold">Preço Médio</span>
+                    <span class="text-2xl font-mono font-bold text-gray-800">R$ 125,00 <small class="text-sm font-normal">/ 50kg</small></span>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            anime({
+                targets: '.animate-card',
+                opacity: [0, 1],
+                translateY: [20, 0],
+                delay: anime.stagger(60),
+                duration: 600,
+                easing: 'easeOutQuart'
+            });
+        });
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            anime({
+                targets: '.animate-card',
+                opacity: [0, 1],
+                translateY: [20, 0],
+                delay: anime.stagger(60),
+                duration: 600,
+                easing: 'easeOutQuart'
+            });
+        });
+    </script>
+</body>
+</html>
