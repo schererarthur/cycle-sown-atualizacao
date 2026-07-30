@@ -1,0 +1,171 @@
+/* ============================================================================
+   Cycle Sown — estilos compartilhados das telas de login e cadastro
+   ============================================================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+:root {
+    --verde-principal: #2d5a3d;
+    --verde-principal-escuro: #234a31;
+    --verde-claro: #8bc34a;
+    --fundo: #f4f7f2;
+    --cinza-borda: #d7ddd4;
+    --texto: #2f3a33;
+    --texto-suave: #6b756f;
+    --erro: #c62828;
+    --sucesso: #2e7d32;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    font-family: 'Inter', sans-serif;
+    background: var(--fundo);
+    color: var(--texto);
+}
+
+.auth-card {
+    width: 100%;
+    max-width: 420px;
+    background: #ffffff;
+    border-radius: 12px;
+    box-shadow: 0 10px 30px rgba(45, 90, 61, 0.12);
+    padding: 32px 24px;
+}
+
+.auth-logo {
+    text-align: center;
+    margin-bottom: 8px;
+}
+
+.auth-logo span {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--verde-principal);
+}
+
+.auth-subtitle {
+    text-align: center;
+    color: var(--texto-suave);
+    font-size: 0.9rem;
+    margin: 0 0 24px;
+}
+
+.auth-form label {
+    display: block;
+    font-size: 0.85rem;
+    font-weight: 600;
+    margin-bottom: 6px;
+    color: var(--texto);
+}
+
+.auth-field {
+    margin-bottom: 18px;
+}
+
+.auth-form input {
+    width: 100%;
+    padding: 12px 14px;
+    border: 1px solid var(--cinza-borda);
+    border-radius: 8px;
+    font-size: 1rem;
+    font-family: inherit;
+    color: var(--texto);
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.auth-form input:focus {
+    outline: none;
+    border-color: var(--verde-principal);
+    box-shadow: 0 0 0 3px rgba(45, 90, 61, 0.15);
+}
+
+.auth-hint {
+    font-size: 0.78rem;
+    color: var(--texto-suave);
+    margin: 6px 0 0;
+}
+
+.auth-button {
+    width: 100%;
+    padding: 14px;
+    border: none;
+    border-radius: 8px;
+    background: var(--verde-principal);
+    color: #ffffff;
+    font-size: 1rem;
+    font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.auth-button:hover:not(:disabled) {
+    background: var(--verde-principal-escuro);
+}
+
+.auth-button:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+}
+
+.auth-links {
+    margin-top: 20px;
+    text-align: center;
+    font-size: 0.9rem;
+}
+
+.auth-links p {
+    margin: 8px 0;
+    color: var(--texto-suave);
+}
+
+.auth-links a {
+    color: var(--verde-principal);
+    text-decoration: none;
+    font-weight: 600;
+}
+
+.auth-links a:hover {
+    text-decoration: underline;
+}
+
+.auth-message {
+    display: none;
+    padding: 12px 14px;
+    border-radius: 8px;
+    font-size: 0.88rem;
+    margin-bottom: 18px;
+}
+
+.auth-message.is-visible {
+    display: block;
+}
+
+.auth-message.is-error {
+    background: rgba(198, 40, 40, 0.1);
+    color: var(--erro);
+    border: 1px solid rgba(198, 40, 40, 0.25);
+}
+
+.auth-message.is-success {
+    background: rgba(46, 125, 50, 0.1);
+    color: var(--sucesso);
+    border: 1px solid rgba(46, 125, 50, 0.25);
+}
+
+/* Mobile-first: os estilos acima já funcionam bem em telas pequenas.
+   A partir daqui, só respiros extras para telas maiores. */
+@media (min-width: 480px) {
+    .auth-card {
+        padding: 40px 36px;
+    }
+}

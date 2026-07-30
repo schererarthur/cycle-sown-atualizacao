@@ -1,0 +1,635 @@
+<!-- ============================================================================
+     produtividade.html — controle de produtividade agrícola do produtor.
+     O agricultor registra cada safra (ano + cultura + área plantada +
+     quantidade colhida) e a página calcula a produtividade em kg/ha e deixa
+     comparar a evolução entre anos num gráfico e numa tabela, filtrando por
+     cultura. Dados ficam em userStorage.productivityRecords (localStorage
+     escopado por usuário) — schema.sql já prevê uma tabela
+     `productivity_records` para quando isso migrar para o backend.
+     ============================================================================ -->
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Produtividade - Cycle Sown</title>
+    <script src="userStorage.js"></script>
+    <script>
+        if (!userStorage.getCurrentUserId()) {
+            window.location.href = 'login.html';
+        }
+    </script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:wght@400;600;700&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --forest-green: #2D5016;
+            --terracotta: #B85450;
+            --golden-wheat: #E6B17A;
+            --sage-green: #87A96B;
+            --cream-white: #FAF8F5;
+            --charcoal-gray: #3A3A3A;
+            --light-border: #E5E7EB;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--cream-white);
+            color: var(--charcoal-gray);
+        }
+
+        .font-display { font-family: 'Crimson Pro', serif; }
+        .font-mono { font-family: 'JetBrains Mono', monospace; }
+
+        .stat-card {
+            background: white;
+            border: 1px solid var(--light-border);
+        }
+
+        .print-only { display: none; }
+
+        @media print {
+            .no-print { display: none !important; }
+            .print-only { display: block !important; }
+            body { background: white; padding-top: 0; }
+        }
+    </style>
+</head>
+<body class="pt-20">
+    <nav class="fixed top-0 w-full z-50 backdrop-blur-xl bg-white/80 border-b border-slate-200 shadow-sm no-print">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center gap-3">
+                    <a href="index.html" class="flex items-center shrink-0">
+                        <img src="img/logo.png" alt="Cycle Sown" class="h-14 w-auto">
+                    </a>
+                    <button type="button" aria-label="Abrir menu" onclick="toggleMenu(true)" class="p-2 rounded-full text-slate-700 hover:bg-slate-100 transition-colors">
+                        <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" xmlns="http://www.w3.org/2000/svg">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+                        </svg>
+                    </button>
+                </div>
+                <div class="hidden md:block">
+                    <div class="ml-10 flex items-baseline space-x-8">
+                        <a href="index.html#analysis" class="text-slate-800 hover:text-emerald-700 px-3 py-2 text-sm font-medium transition-colors">Análise</a>
+                        <a href="recommendations.html" class="text-slate-600 hover:text-emerald-700 px-3 py-2 text-sm font-medium transition-colors">Recomendações</a>
+                        <a href="relatorio.html" class="text-slate-600 hover:text-emerald-700 px-3 py-2 text-sm font-medium transition-colors">Relatório</a>
+                        <a href="profile.html" class="text-slate-600 hover:text-emerald-700 px-3 py-2 text-sm font-medium transition-colors">Perfil</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div id="slideMenu" class="fixed inset-0 z-[9998] hidden no-print">
+        <div class="absolute inset-0 bg-black/40 z-[9998]" onclick="toggleMenu(false)"></div>
+        <div class="absolute left-0 top-0 h-full w-72 bg-white border-r shadow-xl overflow-y-auto z-[9999]">
+            <div class="flex items-center justify-between p-5 border-b border-gray-200">
+                <span class="flex items-center gap-2">
+                    <img src="img/logo.png" alt="Cycle Sown" class="h-12 w-auto">
+                    <span class="text-lg font-semibold text-gray-900">Menu</span>
+                </span>
+                <button type="button" aria-label="Fechar menu" onclick="toggleMenu(false)" class="text-gray-600 hover:text-gray-900">
+                    <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" xmlns="http://www.w3.org/2000/svg">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+            <nav class="p-5 space-y-3">
+                <hr class="my-3">
+                <a href="calendar.html" onclick="toggleMenu(false)" class="block text-gray-900 px-4 py-3 rounded-lg hover:bg-green-50 transition-colors">Calendário</a>
+                <a href="catalogo.html" onclick="toggleMenu(false)" class="block text-gray-900 px-4 py-3 rounded-lg hover:bg-green-50 transition-colors">Catálogo</a>
+                <a href="produtividade.html" onclick="toggleMenu(false)" class="block text-gray-900 px-4 py-3 rounded-lg hover:bg-green-50 transition-colors">Produtividade</a>
+                <a href="empresas/index.html" onclick="toggleMenu(false)" class="block text-gray-900 px-4 py-3 rounded-lg hover:bg-green-50 transition-colors">Vender Produção</a>
+                <a href="profile.html" onclick="toggleMenu(false)" class="block text-green-700 font-semibold px-4 py-3 rounded-lg hover:bg-green-50 transition-colors">Meu Perfil</a>
+            </nav>
+        </div>
+    </div>
+
+    <div>
+
+    <header class="py-12 bg-white border-b border-gray-100 no-print">
+        <div class="max-w-7xl mx-auto px-4 text-center">
+            <h2 class="font-display text-4xl font-bold mb-4" style="color: var(--forest-green);">Controle de Produtividade</h2>
+            <p class="text-gray-500 max-w-2xl mx-auto italic">Registre suas safras por ano e cultura e acompanhe a evolução da sua produtividade ao longo do tempo.</p>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-4 py-16 space-y-10">
+
+        <section class="bg-white border border-gray-200 rounded-xl p-6 sm:p-8 no-print">
+            <h3 class="font-display text-2xl font-bold mb-6" style="color: var(--forest-green);">Registrar Safra</h3>
+            <form id="productivityForm" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+                <div>
+                    <label for="yearInput" class="block text-xs text-gray-400 uppercase font-bold mb-1">Ano</label>
+                    <input type="number" id="yearInput" required min="1990" class="w-full rounded-lg border border-gray-200 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-600">
+                </div>
+
+                <div>
+                    <label for="cropSelect" class="block text-xs text-gray-400 uppercase font-bold mb-1">Cultura</label>
+                    <select id="cropSelect" class="w-full rounded-lg border border-gray-200 bg-white px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-600">
+                        <option value="milho">Milho</option>
+                        <option value="soja">Soja</option>
+                        <option value="trigo">Trigo</option>
+                        <option value="tabaco">Tabaco</option>
+                        <option value="outra">Outra cultura</option>
+                    </select>
+                </div>
+
+                <div id="customCropWrapper" class="hidden">
+                    <label for="customCropInput" class="block text-xs text-gray-400 uppercase font-bold mb-1">Nome da cultura</label>
+                    <input type="text" id="customCropInput" placeholder="Ex: Café" maxlength="40" class="w-full rounded-lg border border-gray-200 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-600">
+                </div>
+
+                <div>
+                    <label for="plantingDateInput" class="block text-xs text-gray-400 uppercase font-bold mb-1">Data de Plantio</label>
+                    <input type="date" id="plantingDateInput" class="w-full rounded-lg border border-gray-200 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-600">
+                </div>
+
+                <div>
+                    <label for="harvestDateInput" class="block text-xs text-gray-400 uppercase font-bold mb-1">Data de Colheita</label>
+                    <input type="date" id="harvestDateInput" class="w-full rounded-lg border border-gray-200 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-600">
+                </div>
+
+                <div>
+                    <label for="areaInput" class="block text-xs text-gray-400 uppercase font-bold mb-1">Área Plantada (ha)</label>
+                    <input type="number" id="areaInput" required min="0.1" step="0.1" placeholder="10" class="w-full rounded-lg border border-gray-200 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-600">
+                </div>
+
+                <div>
+                    <label for="quantityInput" class="block text-xs text-gray-400 uppercase font-bold mb-1">Quantidade Colhida</label>
+                    <div class="flex gap-2">
+                        <input type="number" id="quantityInput" required min="0.1" step="0.1" placeholder="600" class="w-full rounded-lg border border-gray-200 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-600">
+                        <select id="unitSelect" class="rounded-lg border border-gray-200 bg-white px-2 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-600">
+                            <option value="sacas">sc (60kg)</option>
+                            <option value="toneladas">t</option>
+                            <option value="kg">kg</option>
+                        </select>
+                    </div>
+                </div>
+
+                <p class="sm:col-span-2 lg:col-span-4 text-xs text-gray-400 -mt-2">As datas de plantio e colheita são opcionais e alimentam o ciclo (dias) exibido na tabela e no relatório impresso.</p>
+
+                <div class="sm:col-span-2 lg:col-span-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-t pt-5 mt-1">
+                    <div class="text-sm text-gray-500">
+                        Produtividade estimada: <span id="livePreview" class="font-mono font-bold text-gray-800">—</span>
+                    </div>
+                    <button type="submit" class="px-6 py-3 rounded-lg text-white font-semibold text-sm transition-colors hover:opacity-90" style="background-color: var(--forest-green);">Salvar Registro</button>
+                </div>
+            </form>
+        </section>
+
+        <section>
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+                <h3 class="font-display text-2xl font-bold" style="color: var(--forest-green);">Comparativo entre Safras</h3>
+                <div class="flex flex-col sm:flex-row gap-3 no-print">
+                    <select id="cropFilter" class="sm:w-56 w-full rounded-lg border border-gray-200 bg-white px-4 py-2.5 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-green-600">
+                        <option value="">Todas as culturas</option>
+                    </select>
+                    <button type="button" id="printReportBtn" class="px-5 py-2.5 rounded-lg border border-gray-200 bg-white text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors">Imprimir Relatório</button>
+                </div>
+            </div>
+
+            <div id="emptyState" class="hidden text-center py-16 bg-white border border-gray-200 rounded-xl">
+                <p class="text-gray-500 italic">Você ainda não registrou nenhuma safra. Use o formulário acima para começar a acompanhar sua produtividade.</p>
+            </div>
+
+            <div id="dataView" class="hidden">
+                <div id="printHeader" class="print-only mb-6">
+                    <h1 class="font-display text-2xl font-bold" style="color: var(--forest-green);">Relatório de Produtividade — Cycle Sown</h1>
+                    <p class="text-sm mt-1">Produtor: <span id="printFarmerName"></span></p>
+                    <p class="text-sm">Cultura: <span id="printCropLabel"></span></p>
+                    <p class="text-sm">Gerado em: <span id="printGeneratedAt"></span></p>
+                    <p class="text-sm mt-2">Ciclo completo do plantio à colheita — período e produtividade por safra.</p>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-6">
+                    <div class="stat-card rounded-xl p-5">
+                        <span class="text-xs text-gray-400 uppercase font-bold">Produtividade Média</span>
+                        <div id="statAverage" class="text-xl font-mono font-bold text-gray-800 mt-1">—</div>
+                        <div id="statAverageNote" class="text-xs text-gray-400 mt-1"></div>
+                    </div>
+                    <div class="stat-card rounded-xl p-5">
+                        <span class="text-xs text-gray-400 uppercase font-bold">Melhor Safra</span>
+                        <div id="statBest" class="text-xl font-mono font-bold text-gray-800 mt-1">—</div>
+                        <div id="statBestNote" class="text-xs text-gray-400 mt-1"></div>
+                    </div>
+                    <div class="stat-card rounded-xl p-5">
+                        <span class="text-xs text-gray-400 uppercase font-bold">Variação vs. Ano Anterior</span>
+                        <div id="statChange" class="text-xl font-mono font-bold mt-1">—</div>
+                        <div id="statChangeNote" class="text-xs text-gray-400 mt-1"></div>
+                    </div>
+                </div>
+
+                <div class="stat-card rounded-xl p-6 mb-6 no-print">
+                    <div id="productivityChart" style="width: 100%; height: 360px;"></div>
+                </div>
+
+                <div class="stat-card rounded-xl overflow-x-auto">
+                    <table class="w-full text-sm text-left">
+                        <thead>
+                            <tr class="border-b border-gray-100 text-xs text-gray-400 uppercase font-bold">
+                                <th class="px-5 py-3">Ano</th>
+                                <th class="px-5 py-3">Cultura</th>
+                                <th class="px-5 py-3">Plantio</th>
+                                <th class="px-5 py-3">Colheita</th>
+                                <th class="px-5 py-3">Ciclo</th>
+                                <th class="px-5 py-3">Área</th>
+                                <th class="px-5 py-3">Produção</th>
+                                <th class="px-5 py-3">Produtividade</th>
+                                <th class="px-5 py-3 no-print"></th>
+                            </tr>
+                        </thead>
+                        <tbody id="recordsTableBody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <div id="site-footer" class="no-print"></div>
+
+    <script src="footer.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            anime({
+                targets: '.stat-card',
+                opacity: [0, 1],
+                translateY: [20, 0],
+                delay: anime.stagger(60),
+                duration: 600,
+                easing: 'easeOutQuart'
+            });
+        });
+
+        function toggleMenu(open) {
+            const menu = document.getElementById('slideMenu');
+            if (!menu) return;
+            menu.classList.toggle('hidden', !open);
+            document.body.style.overflow = open ? 'hidden' : '';
+        }
+    </script>
+    <script>
+        (function() {
+            const CROPS = { milho: 'Milho', soja: 'Soja', trigo: 'Trigo', tabaco: 'Tabaco' };
+            const FIXED_CROP_ORDER = ['milho', 'soja', 'trigo', 'tabaco'];
+            const PALETTE = ['#2a78d6', '#eb6834', '#1baf7a', '#eda100', '#e87ba4', '#008300', '#4a3aa7', '#e34948'];
+            const UNIT_LABELS = { sacas: 'sc', toneladas: 't', kg: 'kg' };
+
+            const form = document.getElementById('productivityForm');
+            const yearInput = document.getElementById('yearInput');
+            const cropSelect = document.getElementById('cropSelect');
+            const customCropWrapper = document.getElementById('customCropWrapper');
+            const customCropInput = document.getElementById('customCropInput');
+            const plantingDateInput = document.getElementById('plantingDateInput');
+            const harvestDateInput = document.getElementById('harvestDateInput');
+            const areaInput = document.getElementById('areaInput');
+            const quantityInput = document.getElementById('quantityInput');
+            const unitSelect = document.getElementById('unitSelect');
+            const livePreview = document.getElementById('livePreview');
+            const cropFilter = document.getElementById('cropFilter');
+            const emptyState = document.getElementById('emptyState');
+            const dataView = document.getElementById('dataView');
+            const statAverage = document.getElementById('statAverage');
+            const statAverageNote = document.getElementById('statAverageNote');
+            const statBest = document.getElementById('statBest');
+            const statBestNote = document.getElementById('statBestNote');
+            const statChange = document.getElementById('statChange');
+            const statChangeNote = document.getElementById('statChangeNote');
+            const recordsTableBody = document.getElementById('recordsTableBody');
+            const chartEl = document.getElementById('productivityChart');
+            const printReportBtn = document.getElementById('printReportBtn');
+            const printFarmerName = document.getElementById('printFarmerName');
+            const printCropLabel = document.getElementById('printCropLabel');
+            const printGeneratedAt = document.getElementById('printGeneratedAt');
+
+            let records = loadRecords();
+            let chart = null;
+
+            const currentYear = new Date().getFullYear();
+            yearInput.value = currentYear;
+            yearInput.max = currentYear + 1;
+
+            function loadRecords() {
+                try {
+                    return JSON.parse(userStorage.getItem('productivityRecords') || '[]');
+                } catch (err) {
+                    return [];
+                }
+            }
+
+            function saveRecords() {
+                userStorage.setItem('productivityRecords', JSON.stringify(records));
+            }
+
+            function escapeHtml(str) {
+                return String(str)
+                    .replace(/&/g, '&amp;')
+                    .replace(/</g, '&lt;')
+                    .replace(/>/g, '&gt;')
+                    .replace(/"/g, '&quot;')
+                    .replace(/'/g, '&#39;');
+            }
+
+            function toKg(quantity, unit) {
+                if (unit === 'toneladas') return quantity * 1000;
+                if (unit === 'sacas') return quantity * 60;
+                return quantity;
+            }
+
+            function formatYield(kgHa) {
+                if (kgHa == null || isNaN(kgHa)) return '—';
+                const scHa = kgHa / 60;
+                return kgHa.toLocaleString('pt-BR', { maximumFractionDigits: 0 }) + ' kg/ha · ' +
+                    scHa.toLocaleString('pt-BR', { maximumFractionDigits: 1 }) + ' sc/ha';
+            }
+
+            // Constrói a data no fuso local a partir de 'YYYY-MM-DD' (evita o
+            // "new Date('YYYY-MM-DD')" que o navegador interpreta como UTC e
+            // pode voltar um dia em fusos negativos).
+            function parseDateOnly(str) {
+                if (!str) return null;
+                const [y, m, d] = str.split('-').map(Number);
+                if (!y || !m || !d) return null;
+                return new Date(y, m - 1, d);
+            }
+
+            function formatDate(str) {
+                const date = parseDateOnly(str);
+                return date ? date.toLocaleDateString('pt-BR') : '—';
+            }
+
+            function computeCycleDays(plantingStr, harvestStr) {
+                const planting = parseDateOnly(plantingStr);
+                const harvest = parseDateOnly(harvestStr);
+                if (!planting || !harvest) return null;
+                const days = Math.round((harvest - planting) / 86400000);
+                return days >= 0 ? days : null;
+            }
+
+            function seriesKeyFor(record) {
+                return record.cropKey === 'outra' ? ('outra:' + record.cropLabel) : record.cropKey;
+            }
+
+            function orderedSeriesKeys(list) {
+                const present = new Set(list.map(seriesKeyFor));
+                const ordered = FIXED_CROP_ORDER.filter(k => present.has(k));
+                const customLabels = Array.from(new Set(
+                    list.filter(r => r.cropKey === 'outra').map(r => r.cropLabel)
+                )).sort((a, b) => a.localeCompare(b, 'pt-BR'));
+                customLabels.forEach(label => ordered.push('outra:' + label));
+                return ordered;
+            }
+
+            function buildColorMap(list) {
+                const keys = orderedSeriesKeys(list);
+                const map = {};
+                keys.forEach((key, i) => { map[key] = PALETTE[i % PALETTE.length]; });
+                return map;
+            }
+
+            function labelForKey(key) {
+                if (CROPS[key]) return CROPS[key];
+                return key.startsWith('outra:') ? key.slice(6) : key;
+            }
+
+            function cropLabelFor(record) {
+                return record.cropKey === 'outra' ? record.cropLabel : CROPS[record.cropKey];
+            }
+
+            function updateLivePreview() {
+                const area = parseFloat(areaInput.value);
+                const quantity = parseFloat(quantityInput.value);
+                if (!area || area <= 0 || !quantity || quantity <= 0) {
+                    livePreview.textContent = '—';
+                    return;
+                }
+                const yieldKgHa = toKg(quantity, unitSelect.value) / area;
+                livePreview.textContent = formatYield(yieldKgHa);
+            }
+
+            cropSelect.addEventListener('change', function() {
+                const isOther = cropSelect.value === 'outra';
+                customCropWrapper.classList.toggle('hidden', !isOther);
+                customCropInput.required = isOther;
+                if (!isOther) customCropInput.value = '';
+            });
+
+            [areaInput, quantityInput].forEach(el => el.addEventListener('input', updateLivePreview));
+            unitSelect.addEventListener('change', updateLivePreview);
+
+            function rebuildCropFilterOptions() {
+                const previousValue = cropFilter.value;
+                const keys = orderedSeriesKeys(records);
+                cropFilter.innerHTML = '<option value="">Todas as culturas</option>' +
+                    keys.map(k => '<option value="' + escapeHtml(k) + '">' + escapeHtml(labelForKey(k)) + '</option>').join('');
+                cropFilter.value = keys.includes(previousValue) ? previousValue : '';
+            }
+
+            form.addEventListener('submit', function(e) {
+                e.preventDefault();
+
+                const year = parseInt(yearInput.value, 10);
+                const cropKey = cropSelect.value;
+                const cropLabel = cropKey === 'outra' ? (customCropInput.value.trim() || 'Outra cultura') : CROPS[cropKey];
+                const area = parseFloat(areaInput.value);
+                const quantity = parseFloat(quantityInput.value);
+                const unit = unitSelect.value;
+                const plantingDate = plantingDateInput.value || null;
+                const harvestDate = harvestDateInput.value || null;
+
+                if (!year || !area || area <= 0 || !quantity || quantity <= 0) return;
+
+                const yieldKgHa = toKg(quantity, unit) / area;
+
+                records.push({
+                    id: Date.now().toString(36) + Math.random().toString(36).slice(2, 7),
+                    year, cropKey, cropLabel, area, quantity, unit, yieldKgHa,
+                    plantingDate, harvestDate
+                });
+                saveRecords();
+
+                form.reset();
+                yearInput.value = currentYear;
+                customCropWrapper.classList.add('hidden');
+                customCropInput.required = false;
+                livePreview.textContent = '—';
+
+                rebuildCropFilterOptions();
+                render();
+            });
+
+            recordsTableBody.addEventListener('click', function(e) {
+                const btn = e.target.closest('[data-delete-id]');
+                if (!btn) return;
+                if (!confirm('Excluir este registro de safra?')) return;
+                records = records.filter(r => r.id !== btn.dataset.deleteId);
+                saveRecords();
+                rebuildCropFilterOptions();
+                render();
+            });
+
+            cropFilter.addEventListener('change', render);
+            printReportBtn.addEventListener('click', function() { window.print(); });
+
+            function renderPrintHeader() {
+                const user = userStorage.getCurrentUser();
+                printFarmerName.textContent = (user && user.name) || '—';
+                const selectedOption = cropFilter.options[cropFilter.selectedIndex];
+                printCropLabel.textContent = selectedOption ? selectedOption.textContent : 'Todas as culturas';
+                printGeneratedAt.textContent = new Date().toLocaleDateString('pt-BR') + ' às ' + new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+            }
+
+            function computeYoyChange(filtered) {
+                const byYear = {};
+                filtered.forEach(r => { (byYear[r.year] = byYear[r.year] || []).push(r.yieldKgHa); });
+                const years = Object.keys(byYear).map(Number).sort((a, b) => a - b);
+                if (years.length < 2) return null;
+                const avg = arr => arr.reduce((s, v) => s + v, 0) / arr.length;
+                const lastYear = years[years.length - 1];
+                const prevYear = years[years.length - 2];
+                const lastAvg = avg(byYear[lastYear]);
+                const prevAvg = avg(byYear[prevYear]);
+                return { pct: ((lastAvg - prevAvg) / prevAvg) * 100, lastYear, prevYear };
+            }
+
+            function renderStats(filtered) {
+                const average = filtered.reduce((s, r) => s + r.yieldKgHa, 0) / filtered.length;
+                statAverage.textContent = formatYield(average);
+                statAverageNote.textContent = filtered.length + (filtered.length === 1 ? ' registro' : ' registros');
+
+                const best = filtered.reduce((max, r) => (r.yieldKgHa > max.yieldKgHa ? r : max), filtered[0]);
+                statBest.textContent = formatYield(best.yieldKgHa);
+                statBestNote.textContent = cropLabelFor(best) + ' · ' + best.year;
+
+                const change = computeYoyChange(filtered);
+                if (!change) {
+                    statChange.innerHTML = '—';
+                    statChangeNote.textContent = 'Adicione registros de pelo menos 2 anos para comparar.';
+                } else {
+                    const up = change.pct >= 0;
+                    const color = up ? '#006300' : '#d03b3b';
+                    const arrow = up ? '▲' : '▼';
+                    statChange.innerHTML = '<span style="color:' + color + '">' + arrow + ' ' +
+                        Math.abs(change.pct).toLocaleString('pt-BR', { maximumFractionDigits: 1 }) + '%</span>';
+                    statChangeNote.textContent = change.prevYear + ' → ' + change.lastYear;
+                }
+            }
+
+            function renderChart(filtered) {
+                const colorMap = buildColorMap(records);
+                const years = Array.from(new Set(filtered.map(r => r.year))).sort((a, b) => a - b);
+                const seriesKeys = orderedSeriesKeys(filtered);
+
+                const sums = {};
+                filtered.forEach(r => {
+                    const key = seriesKeyFor(r);
+                    sums[key] = sums[key] || {};
+                    sums[key][r.year] = sums[key][r.year] || [];
+                    sums[key][r.year].push(r.yieldKgHa);
+                });
+                const avgFor = (key, year) => {
+                    const vals = (sums[key] && sums[key][year]) || null;
+                    if (!vals) return null;
+                    return vals.reduce((s, v) => s + v, 0) / vals.length;
+                };
+
+                if (!chart) chart = echarts.init(chartEl);
+
+                const showLegend = seriesKeys.length > 1;
+                const option = {
+                    color: seriesKeys.map(k => colorMap[k]),
+                    tooltip: {
+                        trigger: 'axis',
+                        axisPointer: { type: 'shadow' },
+                        valueFormatter: function(value) {
+                            return value == null ? '—' : formatYield(value);
+                        }
+                    },
+                    legend: showLegend ? {
+                        top: 0,
+                        data: seriesKeys.map(labelForKey),
+                        textStyle: { color: '#52514e' }
+                    } : undefined,
+                    grid: { left: 55, right: 20, top: showLegend ? 50 : 32, bottom: 30, containLabel: true },
+                    xAxis: {
+                        type: 'category',
+                        data: years,
+                        axisLine: { lineStyle: { color: '#c3c2b7' } },
+                        axisTick: { show: false },
+                        axisLabel: { color: '#52514e' }
+                    },
+                    yAxis: {
+                        type: 'value',
+                        name: 'kg/ha',
+                        nameTextStyle: { color: '#898781' },
+                        splitLine: { lineStyle: { color: '#e1e0d9' } },
+                        axisLabel: { color: '#52514e' }
+                    },
+                    series: seriesKeys.map(key => ({
+                        name: labelForKey(key),
+                        type: 'bar',
+                        barMaxWidth: 24,
+                        barGap: '15%',
+                        barCategoryGap: '35%',
+                        itemStyle: { color: colorMap[key], borderRadius: [4, 4, 0, 0] },
+                        data: years.map(y => avgFor(key, y))
+                    }))
+                };
+
+                chart.setOption(option, true);
+                chart.resize();
+            }
+
+            function renderTable(filtered) {
+                const sorted = [...filtered].sort((a, b) => b.year - a.year || cropLabelFor(a).localeCompare(cropLabelFor(b), 'pt-BR'));
+                recordsTableBody.innerHTML = sorted.map(r => {
+                    const cycleDays = computeCycleDays(r.plantingDate, r.harvestDate);
+                    return '<tr class="border-b border-gray-50 last:border-0">' +
+                        '<td class="px-5 py-3 font-mono">' + r.year + '</td>' +
+                        '<td class="px-5 py-3">' + escapeHtml(cropLabelFor(r)) + '</td>' +
+                        '<td class="px-5 py-3 font-mono">' + formatDate(r.plantingDate) + '</td>' +
+                        '<td class="px-5 py-3 font-mono">' + formatDate(r.harvestDate) + '</td>' +
+                        '<td class="px-5 py-3 font-mono">' + (cycleDays == null ? '—' : cycleDays + ' dias') + '</td>' +
+                        '<td class="px-5 py-3 font-mono">' + r.area.toLocaleString('pt-BR') + ' ha</td>' +
+                        '<td class="px-5 py-3 font-mono">' + r.quantity.toLocaleString('pt-BR') + ' ' + UNIT_LABELS[r.unit] + '</td>' +
+                        '<td class="px-5 py-3 font-mono font-semibold">' + formatYield(r.yieldKgHa) + '</td>' +
+                        '<td class="px-5 py-3 text-right no-print">' +
+                            '<button type="button" data-delete-id="' + r.id + '" aria-label="Excluir registro" class="text-gray-400 hover:text-red-600">' +
+                                '<svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" xmlns="http://www.w3.org/2000/svg">' +
+                                    '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M9 7V4a1 1 0 011-1h4a1 1 0 011 1v3M4 7h16" />' +
+                                '</svg>' +
+                            '</button>' +
+                        '</td>' +
+                    '</tr>';
+                }).join('');
+            }
+
+            function render() {
+                const hasRecords = records.length > 0;
+                emptyState.classList.toggle('hidden', hasRecords);
+                dataView.classList.toggle('hidden', !hasRecords);
+                if (!hasRecords) return;
+
+                const filterValue = cropFilter.value;
+                const filtered = filterValue ? records.filter(r => seriesKeyFor(r) === filterValue) : records;
+
+                renderStats(filtered);
+                renderChart(filtered);
+                renderTable(filtered);
+                renderPrintHeader();
+            }
+
+            window.addEventListener('resize', function() {
+                if (chart) chart.resize();
+            });
+
+            rebuildCropFilterOptions();
+            render();
+        })();
+    </script>
+</body>
+</html>

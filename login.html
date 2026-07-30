@@ -1,0 +1,43 @@
+<!-- ============================================================================
+     login.html — tela de login. Formulário puro; toda a lógica (validação,
+     chamada à API, salvar sessão) está em js/auth.js (initLoginPage),
+     compartilhado com register.html.
+     ============================================================================ -->
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Entrar - Cycle Sown</title>
+    <link rel="stylesheet" href="css/auth.css">
+</head>
+<body>
+    <main class="auth-card">
+        <div class="auth-logo"><span>Cycle Sown 🌱</span></div>
+        <p class="auth-subtitle">Análise inteligente de solo para o seu campo</p>
+
+        <div id="authMessage" class="auth-message" role="alert"></div>
+
+        <form id="loginForm" class="auth-form" novalidate>
+            <div class="auth-field">
+                <label for="email">E-mail</label>
+                <input type="email" id="email" name="email" autocomplete="email" required>
+            </div>
+
+            <div class="auth-field">
+                <label for="password">Senha</label>
+                <input type="password" id="password" name="password" autocomplete="current-password" required>
+            </div>
+
+            <button type="submit" class="auth-button">Entrar</button>
+        </form>
+
+        <div class="auth-links">
+            <p><a href="#" id="forgotPasswordLink">Esqueci minha senha</a></p>
+            <p>Não tem conta? <a href="register.html">Cadastre-se</a></p>
+        </div>
+    </main>
+
+    <script src="js/auth.js"></script>
+</body>
+</html>

@@ -1,0 +1,58 @@
+<!-- ============================================================================
+     register.html — tela de cadastro. Formulário puro; toda a lógica
+     (validação, chamada à API, redirecionamento) está em js/auth.js
+     (initRegisterPage), compartilhado com login.html.
+     ============================================================================ -->
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cadastre-se - Cycle Sown</title>
+    <link rel="stylesheet" href="css/auth.css">
+</head>
+<body>
+    <main class="auth-card">
+        <div class="auth-logo"><span>Cycle Sown 🌱</span></div>
+        <p class="auth-subtitle">Crie sua conta e comece a analisar o seu solo</p>
+
+        <div id="authMessage" class="auth-message" role="alert"></div>
+
+        <form id="registerForm" class="auth-form" novalidate>
+            <div class="auth-field">
+                <label for="name">Nome completo</label>
+                <input type="text" id="name" name="name" autocomplete="name" required>
+            </div>
+
+            <div class="auth-field">
+                <label for="email">E-mail</label>
+                <input type="email" id="email" name="email" autocomplete="email" required>
+            </div>
+
+            <div class="auth-field">
+                <label for="phone">Telefone (opcional)</label>
+                <input type="tel" id="phone" name="phone" autocomplete="tel" placeholder="(00) 90000-0000">
+            </div>
+
+            <div class="auth-field">
+                <label for="password">Senha</label>
+                <input type="password" id="password" name="password" autocomplete="new-password" required>
+                <p class="auth-hint">Mínimo 8 caracteres, com letras e números.</p>
+            </div>
+
+            <div class="auth-field">
+                <label for="confirmPassword">Confirmar senha</label>
+                <input type="password" id="confirmPassword" name="confirmPassword" autocomplete="new-password" required>
+            </div>
+
+            <button type="submit" class="auth-button">Cadastrar</button>
+        </form>
+
+        <div class="auth-links">
+            <p>Já tem conta? <a href="login.html">Faça login</a></p>
+        </div>
+    </main>
+
+    <script src="js/auth.js"></script>
+</body>
+</html>

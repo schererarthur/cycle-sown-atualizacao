@@ -1,11 +1,26 @@
+<!-- ============================================================================
+     calendar.html — calendário de plantio mês a mês para as 4 culturas do
+     site (milho, soja, trigo, tabaco). Os dados de cada mês (culturas
+     ativas, atividades recomendadas, dica) ficam no objeto `plantingCalendar`
+     no <script> no fim do arquivo — são fixos no HTML, não vêm de
+     userStorage nem do backend. Selecionar uma cultura no topo apenas
+     destaca (via CSS) os meses em que ela aparece.
+     ============================================================================ -->
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Calendário de Plantio - Cycle Sown</title>
+    <script src="userStorage.js"></script>
+    <script>
+        if (!userStorage.getCurrentUserId()) {
+            window.location.href = 'login.html';
+        }
+    </script>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
     <link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:wght@400;600;700&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -74,88 +89,96 @@
 </head>
 <body>
     <!-- Navigation -->
-    <nav class="fixed top-0 w-full z-50 glass-effect border-b border-gray-200">
+    <nav class="fixed top-0 w-full z-50 backdrop-blur-xl bg-white/80 border-b border-slate-200 shadow-sm">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between items-center h-16">
-                <div class="flex items-center">
-                    <div class="flex-shrink-0">
-                        
-                    </div>
+                <div class="flex items-center gap-3">
+                    <a href="index.html" class="flex items-center shrink-0">
+                        <img src="img/logo.png" alt="Cycle Sown" class="h-14 w-auto">
+                    </a>
+                    <button type="button" aria-label="Abrir menu" onclick="toggleMenu(true)" class="p-2 rounded-full text-slate-700 hover:bg-slate-100 transition-colors">
+                        <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" xmlns="http://www.w3.org/2000/svg">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+                        </svg>
+                    </button>
                 </div>
                 <div class="hidden md:block">
                     <div class="ml-10 flex items-baseline space-x-8">
-                        <a href="index.html#analysis" class="text-gray-900 hover:text-green-700 px-3 py-2 text-sm font-medium transition-colors">Análise</a>
-                        <a href="recommendations.html" class="text-gray-600 hover:text-green-700 px-3 py-2 text-sm font-medium transition-colors">Recomendações</a>
-                        <a href="relatorio.html" class="text-gray-600 hover:text-green-700 px-3 py-2 text-sm font-medium transition-colors">Relatório</a>
+                        <a href="index.html#analysis" class="text-slate-800 hover:text-emerald-700 px-3 py-2 text-sm font-medium transition-colors">Análise</a>
+                        <a href="recommendations.html" class="text-slate-600 hover:text-emerald-700 px-3 py-2 text-sm font-medium transition-colors">Recomendações</a>
+                        <a href="relatorio.html" class="text-slate-600 hover:text-emerald-700 px-3 py-2 text-sm font-medium transition-colors">Relatório</a>
+                        <a href="profile.html" class="text-slate-600 hover:text-emerald-700 px-3 py-2 text-sm font-medium transition-colors">Perfil</a>
                     </div>
                 </div>
             </div>
         </div>
     </nav>
 
-        <!-- Sidebar + Main wrapper -->
-        <aside class="hidden md:block fixed left-0 top-16 h-full w-64 bg-white border-r z-40 shadow-sm">
-            <div class="p-4 flex flex-col items-center">
-                <nav class="w-full mt-2">
-                    <a href="calendar.html" class="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-green-50 hover:translate-x-1 transition-all">
-                        <span class="text-xl">📅</span>
-                        <span class="font-medium text-sm">Calendário</span>
-                    </a>
-                    <a href="catalog.html" class="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-green-50 hover:translate-x-1 transition-all mt-2">
-                        <span class="text-xl">🛒</span>
-                        <span class="font-medium text-sm">Catálogo</span>
-                    </a>
-                    <a href="empresas/index.html" class="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-green-50 hover:translate-x-1 transition-all mt-2">
-                        <span class="text-xl">💼</span>
-                        <span class="font-medium text-sm">Vender Produção</span>
-                    </a>
-                </nav>
+    <div id="slideMenu" class="fixed inset-0 z-[9998] hidden">
+        <div class="absolute inset-0 bg-black/40 z-[9998]" onclick="toggleMenu(false)"></div>
+        <div class="absolute left-0 top-0 h-full w-72 bg-white border-r shadow-xl overflow-y-auto z-[9999]">
+            <div class="flex items-center justify-between p-5 border-b border-gray-200">
+                <span class="flex items-center gap-2">
+                    <img src="img/logo.png" alt="Cycle Sown" class="h-12 w-auto">
+                    <span class="text-lg font-semibold text-gray-900">Menu</span>
+                </span>
+                <button type="button" aria-label="Fechar menu" onclick="toggleMenu(false)" class="text-gray-600 hover:text-gray-900">
+                    <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" xmlns="http://www.w3.org/2000/svg">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+            <nav class="p-5 space-y-3">
+                <hr class="my-3">
+                <a href="calendar.html" onclick="toggleMenu(false)" class="block text-gray-900 px-4 py-3 rounded-lg hover:bg-green-50 transition-colors">Calendário</a>
+                <a href="catalogo.html" onclick="toggleMenu(false)" class="block text-gray-900 px-4 py-3 rounded-lg hover:bg-green-50 transition-colors">Catálogo</a>
+                <a href="produtividade.html" onclick="toggleMenu(false)" class="block text-gray-900 px-4 py-3 rounded-lg hover:bg-green-50 transition-colors">Produtividade</a>
+                <a href="empresas/index.html" onclick="toggleMenu(false)" class="block text-gray-900 px-4 py-3 rounded-lg hover:bg-green-50 transition-colors">Vender Produção</a>
+                <a href="profile.html" onclick="toggleMenu(false)" class="block text-green-700 font-semibold px-4 py-3 rounded-lg hover:bg-green-50 transition-colors">Meu Perfil</a>
+            </nav>
+        </div>
+    </div>
 
-                <div class="mt-auto w-full pt-4">
-                    <a href="relatorio.html" class="block w-full text-center px-4 py-3 bg-green-700 text-white rounded-lg hover:bg-green-800">Ver Relatório</a>
+    <div class="relative w-full overflow-hidden min-h-[70vh] mb-16">
+        <div class="absolute inset-0 bg-cover bg-center" style="background-image: url('Plantio-de-milho.-como-aumentar-a-produtividade-da-lavoura-1024x536.jpg');"></div>
+        <div class="absolute inset-0 bg-black/30"></div>
+        <div class="relative flex items-start justify-center min-h-[70vh] pt-20 px-4 lg:px-0">
+            <div class="text-center text-white animate-fade-in max-w-5xl">
+                <h1 class="font-display text-5xl md:text-7xl font-bold mb-6">Planeje o seu calendário de plantio</h1>
+                <div class="mx-auto inline-block bg-white/15 backdrop-blur-xl border border-white/20 rounded-3xl px-10 py-8 max-w-3xl shadow-xl shadow-black/10">
+                    <p class="text-2xl md:text-3xl font-semibold leading-snug text-white">Planejar o plantio hoje é garantir a colheita de amanhã.</p>
                 </div>
             </div>
-        </aside>
-
-        <div class="md:ml-56">
-
-    <!-- Header Section -->
-    <section class="pt-24 pb-12 px-4" style="background: linear-gradient(135deg, var(--forest-green) 0%, var(--sage-green) 100%);">
-        <div class="max-w-6xl mx-auto text-center text-white">
-            <h1 class="font-display text-5xl font-bold mb-6 animate-fade-in">Calendário de Plantio</h1>
-            <p class="text-xl mb-8 max-w-3xl mx-auto animate-fade-in">
-                Planeje suas safras ao longo do ano com base nas condições climáticas ideais e características de cada cultura.
-            </p>
         </div>
-    </section>
+    </div>
 
-    <!-- Season Overview -->
-    <section class="py-12 px-4">
+    <!-- Crop Selection -->
+    <section class="px-4 mb-12">
         <div class="max-w-6xl mx-auto">
-            <div class="grid md:grid-cols-4 gap-6 mb-12">
-                <div class="text-center p-6 rounded-2xl text-white season-spring">
-                    <div class="text-4xl mb-4">🌱</div>
-                    <h3 class="font-display text-xl font-bold mb-2">Primavera</h3>
-                    <p class="text-sm opacity-90">Set - Nov</p>
-                    <p class="text-xs mt-2 opacity-80">Clima ameno, ideal para germinação</p>
+            <div class="bg-white rounded-2xl shadow-lg p-6 card-hover">
+                <div class="mb-6 text-center">
+                    <p class="text-gray-700 text-lg font-medium">Comece selecionando a cultura plantada e a sua região</p>
                 </div>
-                <div class="text-center p-6 rounded-2xl text-white season-summer">
-                    <div class="text-4xl mb-4">☀️</div>
-                    <h3 class="font-display text-xl font-bold mb-2">Verão</h3>
-                    <p class="text-sm opacity-90">Dez - Fev</p>
-                    <p class="text-xs mt-2 opacity-80">Calor intenso, crescimento acelerado</p>
-                </div>
-                <div class="text-center p-6 rounded-2xl text-white season-autumn">
-                    <div class="text-4xl mb-4">🍂</div>
-                    <h3 class="font-display text-xl font-bold mb-2">Outono</h3>
-                    <p class="text-sm opacity-90">Mar - Mai</p>
-                    <p class="text-xs mt-2 opacity-80">Temperatura amena, boa para colheita</p>
-                </div>
-                <div class="text-center p-6 rounded-2xl text-white season-winter">
-                    <div class="text-4xl mb-4">❄️</div>
-                    <h3 class="font-display text-xl font-bold mb-2">Inverno</h3>
-                    <p class="text-sm opacity-90">Jun - Ago</p>
-                    <p class="text-xs mt-2 opacity-80">Frio moderado, período de preparação</p>
+                <div class="grid gap-6 md:grid-cols-2 items-center justify-items-center">
+                    <div class="w-full max-w-md">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Cultura</label>
+                        <select id="mainCrop" onchange="renderMonthlyCalendar()" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500">
+                            <option value="milho">Milho</option>
+                            <option value="soja">Soja</option>
+                            <option value="trigo">Trigo</option>
+                            <option value="tabaco">Tabaco</option>
+                        </select>
+                    </div>
+                    <div class="w-full max-w-md">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Região</label>
+                        <select id="region" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500">
+                            <option value="southeast">Sudeste</option>
+                            <option value="south">Sul</option>
+                            <option value="northeast">Nordeste</option>
+                            <option value="north">Norte</option>
+                            <option value="centerwest">Centro-Oeste</option>
+                        </select>
+                    </div>
                 </div>
             </div>
         </div>
@@ -168,59 +191,6 @@
             
             <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6" id="monthlyCalendar">
                 <!-- Calendar months will be populated by JavaScript -->
-            </div>
-        </div>
-    </section>
-
-    <!-- Crop Planning Tool -->
-    <section class="px-4 mb-12">
-        <div class="max-w-6xl mx-auto">
-            <div class="bg-white rounded-2xl shadow-lg p-8 card-hover">
-                <h3 class="font-display text-2xl font-semibold mb-6" style="color: var(--forest-green);">Planejador de Culturas</h3>
-                
-                <div class="grid md:grid-cols-2 gap-8">
-                    <div>
-                        <h4 class="font-semibold text-lg mb-4">Selecionar Cultura</h4>
-                        <div class="mb-4">
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Cultura Principal</label>
-                            <select id="mainCrop" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500">
-                                <option value="milho">Milho</option>
-                                <option value="soja">Soja</option>
-                                <option value="trigo">Trigo</option>
-                                <option value="batata">Batata</option>
-                                <option value="tomate">Tomate</option>
-                                <option value="arroz">Arroz</option>
-                                <option value="feijao">Feijão</option>
-                                <option value="cenoura">Cenoura</option>
-                            </select>
-                        </div>
-                        
-                        <div class="mb-4">
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Região</label>
-                                <select id="region" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500">
-                                <option value="southeast">Sudeste</option>
-                                <option value="south">Sul</option>
-                                <option value="northeast">Nordeste</option>
-                                <option value="north">Norte</option>
-                                <option value="centerwest">Centro-Oeste</option>
-                            </select>
-                        </div>
-                        
-                        <button onclick="generatePlantingPlan()" class="w-full bg-green-700 text-white py-3 rounded-lg font-semibold hover:bg-green-800 transition-colors">
-                            Gerar Plano de Plantio
-                        </button>
-                    </div>
-                    
-                    <div>
-                        <h4 class="font-semibold text-lg mb-4">Recomendações</h4>
-                        <div id="plantingRecommendations" class="space-y-3">
-                            <div class="p-3 bg-gray-50 rounded-lg">
-                                <div class="font-medium text-gray-700">Selecione uma cultura e região</div>
-                                <div class="text-sm text-gray-600">Para receber recomendações personalizadas</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
             </div>
         </div>
     </section>
@@ -282,21 +252,35 @@
 
     </div>
 
+    <div id="site-footer"></div>
+
     <script src="main.js"></script>
+    <script src="footer.js"></script>
     <script>
-        // Planting calendar data
+        function toggleMenu(open) {
+            const menu = document.getElementById('slideMenu');
+            if (!menu) return;
+            menu.classList.toggle('hidden', !open);
+            document.body.style.overflow = open ? 'hidden' : '';
+        }
+    </script>
+    <script>
+        // Calendário de plantio: mês -> estação, culturas ativas (plantio,
+        // trato ou colheita) naquele mês e dicas gerais. Restrito às 4
+        // culturas do site (milho, soja, trigo, tabaco) — mesmas chaves de
+        // cropDatabase em main.js.
         const plantingCalendar = {
             january: {
                 name: 'Janeiro',
                 season: 'summer',
-                crops: ['milho', 'feijao', 'arroz'],
-                activities: ['Preparo do solo', 'Plantio de verão', 'Irrigação'],
-                tips: 'Período quente e chuvoso. Ideal para culturas de ciclo curto.'
+                crops: ['milho', 'soja'],
+                activities: ['Preparo do solo', 'Plantio de verão (safrinha)', 'Irrigação'],
+                tips: 'Período quente e chuvoso. Milho safrinha e manejo de soja em pleno desenvolvimento.'
             },
             february: {
                 name: 'Fevereiro',
                 season: 'summer',
-                crops: ['milho', 'soja', 'feijao'],
+                crops: ['milho', 'soja'],
                 activities: ['Plantio', 'Controle de pragas', 'Adubação'],
                 tips: 'Último mês ideal para plantio de verão em muitas regiões.'
             },
@@ -304,71 +288,71 @@
                 name: 'Março',
                 season: 'autumn',
                 crops: ['milho', 'soja', 'trigo'],
-                activities: ['Colheita de verão', 'Preparo para outono', 'Plantio de trigo'],
+                activities: ['Colheita de verão', 'Preparo para outono', 'Preparo do solo para trigo'],
                 tips: 'Transição para outono. Começo da época seca em algumas regiões.'
             },
             april: {
                 name: 'Abril',
                 season: 'autumn',
-                crops: ['trigo', 'batata', 'cenoura'],
-                activities: ['Plantio de outono', 'Colheita', 'Preparo do solo'],
-                tips: 'Temperaturas amenas. Bom para hortaliças e grãos de inverno.'
+                crops: ['trigo'],
+                activities: ['Plantio de outono', 'Preparo do solo'],
+                tips: 'Temperaturas amenas. Início da janela de plantio do trigo.'
             },
             may: {
                 name: 'Maio',
                 season: 'autumn',
-                crops: ['trigo', 'batata', 'tomate'],
-                activities: ['Plantio', 'Controle de pragas', 'Irrigação'],
-                tips: 'Último mês seguro para plantio de inverno na maioria das regiões.'
+                crops: ['trigo', 'tabaco'],
+                activities: ['Plantio de trigo', 'Preparo de mudas de tabaco', 'Irrigação'],
+                tips: 'Último mês seguro para plantio de trigo na maioria das regiões. Início das mudas de tabaco.'
             },
             june: {
                 name: 'Junho',
                 season: 'winter',
-                crops: ['trigo', 'batata', 'cenoura'],
-                activities: ['Manutenção', 'Controle de pragas', 'Preparo para primavera'],
-                tips: 'Inverno. Menor atividade vegetativa. Período de planejamento.'
+                crops: ['trigo', 'tabaco'],
+                activities: ['Manutenção do trigo', 'Formação de mudas de tabaco', 'Controle de pragas'],
+                tips: 'Inverno. Menor atividade vegetativa no trigo; mudas de tabaco em formação.'
             },
             july: {
                 name: 'Julho',
                 season: 'winter',
-                crops: ['trigo', 'batata', 'alface'],
-                activities: ['Irrigação', 'Preparo do solo', 'Planejamento'],
-                tips: 'Frio intenso em algumas regiões. Ideal para preparação.'
+                crops: ['trigo', 'tabaco'],
+                activities: ['Irrigação', 'Transplante de mudas de tabaco', 'Planejamento'],
+                tips: 'Frio intenso em algumas regiões. Início do transplante de tabaco para o campo.'
             },
             august: {
                 name: 'Agosto',
                 season: 'winter',
-                crops: ['trigo', 'batata', 'espinafre'],
-                activities: ['Últimos plantios de inverno', 'Preparo para primavera'],
+                crops: ['trigo', 'tabaco'],
+                activities: ['Últimos tratos de inverno', 'Transplante de tabaco', 'Preparo para primavera'],
                 tips: 'Final do inverno. Preparação intensiva para a primavera.'
             },
             september: {
                 name: 'Setembro',
                 season: 'spring',
-                crops: ['milho', 'soja', 'tomate'],
+                crops: ['milho', 'soja', 'tabaco'],
                 activities: ['Plantio de primavera', 'Preparo do solo', 'Adubação'],
-                tips: 'Início da primavera. Temperaturas começam a subir.'
+                tips: 'Início da primavera. Temperaturas começam a subir; tabaco em desenvolvimento vegetativo.'
             },
             october: {
                 name: 'Outubro',
                 season: 'spring',
-                crops: ['milho', 'soja', 'feijao'],
+                crops: ['milho', 'soja'],
                 activities: ['Plantio primavera', 'Controle de pragas', 'Irrigação'],
-                tips: 'Primavera plena. Uma das melhores épocas para plantio.'
+                tips: 'Primavera plena. Uma das melhores épocas para plantio de milho e soja.'
             },
             november: {
                 name: 'Novembro',
                 season: 'spring',
-                crops: ['milho', 'soja', 'arroz'],
-                activities: ['Últimos plantios de primavera', 'Preparo para verão'],
-                tips: 'Final da primavera. Transição para o verão.'
+                crops: ['milho', 'soja', 'trigo'],
+                activities: ['Últimos plantios de primavera', 'Colheita de trigo', 'Preparo para verão'],
+                tips: 'Final da primavera. Colheita de trigo em andamento.'
             },
             december: {
                 name: 'Dezembro',
                 season: 'summer',
-                crops: ['milho', 'soja', 'feijao'],
-                activities: ['Plantio de verão', 'Colheita de primavera', 'Irrigação'],
-                tips: 'Início do verão. Calor e chuvas intensas.'
+                crops: ['milho', 'soja', 'tabaco'],
+                activities: ['Plantio de verão', 'Colheita de tabaco', 'Irrigação'],
+                tips: 'Início do verão. Calor e chuvas intensas; início da colheita de tabaco.'
             }
         };
 
@@ -392,144 +376,42 @@
         function renderMonthlyCalendar() {
             const calendar = document.getElementById('monthlyCalendar');
             const months = Object.keys(plantingCalendar);
-            
+            const selectedCrop = document.getElementById('mainCrop')?.value || '';
+
             calendar.innerHTML = months.map(monthKey => {
                 const month = plantingCalendar[monthKey];
+                const matchesSelectedCrop = month.crops.includes(selectedCrop);
                 return `
-                    <div class="month-card bg-white rounded-2xl p-6 shadow-lg card-hover">
+                    <div class="month-card bg-white rounded-2xl p-6 shadow-lg card-hover transition-opacity ${matchesSelectedCrop ? 'ring-2 ring-green-600' : 'opacity-60'}">
                         <div class="flex justify-between items-center mb-4">
                             <h3 class="font-display text-xl font-semibold" style="color: var(--forest-green);">${month.name}</h3>
                             <div class="w-4 h-4 rounded-full season-${month.season}"></div>
                         </div>
-                        
+
                         <div class="mb-4">
                             <h4 class="font-semibold text-sm mb-2 text-gray-700">Culturas Recomendadas:</h4>
                             <div class="flex flex-wrap">
                                 ${month.crops.map(crop => `
-                                    <span class="crop-tag" style="background-color: var(--sage-green); color: white;">
+                                    <span class="crop-tag" style="background-color: ${crop === selectedCrop ? 'var(--forest-green)' : 'var(--sage-green)'}; color: white;">
                                         ${crop.charAt(0).toUpperCase() + crop.slice(1)}
                                     </span>
                                 `).join('')}
                             </div>
                         </div>
-                        
+
                         <div class="mb-4">
                             <h4 class="font-semibold text-sm mb-2 text-gray-700">Atividades:</h4>
                             <ul class="text-xs text-gray-600 space-y-1">
                                 ${month.activities.map(activity => `<li>• ${activity}</li>`).join('')}
                             </ul>
                         </div>
-                        
+
                         <div class="text-xs text-gray-500 bg-gray-50 p-2 rounded">
                             <strong>Dica:</strong> ${month.tips}
                         </div>
                     </div>
                 `;
             }).join('');
-        }
-
-        function generatePlantingPlan() {
-            const mainCrop = document.getElementById('mainCrop').value;
-            const region = document.getElementById('region').value;
-            
-            const recommendations = document.getElementById('plantingRecommendations');
-            
-            // Generate recommendations based on crop and region
-            const cropData = cropDatabase[mainCrop];
-            if (!cropData) return;
-            
-            const regionRecommendations = {
-                'southeast': {
-                    bestMonths: ['Set', 'Out', 'Nov', 'Mar', 'Abr'],
-                    considerations: 'Clima subtropical, atenção à estação seca'
-                },
-                'south': {
-                    bestMonths: ['Set', 'Out', 'Nov', 'Dez', 'Mar', 'Abr', 'Mai'],
-                    considerations: 'Clima temperado, inverno rigoroso'
-                },
-                'northeast': {
-                    bestMonths: ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Set', 'Out', 'Nov'],
-                    considerations: 'Clima semi-árido, necessidade de irrigação'
-                },
-                'north': {
-                    bestMonths: ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago'],
-                    considerations: 'Clima tropical, estação chuvosa'
-                },
-                'centerwest': {
-                    bestMonths: ['Set', 'Out', 'Nov', 'Dez', 'Mar', 'Abr', 'Mai'],
-                    considerations: 'Clima tropical, estação seca prolongada'
-                }
-            };
-            
-            const regionData = regionRecommendations[region];
-            
-            recommendations.innerHTML = `
-                <div class="p-4 bg-green-50 rounded-lg">
-                    <div class="font-semibold text-green-800 mb-2">Melhores Meses para ${cropData.name} na Região ${region.toUpperCase()}</div>
-                    <div class="text-sm text-green-700 mb-2">
-                        <strong>Meses recomendados:</strong> ${regionData.bestMonths.join(', ')}
-                    </div>
-                    <div class="text-xs text-green-600">
-                        <strong>Observações:</strong> ${regionData.considerations}
-                    </div>
-                </div>
-                
-                <div class="p-4 bg-blue-50 rounded-lg">
-                    <div class="font-semibold text-blue-800 mb-2">Cuidados Especiais</div>
-                    <div class="text-sm text-blue-700">
-                        • Manter pH entre ${cropData.phRange[0]}-${cropData.phRange[1]}<br>
-                        • Monitorar nutrientes essenciais<br>
-                        • Preparar sistema de irrigação adequado
-                    </div>
-                </div>
-                
-                <div class="p-4 bg-yellow-50 rounded-lg">
-                    <div class="font-semibold text-yellow-800 mb-2">Próximos Passos</div>
-                    <div class="text-sm text-yellow-700">
-                        1. Realizar análise de solo<br>
-                        2. Preparar área de plantio<br>
-                        3. Adquirir sementes de qualidade<br>
-                        4. Planejar sistema de irrigação
-                    </div>
-                </div>
-            `;
-        }
-
-        function calculatePHCorrection() {
-            const currentPH = parseFloat(document.getElementById('phCurrent').textContent);
-            const targetPH = parseFloat(document.getElementById('phTarget').value);
-            const soilType = document.getElementById('soilType').value;
-            
-            // Lime requirement calculation based on soil type and pH difference
-            let limeFactor = {
-                'clay': 8,      // t/ha per pH unit
-                'loam': 6,
-                'sandy': 4,
-                'peaty': 10
-            }[soilType];
-            
-            const phDifference = Math.abs(targetPH - currentPH);
-            let limeRequirement = phDifference * limeFactor;
-            
-            // Adjust for pH direction
-            if (targetPH > currentPH) {
-                // Need lime (raising pH)
-                limeRequirement = Math.max(0, limeRequirement);
-                document.getElementById('limeRequirement').textContent = limeRequirement.toFixed(1) + ' t/ha';
-                document.getElementById('limeCost').textContent = 'R$ ' + Math.round(limeRequirement * 500).toLocaleString();
-            } else {
-                // Need sulfur (lowering pH)
-                const sulfurRequirement = limeRequirement * 0.3; // Approximate conversion
-                document.getElementById('limeRequirement').textContent = sulfurRequirement.toFixed(1) + ' t/ha';
-                document.getElementById('limeCost').textContent = 'R$ ' + Math.round(sulfurRequirement * 800).toLocaleString();
-            }
-        }
-
-        function calculateNutrientCorrection() {
-            // This function is already implemented in recommendations.html
-            // For simplicity, we'll use default values here
-            document.getElementById('totalFertilizer').textContent = '300 kg/ha';
-            document.getElementById('totalFertilizerCost').textContent = 'R$ 900';
         }
     </script>
 </body>

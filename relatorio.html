@@ -1,10 +1,25 @@
+<!-- ============================================================================
+     relatorio.html — laudo de fertilidade formatado para leitura/impressão.
+     Lê os relatórios salvos em userStorage.soilAnalysisReports (gerados por
+     index.html via main.js), deixa trocar entre eles no seletor do topo, e
+     renderiza cards de macro/micronutrientes, parecer técnico e
+     recomendações calculados a partir dos valores informados. Não depende
+     de main.js — refaz seus próprios cálculos de adequação inline.
+     ============================================================================ -->
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Relatório Premium de Solo - Cycle Sown</title>
+    <script src="userStorage.js"></script>
+    <script>
+        if (!userStorage.getCurrentUserId()) {
+            window.location.href = 'login.html';
+        }
+    </script>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
     <link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:wght@400;700&family=Inter:wght@300;400;600;700&family=JetBrains+Mono&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -38,11 +53,14 @@
 </head>
 <body class="pt-20">
 
-    <nav class="fixed top-0 w-full z-50 glass-effect border-b border-gray-200 no-print">
+    <nav class="fixed top-0 w-full z-50 backdrop-blur-xl bg-white/80 border-b border-slate-200 shadow-sm no-print">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between items-center h-16">
                 <div class="flex items-center gap-3">
-                    <button type="button" aria-label="Abrir menu" onclick="toggleMenu(true)" class="p-2 rounded-md text-gray-700 hover:bg-gray-100">
+                    <a href="index.html" class="flex items-center shrink-0 no-print">
+                        <img src="img/logo.png" alt="Cycle Sown" class="h-14 w-auto">
+                    </a>
+                    <button type="button" aria-label="Abrir menu" onclick="toggleMenu(true)" class="p-2 rounded-full text-slate-700 hover:bg-slate-100 transition-colors">
                         <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" xmlns="http://www.w3.org/2000/svg">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
                         </svg>
@@ -50,21 +68,24 @@
                 </div>
                 <div class="hidden md:block">
                     <div class="ml-10 flex items-baseline space-x-8">
-                        <a href="index.html#analysis" class="text-gray-900 hover:text-green-700 px-3 py-2 text-sm font-medium transition-colors">Análise</a>
-                        <a href="recommendations.html" class="text-gray-600 hover:text-green-700 px-3 py-2 text-sm font-medium transition-colors">Recomendações</a>
-                        <a href="relatorio.html" class="text-gray-600 hover:text-green-700 px-3 py-2 text-sm font-medium transition-colors">Relatório</a>
-                        <a href="profile.html" class="text-gray-600 hover:text-green-700 px-3 py-2 text-sm font-medium transition-colors">👤 Perfil</a>
+                        <a href="index.html#analysis" class="text-slate-800 hover:text-emerald-700 px-3 py-2 text-sm font-medium transition-colors">Análise</a>
+                        <a href="recommendations.html" class="text-slate-600 hover:text-emerald-700 px-3 py-2 text-sm font-medium transition-colors">Recomendações</a>
+                        <a href="relatorio.html" class="text-slate-600 hover:text-emerald-700 px-3 py-2 text-sm font-medium transition-colors">Relatório</a>
+                        <a href="profile.html" class="text-slate-600 hover:text-emerald-700 px-3 py-2 text-sm font-medium transition-colors">Perfil</a>
                     </div>
                 </div>
             </div>
         </div>
     </nav>
 
-    <div id="slideMenu" class="fixed inset-0 z-40 hidden">
-        <div class="absolute inset-0 bg-black/40" onclick="toggleMenu(false)"></div>
-        <div class="absolute left-0 top-0 h-full w-72 bg-white border-r shadow-xl overflow-y-auto">
+    <div id="slideMenu" class="fixed inset-0 z-[9998] hidden">
+        <div class="absolute inset-0 bg-black/40 z-[9998]" onclick="toggleMenu(false)"></div>
+        <div class="absolute left-0 top-0 h-full w-72 bg-white border-r shadow-xl overflow-y-auto z-[9999]">
             <div class="flex items-center justify-between p-5 border-b border-gray-200">
-                <span class="text-lg font-semibold text-gray-900">Menu</span>
+                <span class="flex items-center gap-2">
+                    <img src="img/logo.png" alt="Cycle Sown" class="h-12 w-auto">
+                    <span class="text-lg font-semibold text-gray-900">Menu</span>
+                </span>
                 <button type="button" aria-label="Fechar menu" onclick="toggleMenu(false)" class="text-gray-600 hover:text-gray-900">
                     <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" xmlns="http://www.w3.org/2000/svg">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
@@ -72,43 +93,17 @@
                 </button>
             </div>
             <nav class="p-5 space-y-3">
-                <a href="index.html#analysis" onclick="toggleMenu(false)" class="block text-gray-900 px-4 py-3 rounded-lg hover:bg-green-50 transition-colors">Análise</a>
-                <a href="recommendations.html" onclick="toggleMenu(false)" class="block text-gray-900 px-4 py-3 rounded-lg hover:bg-green-50 transition-colors">Recomendações</a>
-                <a href="relatorio.html" onclick="toggleMenu(false)" class="block text-gray-900 px-4 py-3 rounded-lg hover:bg-green-50 transition-colors">Relatório</a>
-                <a href="calendar.html" onclick="toggleMenu(false)" class="block text-gray-900 px-4 py-3 rounded-lg hover:bg-green-50 transition-colors">📅 Calendário</a>
-                <a href="catalog.html" onclick="toggleMenu(false)" class="block text-gray-900 px-4 py-3 rounded-lg hover:bg-green-50 transition-colors">🛒 Catálogo</a>
-                <a href="empresas/index.html" onclick="toggleMenu(false)" class="block text-gray-900 px-4 py-3 rounded-lg hover:bg-green-50 transition-colors">💼 Vender Produção</a>
                 <hr class="my-3">
-                <a href="profile.html" onclick="toggleMenu(false)" class="block text-green-700 font-semibold px-4 py-3 rounded-lg hover:bg-green-50 transition-colors">👤 Meu Perfil</a>
+                <a href="calendar.html" onclick="toggleMenu(false)" class="block text-gray-900 px-4 py-3 rounded-lg hover:bg-green-50 transition-colors">Calendário</a>
+                <a href="catalogo.html" onclick="toggleMenu(false)" class="block text-gray-900 px-4 py-3 rounded-lg hover:bg-green-50 transition-colors">Catálogo</a>
+                <a href="produtividade.html" onclick="toggleMenu(false)" class="block text-gray-900 px-4 py-3 rounded-lg hover:bg-green-50 transition-colors">Produtividade</a>
+                <a href="empresas/index.html" onclick="toggleMenu(false)" class="block text-gray-900 px-4 py-3 rounded-lg hover:bg-green-50 transition-colors">Vender Produção</a>
+                <a href="profile.html" onclick="toggleMenu(false)" class="block text-green-700 font-semibold px-4 py-3 rounded-lg hover:bg-green-50 transition-colors">Meu Perfil</a>
             </nav>
         </div>
     </div>
 
-        <!-- Sidebar + Main wrapper -->
-        <aside class="hidden md:block fixed left-0 top-16 h-full w-64 bg-white border-r z-40 shadow-sm">
-            <div class="p-4 flex flex-col items-center">
-                <nav class="w-full mt-2">
-                    <a href="calendar.html" class="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-green-50 hover:translate-x-1 transition-all">
-                        <span class="text-xl">📅</span>
-                        <span class="font-medium text-sm">Calendário</span>
-                    </a>
-                    <a href="catalog.html" class="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-green-50 hover:translate-x-1 transition-all mt-2">
-                        <span class="text-xl">🛒</span>
-                        <span class="font-medium text-sm">Catálogo</span>
-                    </a>
-                    <a href="empresas/index.html" class="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-green-50 hover:translate-x-1 transition-all mt-2">
-                        <span class="text-xl">💼</span>
-                        <span class="font-medium text-sm">Vender Produção</span>
-                    </a>
-                </nav>
-
-                <div class="mt-auto w-full pt-4">
-                    <a href="relatorio.html" class="block w-full text-center px-4 py-3 bg-green-700 text-white rounded-lg hover:bg-green-800">Ver Relatório</a>
-                </div>
-            </div>
-        </aside>
-
-        <div class="md:ml-56">
+        <div>
 
     <main class="max-w-6xl mx-auto px-4 pb-20">
         <div class="bg-white shadow-2xl rounded-[2.5rem] overflow-hidden">
@@ -193,6 +188,13 @@
                             Gerando recomendações...
                         </div>
                     </div>
+
+                    <div class="mt-8 bg-amber-50 p-6 rounded-2xl border border-amber-200" id="adequacyAssessmentBlock">
+                        <h5 class="text-amber-800 font-bold mb-4">Adequação dos dados informados</h5>
+                        <div id="adequacyAssessment" class="text-gray-700 text-base space-y-3">
+                            Comparando os valores informados com os parâmetros de referência...
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -209,6 +211,9 @@
         </div>
     </main>
 
+    <div id="site-footer" class="no-print"></div>
+
+    <script src="footer.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('currentDate').innerText = new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' });
@@ -236,11 +241,11 @@
         });
 
         function getSavedReports() {
-            return JSON.parse(localStorage.getItem('soilAnalysisReports') || '[]');
+            return JSON.parse(userStorage.getItem('soilAnalysisReports') || '[]');
         }
 
         function getLatestAnalysisReport() {
-            const latest = localStorage.getItem('soilAnalysisData');
+            const latest = userStorage.getItem('soilAnalysisData');
             return latest ? JSON.parse(latest) : null;
         }
 
@@ -302,18 +307,19 @@
 
         function normalizeReportData(rawData) {
             const defaultData = {
-                ph: 6.2, mo: 3.5,
+                ph: 6.0, mo: 3.2,
                 nutrients: {
-                    'Nitrogênio (N)': { val: 28, ref: 30 },
+                    'Nitrogênio (N)': { val: 25, ref: 30 },
                     'Fósforo (P)': { val: 18, ref: 20 },
                     'Potássio (K)': { val: 160, ref: 150 },
-                    'Cálcio (Ca)': { val: 950, ref: 1000 },
-                    'Magnésio (Mg)': { val: 140, ref: 120 },
+                    'Cálcio (Ca)': { val: 5.2, ref: 6.0 },
+                    'Magnésio (Mg)': { val: 1.4, ref: 1.5 },
                     'Enxofre (S)': { val: 12, ref: 15 },
                     'Ferro (Fe)': { val: 55, ref: 50 },
-                    'Zinco (Zn)': { val: 2.4, ref: 2.0 },
-                    'Boro (B)': { val: 0.8, ref: 1.0 },
-                    'Cobre (Cu)': { val: 1.1, ref: 1.0 }
+                    'Zinco (Zn)': { val: 3.2, ref: 3.0 },
+                    'Boro (B)': { val: 0.5, ref: 0.6 },
+                    'Cobre (Cu)': { val: 1.1, ref: 1.0 },
+                    'Manganês (Mn)': { val: 24, ref: 25 }
                 }
             };
 
@@ -412,15 +418,37 @@
 
             const macroKeys = ['Nitrogênio (N)', 'Fósforo (P)', 'Potássio (K)', 'Cálcio (Ca)', 'Magnésio (Mg)', 'Enxofre (S)'];
             let totalPoints = 0;
+            let informedCount = 0;
 
             Object.entries(data.nutrients).forEach(([name, info]) => {
                 const isMacro = macroKeys.includes(name);
                 const container = isMacro ? document.getElementById('macroContainer') : document.getElementById('microContainer');
-                
-                const percent = Math.min((info.val / info.ref) * 100, 100);
+
+                const hasValue = info.val !== null && info.val !== undefined && !Number.isNaN(Number(info.val));
+
+                if (!hasValue) {
+                    container.innerHTML += `
+                        <div class="bg-white border border-gray-100 p-6 rounded-[2rem] card-nutrient shadow-sm">
+                            <div class="flex justify-between items-center mb-4">
+                                <span class="text-[10px] font-black text-gray-400 uppercase tracking-tighter">${name}</span>
+                                <span class="px-3 py-1 rounded-full text-[9px] font-bold uppercase bg-gray-100 text-gray-500">Não informado</span>
+                            </div>
+                            <div class="bg-gray-100 text-gray-400 px-4 py-2 rounded-xl inline-block mb-4">
+                                <span class="text-2xl font-black">--</span> <span class="text-[10px] uppercase opacity-60">ppm</span>
+                            </div>
+                            <div class="w-full bg-gray-100 h-1 rounded-full overflow-hidden">
+                                <div class="bg-gray-300 h-full" style="width: 0%"></div>
+                            </div>
+                        </div>
+                    `;
+                    return;
+                }
+
+                informedCount++;
+                const percent = Math.min((Number(info.val) / info.ref) * 100, 100);
                 let bgColor = "bg-amber-50", textColor = "text-amber-700", statusLabel = "Alerta", dotColor = "bg-amber-500";
-                
-                if(percent >= 90) { 
+
+                if(percent >= 90) {
                     bgColor = "bg-green-50"; textColor = "text-green-700"; statusLabel = "Ideal"; dotColor = "bg-green-500";
                     totalPoints++;
                 } else if(percent < 60) {
@@ -443,7 +471,10 @@
                 `;
             });
 
-            const score = Math.round((totalPoints / Object.keys(data.nutrients).length) * 100);
+            // Score é calculado só sobre os nutrientes informados — dividir
+            // sempre pelo total (incluindo os não preenchidos) derrubava a
+            // nota de relatórios parciais artificialmente.
+            const score = informedCount > 0 ? Math.round((totalPoints / informedCount) * 100) : 0;
             document.getElementById('resHealth').innerText = score + '%';
             document.getElementById('healthBar').style.width = score + '%';
             
@@ -452,6 +483,51 @@
                 "Atenção necessária em pontos específicos de deficiência. Recomenda-se a correção pontual dos nutrientes marcados em vermelho antes do início do ciclo vegetativo.";
 
             renderRecommendations(data);
+            renderAdequacyAssessment(data);
+        }
+
+        function renderAdequacyAssessment(data) {
+            const container = document.getElementById('adequacyAssessment');
+            if (!container) return;
+
+            const soil = data && data.soilData ? data.soilData : data;
+            const ph = soil && (soil.ph ?? soil.pH ?? soil.soilPH);
+            const om = soil && (soil.organicMatter ?? soil.mo);
+            const nutrients = soil && soil.nutrients ? soil.nutrients : (data.nutrients || {});
+
+            const entries = [];
+            if (ph !== undefined && ph !== null) {
+                const value = parseFloat(ph);
+                entries.push({ label: 'pH', value, status: value >= 5.5 && value <= 7.5 ? 'Adequado' : 'Precisa correção' });
+            }
+            if (om !== undefined && om !== null) {
+                const value = parseFloat(om);
+                entries.push({ label: 'Matéria orgânica', value, status: value >= 2 && value <= 6 ? 'Adequado' : 'Precisa correção' });
+            }
+
+            Object.entries(nutrients).forEach(([label, info]) => {
+                const value = parseFloat(info && (info.val !== undefined ? info.val : info));
+                const ref = parseFloat(info && (info.ref !== undefined ? info.ref : 1));
+                if (!isNaN(value) && !isNaN(ref) && ref > 0) {
+                    const status = value >= ref * 0.8 && value <= ref * 1.2 ? 'Adequado' : 'Precisa correção';
+                    entries.push({ label, value, ref, status });
+                }
+            });
+
+            if (entries.length === 0) {
+                container.innerHTML = '<div>Nenhum dado informado para comparar.</div>';
+                return;
+            }
+
+            container.innerHTML = entries.map(item => `
+                <div class="bg-white p-4 rounded-xl border border-amber-100">
+                    <div class="flex items-center justify-between gap-3">
+                        <strong>${item.label}</strong>
+                        <span class="px-3 py-1 rounded-full text-xs font-bold ${item.status === 'Adequado' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}">${item.status}</span>
+                    </div>
+                    <div class="text-sm text-gray-600 mt-1">Valor informado: ${item.value !== undefined && !isNaN(item.value) ? item.value : '—'}${item.ref ? ` · Referência usada: ${item.ref}` : ''}</div>
+                </div>
+            `).join('');
         }
 
         function renderRecommendations(data) {
@@ -502,8 +578,6 @@
             menu.classList.toggle('hidden', !open);
             document.body.style.overflow = open ? 'hidden' : '';
         }
-    </div>
-
     </script>
 </body>
 </html>

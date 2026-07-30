@@ -1,224 +1,211 @@
-// Soil Analysis Engine - Real Agricultural Data
-// Based on scientific research and agricultural best practices
+// ============================================================================
+// main.js — motor de análise de solo do Cycle Sown.
+// Carregado por index.html, calendar.html, recommendations.html e
+// relatorio.html (via <script src="main.js">). Não depende de nenhuma
+// página específica: lê/escreve nos elementos de formulário quando eles
+// existem (checagens `document.getElementById(...)?`) e expõe funções
+// globais (window.updateAnalysis, window.generateFullReport, etc.) para
+// o script inline de cada página chamar.
+//
+// Culturas suportadas pelo site: apenas milho, soja, trigo e tabaco
+// (definidas em cropDatabase abaixo). Para adicionar uma cultura nova,
+// crie uma nova entrada aqui com os mesmos campos e adicione a chave em
+// `allowedCropKeys` (recommendations.html) e no <select> de
+// calendar.html.
+// ============================================================================
 
-// Crop Database with Real Nutrient Requirements
+// ----------------------------------------------------------------------------
+// SEÇÃO 1 — Banco de dados de culturas (pH ideal e necessidade de cada
+// nutriente por cultura). Usado para calcular compatibilidade do solo com
+// cada cultura e para as recomendações de correção.
+//
+// Dados baseados no Manual de Calagem e Adubação para os Estados do Rio
+// Grande do Sul e Santa Catarina (CQFS-RS/SC, 2016). Unidades de origem:
+// N em ppm; P, S, Fe, Mn, Zn, Cu, B, Mo em mg/dm³; Ca e Mg em cmolc/dm³;
+// K em mg/dm³ — mantidas como estavam no restante do código (nenhuma
+// conversão adicional é feita aqui, os valores só entram nos mesmos
+// campos `optimal`/`range` que já existiam).
+// ----------------------------------------------------------------------------
 const cropDatabase = {
     'milho': {
-        name: 'Milho (Corn)',
-        phRange: [5.8, 7.0],
-        optimalPh: 6.5,
+        name: 'Milho',
+        phRange: [5.5, 6.5],
+        optimalPh: 6.0,
         nutrients: {
-            nitrogen: { optimal: 25, range: [20, 35] },
-            phosphorus: { optimal: 15, range: [12, 25] },
-            potassium: { optimal: 120, range: [100, 180] },
-            calcium: { optimal: 800, range: [600, 1200] },
-            magnesium: { optimal: 120, range: [80, 200] },
-            sulfur: { optimal: 12, range: [8, 20] },
-            iron: { optimal: 45, range: [30, 80] },
-            manganese: { optimal: 25, range: [15, 50] },
-            zinc: { optimal: 2.5, range: [1.5, 5.0] },
-            copper: { optimal: 1.2, range: [0.8, 3.0] },
-            boron: { optimal: 0.8, range: [0.5, 2.0] },
-            molybdenum: { optimal: 0.15, range: [0.1, 0.3] }
+            nitrogen: { optimal: 40, range: [25, 60] },
+            phosphorus: { optimal: 12, range: [9, 18] },
+            potassium: { optimal: 90, range: [61, 120] },
+            calcium: { optimal: 5.0, range: [4.0, 10.0] },
+            magnesium: { optimal: 1.5, range: [1.0, 3.0] },
+            sulfur: { optimal: 12, range: [10, 20] },
+            iron: { optimal: 35, range: [20, 50] },
+            manganese: { optimal: 8, range: [5, 15] },
+            zinc: { optimal: 1.2, range: [0.5, 2.0] },
+            copper: { optimal: 0.8, range: [0.4, 1.5] },
+            boron: { optimal: 0.5, range: [0.3, 0.8] },
+            molybdenum: { optimal: 0.2, range: [0.1, 0.5] }
         },
         compatibility: 0,
         image: ''
     },
     'soja': {
-        name: 'Soja (Soybean)',
-        phRange: [6.0, 7.2],
-        optimalPh: 6.8,
+        name: 'Soja',
+        phRange: [5.5, 6.5],
+        optimalPh: 6.0,
         nutrients: {
             nitrogen: { optimal: 20, range: [15, 30] },
-            phosphorus: { optimal: 18, range: [14, 28] },
-            potassium: { optimal: 140, range: [110, 200] },
-            calcium: { optimal: 1000, range: [800, 1500] },
-            magnesium: { optimal: 150, range: [100, 250] },
-            sulfur: { optimal: 15, range: [10, 25] },
-            iron: { optimal: 50, range: [35, 90] },
-            manganese: { optimal: 30, range: [20, 60] },
-            zinc: { optimal: 3.0, range: [2.0, 6.0] },
-            copper: { optimal: 1.5, range: [1.0, 3.5] },
-            boron: { optimal: 1.0, range: [0.6, 2.5] },
-            molybdenum: { optimal: 0.2, range: [0.12, 0.4] }
+            phosphorus: { optimal: 12, range: [9, 18] },
+            potassium: { optimal: 90, range: [61, 120] },
+            calcium: { optimal: 5.0, range: [4.0, 10.0] },
+            magnesium: { optimal: 1.5, range: [1.0, 3.0] },
+            sulfur: { optimal: 12, range: [10, 20] },
+            iron: { optimal: 30, range: [20, 50] },
+            manganese: { optimal: 8, range: [5, 15] },
+            zinc: { optimal: 1.0, range: [0.5, 2.0] },
+            copper: { optimal: 0.8, range: [0.4, 1.5] },
+            boron: { optimal: 0.5, range: [0.3, 0.8] },
+            molybdenum: { optimal: 0.3, range: [0.1, 0.5] }
         },
         compatibility: 0,
         image: ''
     },
     'trigo': {
-        name: 'Trigo (Wheat)',
-        phRange: [6.0, 7.5],
-        optimalPh: 6.8,
-        nutrients: {
-            nitrogen: { optimal: 30, range: [22, 40] },
-            phosphorus: { optimal: 20, range: [15, 35] },
-            potassium: { optimal: 160, range: [130, 220] },
-            calcium: { optimal: 900, range: [700, 1400] },
-            magnesium: { optimal: 140, range: [90, 220] },
-            sulfur: { optimal: 18, range: [12, 28] },
-            iron: { optimal: 40, range: [25, 70] },
-            manganese: { optimal: 35, range: [22, 65] },
-            zinc: { optimal: 2.8, range: [1.8, 5.5] },
-            copper: { optimal: 1.8, range: [1.2, 4.0] },
-            boron: { optimal: 1.2, range: [0.7, 2.8] },
-            molybdenum: { optimal: 0.18, range: [0.12, 0.35] }
-        },
-        compatibility: 0,
-        image: ''
-    },
-    'batata': {
-        name: 'Batata (Potato)',
-        phRange: [5.0, 6.5],
-        optimalPh: 5.8,
-        nutrients: {
-            nitrogen: { optimal: 35, range: [25, 45] },
-            phosphorus: { optimal: 25, range: [18, 40] },
-            potassium: { optimal: 200, range: [160, 300] },
-            calcium: { optimal: 600, range: [400, 1000] },
-            magnesium: { optimal: 100, range: [60, 180] },
-            sulfur: { optimal: 15, range: [10, 25] },
-            iron: { optimal: 55, range: [35, 100] },
-            manganese: { optimal: 40, range: [25, 80] },
-            zinc: { optimal: 3.5, range: [2.0, 7.0] },
-            copper: { optimal: 2.0, range: [1.2, 4.5] },
-            boron: { optimal: 1.5, range: [0.8, 3.5] },
-            molybdenum: { optimal: 0.12, range: [0.08, 0.25] }
-        },
-        compatibility: 0,
-        image: ''
-    },
-    'tomate': {
-        name: 'Tomate (Tomato)',
-        phRange: [6.0, 7.0],
-        optimalPh: 6.5,
-        nutrients: {
-            nitrogen: { optimal: 28, range: [20, 40] },
-            phosphorus: { optimal: 22, range: [16, 35] },
-            potassium: { optimal: 180, range: [140, 260] },
-            calcium: { optimal: 1200, range: [900, 1800] },
-            magnesium: { optimal: 200, range: [130, 320] },
-            sulfur: { optimal: 20, range: [14, 32] },
-            iron: { optimal: 60, range: [40, 110] },
-            manganese: { optimal: 45, range: [28, 85] },
-            zinc: { optimal: 4.0, range: [2.5, 8.0] },
-            copper: { optimal: 2.5, range: [1.5, 5.5] },
-            boron: { optimal: 2.0, range: [1.0, 4.0] },
-            molybdenum: { optimal: 0.25, range: [0.15, 0.5] }
-        },
-        compatibility: 0,
-        image: ''
-    },
-    'arroz': {
-        name: 'Arroz (Rice)',
-        phRange: [5.5, 7.0],
-        optimalPh: 6.2,
-        nutrients: {
-            nitrogen: { optimal: 22, range: [16, 32] },
-            phosphorus: { optimal: 12, range: [8, 20] },
-            potassium: { optimal: 100, range: [80, 150] },
-            calcium: { optimal: 700, range: [500, 1100] },
-            magnesium: { optimal: 90, range: [60, 150] },
-            sulfur: { optimal: 10, range: [6, 18] },
-            iron: { optimal: 80, range: [50, 150] },
-            manganese: { optimal: 50, range: [30, 100] },
-            zinc: { optimal: 2.0, range: [1.2, 4.0] },
-            copper: { optimal: 1.0, range: [0.6, 2.5] },
-            boron: { optimal: 0.6, range: [0.3, 1.5] },
-            molybdenum: { optimal: 0.1, range: [0.06, 0.2] }
-        },
-        compatibility: 0,
-        image: ''
-    },
-    'cenoura': {
-        name: 'Cenoura (Carrot)',
-        phRange: [5.5, 7.0],
-        optimalPh: 6.2,
-        nutrients: {
-            nitrogen: { optimal: 18, range: [12, 28] },
-            phosphorus: { optimal: 28, range: [20, 45] },
-            potassium: { optimal: 160, range: [120, 240] },
-            calcium: { optimal: 800, range: [600, 1200] },
-            magnesium: { optimal: 120, range: [80, 200] },
-            sulfur: { optimal: 12, range: [8, 20] },
-            iron: { optimal: 40, range: [25, 75] },
-            manganese: { optimal: 25, range: [15, 50] },
-            zinc: { optimal: 2.2, range: [1.3, 4.5] },
-            copper: { optimal: 1.5, range: [0.9, 3.2] },
-            boron: { optimal: 1.2, range: [0.6, 2.8] },
-            molybdenum: { optimal: 0.15, range: [0.09, 0.3] }
-        },
-        compatibility: 0,
-        image: ''
-    },
-    'alface': {
-        name: 'Alface (Lettuce)',
-        phRange: [6.0, 7.0],
-        optimalPh: 6.5,
-        nutrients: {
-            nitrogen: { optimal: 32, range: [24, 45] },
-            phosphorus: { optimal: 18, range: [12, 30] },
-            potassium: { optimal: 140, range: [100, 210] },
-            calcium: { optimal: 1000, range: [700, 1500] },
-            magnesium: { optimal: 150, range: [100, 250] },
-            sulfur: { optimal: 14, range: [9, 22] },
-            iron: { optimal: 50, range: [30, 90] },
-            manganese: { optimal: 30, range: [18, 60] },
-            zinc: { optimal: 2.8, range: [1.6, 5.5] },
-            copper: { optimal: 1.8, range: [1.0, 4.0] },
-            boron: { optimal: 1.5, range: [0.8, 3.2] },
-            molybdenum: { optimal: 0.18, range: [0.11, 0.35] }
-        },
-        compatibility: 0,
-        image: ''
-    },
-    'morango': {
-        name: 'Morango (Strawberry)',
+        name: 'Trigo',
         phRange: [5.5, 6.5],
         optimalPh: 6.0,
         nutrients: {
-            nitrogen: { optimal: 20, range: [14, 30] },
-            phosphorus: { optimal: 18, range: [12, 28] },
-            potassium: { optimal: 130, range: [95, 200] },
-            calcium: { optimal: 700, range: [500, 1100] },
-            magnesium: { optimal: 110, range: [70, 180] },
-            sulfur: { optimal: 12, range: [8, 20] },
-            iron: { optimal: 45, range: [28, 85] },
-            manganese: { optimal: 35, range: [20, 70] },
-            zinc: { optimal: 2.8, range: [1.6, 5.8] },
-            copper: { optimal: 1.6, range: [0.9, 3.5] },
-            boron: { optimal: 1.8, range: [0.9, 3.8] },
-            molybdenum: { optimal: 0.2, range: [0.12, 0.4] }
+            nitrogen: { optimal: 30, range: [20, 50] },
+            phosphorus: { optimal: 12, range: [9, 18] },
+            potassium: { optimal: 60, range: [41, 120] },
+            calcium: { optimal: 5.0, range: [4.0, 10.0] },
+            magnesium: { optimal: 1.5, range: [1.0, 3.0] },
+            sulfur: { optimal: 8, range: [5, 20] },
+            iron: { optimal: 30, range: [20, 50] },
+            manganese: { optimal: 8, range: [5, 15] },
+            zinc: { optimal: 0.8, range: [0.5, 2.0] },
+            copper: { optimal: 0.6, range: [0.4, 1.5] },
+            boron: { optimal: 0.3, range: [0.1, 0.8] },
+            molybdenum: { optimal: 0.2, range: [0.1, 0.5] }
         },
         compatibility: 0,
         image: ''
     },
-    'laranja': {
-        name: 'Laranja (Orange)',
-        phRange: [6.0, 7.5],
-        optimalPh: 6.8,
+    'tabaco': {
+        name: 'Tabaco',
+        phRange: [5.5, 6.5],
+        optimalPh: 6.0,
         nutrients: {
-            nitrogen: { optimal: 25, range: [18, 35] },
-            phosphorus: { optimal: 15, range: [10, 25] },
-            potassium: { optimal: 150, range: [110, 230] },
-            calcium: { optimal: 2000, range: [1500, 3000] },
-            magnesium: { optimal: 300, range: [200, 500] },
-            sulfur: { optimal: 20, range: [14, 32] },
-            iron: { optimal: 60, range: [35, 120] },
-            manganese: { optimal: 45, range: [25, 90] },
-            zinc: { optimal: 3.5, range: [2.0, 7.0] },
-            copper: { optimal: 2.0, range: [1.0, 4.5] },
-            boron: { optimal: 2.0, range: [1.0, 4.0] },
-            molybdenum: { optimal: 0.15, range: [0.08, 0.3] }
+            nitrogen: { optimal: 35, range: [20, 50] },
+            phosphorus: { optimal: 12, range: [9, 18] },
+            potassium: { optimal: 120, range: [90, 180] },
+            calcium: { optimal: 7.0, range: [5.0, 12.0] },
+            magnesium: { optimal: 2.0, range: [1.5, 4.0] },
+            sulfur: { optimal: 14, range: [10, 20] },
+            iron: { optimal: 30, range: [20, 50] },
+            manganese: { optimal: 8, range: [5, 15] },
+            zinc: { optimal: 1.0, range: [0.5, 2.0] },
+            copper: { optimal: 0.8, range: [0.4, 1.5] },
+            boron: { optimal: 0.6, range: [0.3, 1.0] },
+            molybdenum: { optimal: 0.2, range: [0.1, 0.5] }
         },
         compatibility: 0,
         image: ''
     }
 };
 
-// Soil analysis data structure
+// ----------------------------------------------------------------------------
+// SEÇÃO 1.5 — Unidades de medida por campo. Cada laudo de solo (RS/SC, outros
+// estados, laboratórios diferentes) reporta os valores em unidades distintas
+// (ex.: cmolc/dm³ vs mmolc/dm³, mg/dm³ vs mg/kg), então cada campo numérico
+// tem um <select> de unidade ao lado do input. Trocar a unidade NÃO converte
+// o valor já digitado — o agricultor redigita o número na unidade escolhida
+// do próprio laudo; a unidade só é guardada junto do valor para referência
+// no relatório. `options`/`default` aqui são a fonte única de verdade: os
+// <select id="{campo}_unit"> em index.html começam vazios e são preenchidos
+// por initUnitSelectors().
+// ----------------------------------------------------------------------------
+const fieldUnitConfig = {
+    organicMatter: { options: ['%', 'g/kg', 'g/dm³'], default: '%' },
+    aluminum: { options: ['cmolc/dm³', 'mmolc/dm³', 'meq/100mL'], default: 'cmolc/dm³' },
+    potentialAcidity: { options: ['cmolc/dm³', 'mmolc/dm³', 'meq/100mL'], default: 'cmolc/dm³' },
+    sb: { options: ['cmolc/dm³', 'mmolc/dm³'], default: 'cmolc/dm³' },
+    ctcEfetiva: { options: ['cmolc/dm³', 'mmolc/dm³'], default: 'cmolc/dm³' },
+    ctcPH7: { options: ['cmolc/dm³', 'mmolc/dm³'], default: 'cmolc/dm³' },
+    sandContent: { options: ['g/kg', '%', 'g/dm³'], default: 'g/kg' },
+    siltContent: { options: ['g/kg', '%', 'g/dm³'], default: 'g/kg' },
+    clayContent: { options: ['g/kg', '%', 'g/dm³'], default: 'g/kg' },
+    nitrogen: { options: ['ppm (mg/dm³)', 'mg/kg'], default: 'ppm (mg/dm³)' },
+    phosphorus: { options: ['ppm (mg/dm³)', 'mg/kg'], default: 'ppm (mg/dm³)' },
+    potassium: { options: ['ppm (mg/dm³)', 'mg/kg', 'cmolc/dm³'], default: 'ppm (mg/dm³)' },
+    calcium: { options: ['cmolc/dm³', 'mmolc/dm³', 'mg/dm³'], default: 'cmolc/dm³' },
+    magnesium: { options: ['cmolc/dm³', 'mmolc/dm³', 'mg/dm³'], default: 'cmolc/dm³' },
+    sulfur: { options: ['ppm (mg/dm³)', 'mg/kg'], default: 'ppm (mg/dm³)' },
+    iron: { options: ['ppm (mg/dm³)', 'mg/kg'], default: 'ppm (mg/dm³)' },
+    manganese: { options: ['ppm (mg/dm³)', 'mg/kg'], default: 'ppm (mg/dm³)' },
+    zinc: { options: ['ppm (mg/dm³)', 'mg/kg'], default: 'ppm (mg/dm³)' },
+    copper: { options: ['ppm (mg/dm³)', 'mg/kg'], default: 'ppm (mg/dm³)' },
+    boron: { options: ['ppm (mg/dm³)', 'mg/kg'], default: 'ppm (mg/dm³)' },
+    molybdenum: { options: ['ppm (mg/dm³)', 'mg/kg'], default: 'ppm (mg/dm³)' }
+};
+
+// Rótulo compacto para exibir dentro do <select> — a grade de 3 colunas do
+// formulário deixa pouco espaço ao lado do input, e "ppm (mg/dm³)" por
+// extenso força o dropdown a quebrar linha antes da hora. O value salvo em
+// soilData.units continua o texto completo (unidade real do laudo).
+const unitDisplayLabels = {
+    'ppm (mg/dm³)': 'mg/dm³'
+};
+
+// Preenche cada <select id="{campo}_unit"> com as opções de fieldUnitConfig
+// e seleciona a unidade padrão. Chamado uma vez em initializeAnalysis().
+function initUnitSelectors() {
+    Object.keys(fieldUnitConfig).forEach(field => {
+        const select = document.getElementById(`${field}_unit`);
+        if (!select) return;
+        const { options, default: defaultUnit } = fieldUnitConfig[field];
+        select.innerHTML = options
+            .map(unit => `<option value="${unit}">${unitDisplayLabels[unit] || unit}</option>`)
+            .join('');
+        select.value = defaultUnit;
+    });
+}
+
+// Lê a unidade atualmente selecionada para um campo (ou seu padrão, se o
+// <select> ainda não existir na página — ex.: calendar.html/recommendations.html
+// não têm o formulário completo).
+function getFieldUnit(field) {
+    const config = fieldUnitConfig[field];
+    if (!config) return null;
+    const select = document.getElementById(`${field}_unit`);
+    return select ? select.value : config.default;
+}
+
+// ----------------------------------------------------------------------------
+// SEÇÃO 2 — Estado em memória da análise atual (o que o usuário digitou no
+// formulário de index.html). Repopulado a cada `updateAnalysis()`.
+// ----------------------------------------------------------------------------
 let soilData = {
     ph: null,
+    phCaCl2: null,
     organicMatter: null,
+    aluminum: null,
+    potentialAcidity: null,
+    // Complexo Sortivo e Saturações — calculados a partir de Ca, Mg, K, Al e H+Al,
+    // mas mantidos editáveis para o agricultor corrigir com o valor do laudo.
+    sb: null,
+    ctcEfetiva: null,
+    ctcPH7: null,
+    vPercent: null,
+    mPercent: null,
+    indiceSMP: null,
+    texture: {
+        sand: null,
+        silt: null,
+        clay: null
+    },
+    region: '',
+    state: '',
+    soilType: '',
     nutrients: {
         nitrogen: null,
         phosphorus: null,
@@ -232,35 +219,245 @@ let soilData = {
         copper: null,
         boron: null,
         molybdenum: null
-    }
+    },
+    // Unidade escolhida pelo agricultor para cada campo de fieldUnitConfig
+    // (chave = mesmo id do campo, ex.: 'organicMatter', 'calcium'). Populado
+    // em updateAnalysis() e persistido junto do relatório.
+    units: {}
 };
 
-// Initialize analysis system
+// Ponto de entrada chamado por index.html no DOMContentLoaded.
 function initializeAnalysis() {
+    initUnitSelectors();
     updateAnalysis();
     updateSavedReportCount();
     setInterval(updateAnalysis, 1000);
+
+    // Recalcula o Complexo Sortivo (SB, CTC, V%, m%) sempre que Ca, Mg, K, Al
+    // ou H+Al mudarem — os demais campos calculados continuam editáveis entre
+    // essas atualizações.
+    ['calcium', 'magnesium', 'potassium', 'aluminum', 'potentialAcidity'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) {
+            el.addEventListener('input', calcularComplexoSortivo);
+        }
+    });
 }
 
-// Update soil analysis in real-time
+// ----------------------------------------------------------------------------
+// SEÇÃO 3 — Faixas de referência (independentes de cultura) usadas para
+// classificar cada valor de solo em Muito Ruim/Ruim/Regular/Bom/Excelente.
+// ----------------------------------------------------------------------------
+const adequacyClasses = {
+    // Faixas contíguas (sem sobreposição e sem buraco) para que todo
+    // valor de pH caia em exatamente uma classe. Antes havia um buraco
+    // entre 6.8 e 7.5 em que nenhuma faixa batia e o pH caía no
+    // fallback errado ("Muito Ruim"), mesmo sendo um pH neutro ótimo.
+    pH: [
+        { label: 'Muito Ruim', min: -Infinity, max: 4.5 },
+        { label: 'Ruim', min: 4.5, max: 5.0 },
+        { label: 'Regular', min: 5.0, max: 5.5 },
+        { label: 'Bom', min: 5.5, max: 5.8 },
+        { label: 'Excelente', min: 5.8, max: 6.5 },
+        { label: 'Bom', min: 6.5, max: 7.2 },
+        { label: 'Regular', min: 7.2, max: 7.5 },
+        { label: 'Ruim', min: 7.5, max: 8.0 },
+        { label: 'Muito Ruim', min: 8.0, max: Infinity }
+    ],
+    organicMatter: [
+        { label: 'Excelente', min: 5, max: Infinity },
+        { label: 'Bom', min: 3, max: 5 },
+        { label: 'Regular', min: 2, max: 3 },
+        { label: 'Ruim', min: 1, max: 2 },
+        { label: 'Muito Ruim', min: -Infinity, max: 1 }
+    ],
+    phosphorus: [
+        { label: 'Excelente', min: 30, max: Infinity },
+        { label: 'Bom', min: 15, max: 30 },
+        { label: 'Regular', min: 8, max: 15 },
+        { label: 'Ruim', min: 4, max: 8 },
+        { label: 'Muito Ruim', min: -Infinity, max: 4 }
+    ],
+    potassium: [
+        { label: 'Excelente', min: 200, max: Infinity },
+        { label: 'Bom', min: 120, max: 200 },
+        { label: 'Regular', min: 80, max: 120 },
+        { label: 'Ruim', min: 40, max: 80 },
+        { label: 'Muito Ruim', min: -Infinity, max: 40 }
+    ],
+    calcium: [
+        { label: 'Excelente', min: 6, max: Infinity },
+        { label: 'Bom', min: 4, max: 6 },
+        { label: 'Regular', min: 2, max: 4 },
+        { label: 'Ruim', min: 1, max: 2 },
+        { label: 'Muito Ruim', min: -Infinity, max: 1 }
+    ],
+    magnesium: [
+        { label: 'Excelente', min: 2, max: Infinity },
+        { label: 'Bom', min: 1, max: 2 },
+        { label: 'Regular', min: 0.5, max: 1 },
+        { label: 'Ruim', min: 0.3, max: 0.5 },
+        { label: 'Muito Ruim', min: -Infinity, max: 0.3 }
+    ],
+    sulfur: [
+        { label: 'Excelente', min: 20, max: Infinity },
+        { label: 'Bom', min: 10, max: 20 },
+        { label: 'Regular', min: 5, max: 10 },
+        { label: 'Ruim', min: 2, max: 5 },
+        { label: 'Muito Ruim', min: -Infinity, max: 2 }
+    ],
+    boron: [
+        { label: 'Excelente', min: 0.8, max: Infinity },
+        { label: 'Bom', min: 0.3, max: 0.8 },
+        { label: 'Regular', min: 0.2, max: 0.3 },
+        { label: 'Ruim', min: -Infinity, max: 0.2 }
+    ],
+    zinc: [
+        { label: 'Excelente', min: 5, max: Infinity },
+        { label: 'Bom', min: 2, max: 5 },
+        { label: 'Regular', min: 1, max: 2 },
+        { label: 'Ruim', min: -Infinity, max: 1 }
+    ],
+    copper: [
+        { label: 'Excelente', min: 2, max: Infinity },
+        { label: 'Bom', min: 0.8, max: 2 },
+        { label: 'Regular', min: 0.5, max: 0.8 },
+        { label: 'Ruim', min: -Infinity, max: 0.5 }
+    ],
+    manganese: [
+        { label: 'Excelente', min: 50, max: Infinity },
+        { label: 'Bom', min: 10, max: 50 },
+        { label: 'Regular', min: 5, max: 10 },
+        { label: 'Ruim', min: -Infinity, max: 5 }
+    ],
+    // Alumínio e acidez potencial: quanto menor, melhor (escala invertida)
+    aluminum: [
+        { label: 'Excelente', min: -Infinity, max: 0.3 },
+        { label: 'Bom', min: 0.3, max: 0.5 },
+        { label: 'Regular', min: 0.5, max: 1.0 },
+        { label: 'Ruim', min: 1.0, max: 2.0 },
+        { label: 'Muito Ruim', min: 2.0, max: Infinity }
+    ],
+    potentialAcidity: [
+        { label: 'Excelente', min: -Infinity, max: 2.5 },
+        { label: 'Bom', min: 2.5, max: 5.0 },
+        { label: 'Regular', min: 5.0, max: 7.5 },
+        { label: 'Ruim', min: 7.5, max: 10.0 },
+        { label: 'Muito Ruim', min: 10.0, max: Infinity }
+    ]
+};
+
+const adequacyScoreMap = { Excelente: 100, Bom: 80, Regular: 60, Ruim: 40, 'Muito Ruim': 20 };
+
+function classifyAdequacy(nutrient, value) {
+    const reference = adequacyClasses[nutrient] || adequacyClasses[convertNutrientKey(nutrient)];
+    if (!reference || value === null || value === undefined || Number.isNaN(Number(value))) return 'Não informado';
+    const numericValue = Number(value);
+    return reference.find(item => numericValue >= item.min && numericValue < item.max)?.label || reference[reference.length - 1].label;
+}
+
+function convertNutrientKey(nutrient) {
+    const map = {
+        nitrogen: 'nitrogen',
+        phosphorus: 'phosphorus',
+        potassium: 'potassium',
+        calcium: 'calcium',
+        magnesium: 'magnesium',
+        sulfur: 'sulfur',
+        iron: 'iron',
+        manganese: 'manganese',
+        zinc: 'zinc',
+        copper: 'copper',
+        boron: 'boron',
+        molybdenum: 'molybdenum'
+    };
+    return map[nutrient] || nutrient;
+}
+
+function getAdequacyColor(score) {
+    const normalized = Math.max(0, Math.min(100, Number(score) || 0));
+    if (normalized < 40) return '#ef4444';
+    if (normalized < 75) return '#facc15';
+    return '#22c55e';
+}
+
+function getNutrientAdequacyScore(nutrient, value) {
+    const label = classifyAdequacy(nutrient, value);
+    if (label !== 'Não informado') return adequacyScoreMap[label] || 0;
+
+    const nutrientDef = cropDatabase.milho?.nutrients?.[nutrient];
+    if (!nutrientDef || !Array.isArray(nutrientDef.range) || nutrientDef.range.length < 2) return 0;
+
+    const numericValue = Number(value);
+    const [min, max] = nutrientDef.range;
+    if (numericValue >= min && numericValue <= max) return 100;
+    if (numericValue < min) return Math.max(0, 100 - ((min - numericValue) / min) * 150);
+    return Math.max(0, 100 - ((numericValue - max) / max) * 100);
+}
+
+function getAdequacyGradient(score) {
+    const normalized = Math.max(0, Math.min(100, Number(score) || 0));
+    if (normalized < 40) {
+        return 'linear-gradient(90deg, #ef4444 0%, #f97316 55%, #facc15 100%)';
+    }
+    if (normalized < 75) {
+        return 'linear-gradient(90deg, #facc15 0%, #84cc16 100%)';
+    }
+    return 'linear-gradient(90deg, #22c55e 0%, #15803d 100%)';
+}
+
+// Parses a form field as a number, correctly preserving 0 as a real value
+// (unlike `parseFloat(x) || null`, which discards 0 because it's falsy).
+function parseFieldValue(elementId) {
+    const raw = document.getElementById(elementId)?.value;
+    const value = parseFloat(raw);
+    return Number.isNaN(value) ? null : value;
+}
+
+// ----------------------------------------------------------------------------
+// SEÇÃO 4 — Motor de análise em tempo real: lê os campos do formulário,
+// recalcula soilData e atualiza todo o painel (score de saúde, compatibilidade
+// por cultura, recomendações rápidas). Roda a cada input e também a cada 1s
+// via setInterval (initializeAnalysis) para pegar mudanças programáticas.
+// ----------------------------------------------------------------------------
 function updateAnalysis() {
     // Get soil data from form inputs
-    soilData.ph = parseFloat(document.getElementById('soilPH')?.value) || null;
-    soilData.organicMatter = parseFloat(document.getElementById('organicMatter')?.value) || null;
-    
-    const nutrientIds = ['nitrogen', 'phosphorus', 'potassium', 'calcium', 'magnesium', 'sulfur', 
+    soilData.ph = parseFieldValue('soilPH');
+    soilData.phCaCl2 = parseFieldValue('soilPHCaCl2');
+    soilData.organicMatter = parseFieldValue('organicMatter');
+    soilData.aluminum = parseFieldValue('aluminum');
+    soilData.potentialAcidity = parseFieldValue('potentialAcidity');
+    soilData.sb = parseFieldValue('sb');
+    soilData.ctcEfetiva = parseFieldValue('ctcEfetiva');
+    soilData.ctcPH7 = parseFieldValue('ctcPH7');
+    soilData.vPercent = parseFieldValue('vPercent');
+    soilData.mPercent = parseFieldValue('mPercent');
+    soilData.indiceSMP = parseFieldValue('indiceSMP');
+    soilData.texture.sand = parseFieldValue('sandContent');
+    soilData.texture.silt = parseFieldValue('siltContent');
+    soilData.texture.clay = parseFieldValue('clayContent');
+    soilData.region = document.getElementById('region')?.value.trim() || '';
+    soilData.state = document.getElementById('state')?.value.trim() || '';
+    soilData.soilType = document.getElementById('soilType')?.value.trim() || '';
+
+    const nutrientIds = ['nitrogen', 'phosphorus', 'potassium', 'calcium', 'magnesium', 'sulfur',
                         'iron', 'manganese', 'zinc', 'copper', 'boron', 'molybdenum'];
-    
+
     nutrientIds.forEach(nutrient => {
-        soilData.nutrients[nutrient] = parseFloat(document.getElementById(nutrient)?.value) || null;
+        soilData.nutrients[nutrient] = parseFieldValue(nutrient);
     });
-    
+
+    Object.keys(fieldUnitConfig).forEach(field => {
+        soilData.units[field] = getFieldUnit(field);
+    });
+
     // Update analysis dashboard
     updateHealthScore();
     updatePHCompatibility();
     updateNutrientStatus();
     updateQuickRecommendations();
     updateCropCompatibility();
+    updateSoilChemistryIndicators();
 }
 
 // Calculate overall soil health score
@@ -268,34 +465,38 @@ function updateHealthScore() {
     let totalScore = 0;
     let factorsCount = 0;
     
-    // pH score (0-100)
+    // pH score based on user reference classes
     if (soilData.ph !== null) {
-        let phScore = 0;
-        if (soilData.ph >= 6.0 && soilData.ph <= 7.0) {
-            phScore = 100; // Optimal range
-        } else if (soilData.ph >= 5.5 && soilData.ph <= 7.5) {
-            phScore = 80 - Math.abs(soilData.ph - 6.5) * 20; // Good range
-        } else if (soilData.ph >= 5.0 && soilData.ph <= 8.0) {
-            phScore = 60 - Math.abs(soilData.ph - 6.5) * 15; // Acceptable range
-        } else {
-            phScore = Math.max(0, 40 - Math.abs(soilData.ph - 6.5) * 10); // Poor range
-        }
-        totalScore += phScore;
+        const label = classifyAdequacy('pH', soilData.ph);
+        totalScore += adequacyScoreMap[label] || 0;
         factorsCount++;
     }
     
-    // Organic matter score
+    // Organic matter score based on user reference classes
     if (soilData.organicMatter !== null) {
-        let omScore = Math.min(100, soilData.organicMatter * 25); // 4% = 100 points
-        totalScore += omScore;
+        const label = classifyAdequacy('organicMatter', soilData.organicMatter);
+        totalScore += adequacyScoreMap[label] || 0;
         factorsCount++;
     }
-    
-    // Nutrient scores
+
+    // Aluminum toxicity score (lower is better)
+    if (soilData.aluminum !== null) {
+        const label = classifyAdequacy('aluminum', soilData.aluminum);
+        totalScore += adequacyScoreMap[label] || 0;
+        factorsCount++;
+    }
+
+    // Potential acidity (H+Al) score (lower is better)
+    if (soilData.potentialAcidity !== null) {
+        const label = classifyAdequacy('potentialAcidity', soilData.potentialAcidity);
+        totalScore += adequacyScoreMap[label] || 0;
+        factorsCount++;
+    }
+
+    // Nutrient scores based on user reference classes
     Object.keys(soilData.nutrients).forEach(nutrient => {
         if (soilData.nutrients[nutrient] !== null) {
-            let nutrientScore = calculateNutrientScore(nutrient, soilData.nutrients[nutrient]);
-            totalScore += nutrientScore;
+            totalScore += getNutrientAdequacyScore(nutrient, soilData.nutrients[nutrient]);
             factorsCount++;
         }
     });
@@ -307,32 +508,13 @@ function updateHealthScore() {
     
     if (healthScoreElement) {
         healthScoreElement.textContent = healthScore;
-        
-        // Color based on score
-        if (healthScore >= 80) {
-            healthScoreElement.style.color = '#2D5016'; // Forest green
-        } else if (healthScore >= 60) {
-            healthScoreElement.style.color = '#87A96B'; // Sage green
-        } else if (healthScore >= 40) {
-            healthScoreElement.style.color = '#E6B17A'; // Golden wheat
-        } else {
-            healthScoreElement.style.color = '#B85450'; // Terracotta
-        }
+        healthScoreElement.style.color = getAdequacyColor(healthScore);
     }
     
     if (healthBarElement) {
         healthBarElement.style.width = `${healthScore}%`;
-        
-        // Color based on score
-        if (healthScore >= 80) {
-            healthBarElement.className = 'h-2 rounded-full transition-all duration-500 nutrient-optimal';
-        } else if (healthScore >= 60) {
-            healthBarElement.className = 'h-2 rounded-full transition-all duration-500 nutrient-adequate';
-        } else if (healthScore >= 40) {
-            healthBarElement.className = 'h-2 rounded-full transition-all duration-500 nutrient-low';
-        } else {
-            healthBarElement.className = 'h-2 rounded-full transition-all duration-500 nutrient-deficient';
-        }
+        healthBarElement.style.background = getAdequacyGradient(healthScore);
+        healthBarElement.className = 'h-2 rounded-full transition-all duration-500';
     }
 }
 
@@ -355,7 +537,10 @@ function calculateNutrientScore(nutrient, value, cropRef) {
 
     // Prefer the nutrient definition from the reference crop; fall back to milho if missing
     const nutrientDef = (referenceCrop.nutrients && referenceCrop.nutrients[nutrient]) || (cropDatabase.milho.nutrients[nutrient]);
-    if (!nutrientDef) return 0;
+    if (!nutrientDef) {
+        const genericLabel = classifyAdequacy(nutrient, value);
+        return adequacyScoreMap[genericLabel] || 0;
+    }
 
     const range = nutrientDef.range;
     if (!range || range.length < 2) return 0;
@@ -409,6 +594,103 @@ function updatePHCompatibility() {
     }
 }
 
+// Update aluminum warning and soil texture sum indicators
+function updateSoilChemistryIndicators() {
+    const aluminumWarning = document.getElementById('aluminumWarning');
+    if (aluminumWarning) {
+        if (soilData.aluminum === null) {
+            aluminumWarning.classList.add('hidden');
+            aluminumWarning.textContent = '';
+        } else {
+            const label = classifyAdequacy('aluminum', soilData.aluminum);
+            aluminumWarning.classList.remove('hidden');
+            if (soilData.aluminum > 0.5) {
+                aluminumWarning.className = 'mt-3 text-sm font-medium text-red-600';
+                aluminumWarning.textContent = `⚠ Alumínio tóxico (${label}): pode limitar o desenvolvimento radicular de culturas sensíveis.`;
+            } else {
+                aluminumWarning.className = 'mt-3 text-sm font-medium text-green-600';
+                aluminumWarning.textContent = `✓ Alumínio em nível ${label.toLowerCase()} — sem risco de toxidez.`;
+            }
+        }
+    }
+
+    const textureSum = document.getElementById('textureSum');
+    if (textureSum) {
+        const { sand, silt, clay } = soilData.texture;
+        if (sand === null && silt === null && clay === null) {
+            textureSum.textContent = '';
+        } else {
+            const total = (sand || 0) + (silt || 0) + (clay || 0);
+            textureSum.textContent = `Soma: ${total} g/kg (ideal ≈ 1000 g/kg)`;
+        }
+    }
+}
+
+// ----------------------------------------------------------------------------
+// Complexo Sortivo e Saturações — calcula SB, CTC efetiva (t), CTC a pH 7,0 (T),
+// V% e m% a partir de Ca, Mg, K, Al e H+Al. Os campos calculados continuam
+// editáveis: isso só roda quando o agricultor mexe em Ca/Mg/K/Al/H+Al, então
+// uma correção manual no SB/CTC/V%/m% não é sobrescrita até a próxima mudança
+// nesses campos-fonte.
+function calcularComplexoSortivo() {
+    const Ca = parseFloat(document.getElementById('calcium')?.value) || 0;
+    const Mg = parseFloat(document.getElementById('magnesium')?.value) || 0;
+    const K_mgdm3 = parseFloat(document.getElementById('potassium')?.value) || 0;
+    const Al = parseFloat(document.getElementById('aluminum')?.value) || 0;
+    const HAl = parseFloat(document.getElementById('potentialAcidity')?.value) || 0;
+
+    // Converte K de mg/dm³ (ppm) para cmolc/dm³ (massa molar do K / valência)
+    const K_cmolc = K_mgdm3 / 391;
+
+    const SB = Ca + Mg + K_cmolc;
+    const t = SB + Al;
+    const T = SB + HAl;
+    const V = T > 0 ? (SB / T) * 100 : 0;
+    const m = t > 0 ? (Al / t) * 100 : 0;
+
+    document.getElementById('sb').value = SB.toFixed(2);
+    document.getElementById('ctcEfetiva').value = t.toFixed(2);
+    document.getElementById('ctcPH7').value = T.toFixed(2);
+    document.getElementById('vPercent').value = V.toFixed(1);
+    document.getElementById('mPercent').value = m.toFixed(1);
+
+    atualizarBarraV(V);
+    atualizarBarraM(m);
+
+    // Mantém soilData sincronizado imediatamente (updateAnalysis já roda no
+    // mesmo evento de input, mas isso garante consistência caso a ordem mude).
+    soilData.sb = SB;
+    soilData.ctcEfetiva = t;
+    soilData.ctcPH7 = T;
+    soilData.vPercent = V;
+    soilData.mPercent = m;
+}
+
+// Barra visual do V% (Saturação por Bases): vermelho < 45%, amarelo 45-64%,
+// verde claro 65-80%, verde escuro > 80%.
+function atualizarBarraV(v) {
+    const barra = document.getElementById('vPercentBar');
+    if (!barra) return;
+    const largura = Math.min(100, Math.max(0, v));
+    barra.style.width = largura + '%';
+    if (v < 45) barra.style.backgroundColor = '#B85450';
+    else if (v < 65) barra.style.backgroundColor = '#E6B17A';
+    else if (v <= 80) barra.style.backgroundColor = '#87A96B';
+    else barra.style.backgroundColor = '#2D5016';
+}
+
+// Barra visual do m% (Saturação por Alumínio): verde ≤ 10%, amarelo 11-20%,
+// vermelho > 20%.
+function atualizarBarraM(m) {
+    const barra = document.getElementById('mPercentBar');
+    if (!barra) return;
+    const largura = Math.min(100, Math.max(0, m));
+    barra.style.width = largura + '%';
+    if (m <= 10) barra.style.backgroundColor = '#2D5016';
+    else if (m <= 20) barra.style.backgroundColor = '#E6B17A';
+    else barra.style.backgroundColor = '#B85450';
+}
+
 // Update nutrient status display
 function updateNutrientStatus() {
     const nutrientStatusElement = document.getElementById('nutrientStatus');
@@ -432,27 +714,22 @@ function updateNutrientStatus() {
     
     Object.keys(soilData.nutrients).forEach(nutrient => {
         if (soilData.nutrients[nutrient] !== null) {
-            const score = calculateNutrientScore(nutrient, soilData.nutrients[nutrient]);
-            let statusClass = 'nutrient-deficient';
-            let statusText = 'Baixo';
-            
-            if (score >= 80) {
-                statusClass = 'nutrient-optimal';
-                statusText = 'Ótimo';
-            } else if (score >= 60) {
-                statusClass = 'nutrient-adequate';
-                statusText = 'Bom';
-            } else if (score >= 40) {
-                statusClass = 'nutrient-low';
-                statusText = 'Adequado';
+            const score = getNutrientAdequacyScore(nutrient, soilData.nutrients[nutrient]);
+            const adequacyLabel = classifyAdequacy(nutrient, soilData.nutrients[nutrient]);
+            let statusText = adequacyLabel;
+            if (adequacyLabel === 'Não informado') {
+                if (score >= 80) statusText = 'Excelente';
+                else if (score >= 60) statusText = 'Bom';
+                else if (score >= 40) statusText = 'Regular';
+                else statusText = 'Ruim';
             }
             
             statusHTML += `
                 <div class="flex justify-between items-center">
                     <span class="text-sm">${nutrientNames[nutrient]}</span>
                     <div class="flex items-center space-x-2">
-                        <div class="w-12 h-2 bg-gray-200 rounded">
-                            <div class="h-2 rounded transition-all duration-500 ${statusClass}" style="width: ${score}%"></div>
+                        <div class="w-12 h-2 bg-gray-200 rounded overflow-hidden">
+                            <div class="h-2 rounded transition-all duration-500" style="width: ${score}%; background: ${getAdequacyGradient(score)}"></div>
                         </div>
                         <span class="text-xs text-gray-500">${statusText}</span>
                     </div>
@@ -490,7 +767,21 @@ function updateQuickRecommendations() {
             recommendations.push('Adicionar matéria orgânica (composto ou esterco)');
         }
     }
-    
+
+    // Aluminum toxicity recommendations
+    if (soilData.aluminum !== null) {
+        if (soilData.aluminum > 1.0) {
+            recommendations.push(`Alumínio tóxico elevado (${soilData.aluminum} cmolc/dm³): aplicar calcário para neutralização`);
+        } else if (soilData.aluminum > 0.5) {
+            recommendations.push('Alumínio em nível de atenção: monitorar e considerar calagem');
+        }
+    }
+
+    // Potential acidity (H+Al) recommendations
+    if (soilData.potentialAcidity !== null && soilData.potentialAcidity > 7.5) {
+        recommendations.push('Acidez potencial (H+Al) alta: solo com baixa saturação de bases, avaliar calagem');
+    }
+
     // Nutrient-specific recommendations
     Object.keys(soilData.nutrients).forEach(nutrient => {
         if (soilData.nutrients[nutrient] !== null) {
@@ -524,7 +815,11 @@ function updateQuickRecommendations() {
     ).join('');
 }
 
-// Calculate crop compatibility
+// ----------------------------------------------------------------------------
+// SEÇÃO 5 — Compatibilidade solo x cultura: para cada uma das 4 culturas de
+// cropDatabase, calcula um score 0-100 combinando pH e nutrientes. Consumido
+// por recommendations.html para ordenar/filtrar o grid de culturas.
+// ----------------------------------------------------------------------------
 function updateCropCompatibility() {
     Object.keys(cropDatabase).forEach(cropKey => {
         const result = computeCropCompatibility(soilData, cropKey);
@@ -608,7 +903,13 @@ function computeCropCompatibility(soil, cropKey) {
     };
 }
 
-// Generate full analysis report
+// ----------------------------------------------------------------------------
+// SEÇÃO 6 — Relatórios salvos: persiste a análise atual (soilData +
+// compatibilidade por cultura) em userStorage, sob a chave
+// 'soilAnalysisReports' (lista de relatórios) e 'soilAnalysisData' (só o
+// mais recente, para carregamento rápido). relatorio.html e
+// recommendations.html leem esses relatórios para exibir/recalcular.
+// ----------------------------------------------------------------------------
 function generateFullReport(showAlert = true, title = null) {
     updateAnalysis();
 
@@ -616,9 +917,9 @@ function generateFullReport(showAlert = true, title = null) {
     const savedReports = getSavedReports();
     savedReports.push(report);
 
-    localStorage.setItem('soilAnalysisReports', JSON.stringify(savedReports));
+    userStorage.setItem('soilAnalysisReports', JSON.stringify(savedReports));
     // also store the latest analysis data for other pages to pick up
-    localStorage.setItem('soilAnalysisData', JSON.stringify({ soilData: report.soilData, cropCompatibility: report.cropCompatibility }));
+    userStorage.setItem('soilAnalysisData', JSON.stringify({ soilData: report.soilData, cropCompatibility: report.cropCompatibility }));
 
     updateSavedReportCount();
 
@@ -642,7 +943,7 @@ function createAnalysisReport(title = null) {
 }
 
 function getSavedReports() {
-    return JSON.parse(localStorage.getItem('soilAnalysisReports') || '[]');
+    return JSON.parse(userStorage.getItem('soilAnalysisReports') || '[]');
 }
 
 function saveReport() {
@@ -672,7 +973,11 @@ function prepareReportAndRedirect(targetPage) {
     saveReportAndRedirect(targetPage);
 }
 
-// Export functions for global access
+// ----------------------------------------------------------------------------
+// SEÇÃO 7 — Exporta as funções que as páginas HTML chamam via onclick=""
+// ou <script> inline (o restante do arquivo fica "privado" no escopo do
+// módulo).
+// ----------------------------------------------------------------------------
 window.updateAnalysis = updateAnalysis;
 window.generateFullReport = generateFullReport;
 window.prepareReportAndRedirect = saveReportAndRedirect;

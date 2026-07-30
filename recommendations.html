@@ -1,11 +1,27 @@
+<!-- ============================================================================
+     recommendations.html — recomendação de culturas e correções de solo.
+     Carrega o último relatório salvo (userStorage.soilAnalysisData) via
+     main.js, calcula a compatibilidade do solo com cada uma das 4 culturas
+     (allowedCropKeys) e mostra: grid de culturas ordenável/filtrável,
+     calculadora de correção de pH/nutrientes e um gerador de "relatório de
+     correção" por cultura escolhida, salvo em
+     userStorage.cropCorrectionReports.
+     ============================================================================ -->
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Recomendações de Culturas - Cycle Sown</title>
+    <script src="userStorage.js"></script>
+    <script>
+        if (!userStorage.getCurrentUserId()) {
+            window.location.href = 'login.html';
+        }
+    </script>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
     <link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:wght@400;600;700&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -78,50 +94,57 @@
 </head>
 <body>
     <!-- Navigation -->
-    <nav class="fixed top-0 w-full z-50 glass-effect border-b border-gray-200">
+    <nav class="fixed top-0 w-full z-50 backdrop-blur-xl bg-white/80 border-b border-slate-200 shadow-sm">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between items-center h-16">
-                <div class="flex items-center">
-                    <div class="flex-shrink-0">
-                        
-                    </div>
+                <div class="flex items-center gap-3">
+                    <a href="index.html" class="flex items-center shrink-0">
+                        <img src="img/logo.png" alt="Cycle Sown" class="h-14 w-auto">
+                    </a>
+                    <button type="button" aria-label="Abrir menu" onclick="toggleMenu(true)" class="p-2 rounded-full text-slate-700 hover:bg-slate-100 transition-colors">
+                        <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" xmlns="http://www.w3.org/2000/svg">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+                        </svg>
+                    </button>
                 </div>
                 <div class="hidden md:block">
                     <div class="ml-10 flex items-baseline space-x-8">
-                        <a href="index.html#analysis" class="text-gray-900 hover:text-green-700 px-3 py-2 text-sm font-medium transition-colors">Análise</a>
-                        <a href="recommendations.html" class="text-gray-600 hover:text-green-700 px-3 py-2 text-sm font-medium transition-colors">Recomendações</a>
-                        <a href="relatorio.html" class="text-gray-600 hover:text-green-700 px-3 py-2 text-sm font-medium transition-colors">Relatório</a>
+                        <a href="index.html#analysis" class="text-slate-800 hover:text-emerald-700 px-3 py-2 text-sm font-medium transition-colors">Análise</a>
+                        <a href="recommendations.html" class="text-slate-600 hover:text-emerald-700 px-3 py-2 text-sm font-medium transition-colors">Recomendações</a>
+                        <a href="relatorio.html" class="text-slate-600 hover:text-emerald-700 px-3 py-2 text-sm font-medium transition-colors">Relatório</a>
+                        <a href="profile.html" class="text-slate-600 hover:text-emerald-700 px-3 py-2 text-sm font-medium transition-colors">Perfil</a>
                     </div>
                 </div>
             </div>
         </div>
     </nav>
 
-        <!-- Sidebar + Main wrapper -->
-        <aside class="hidden md:block fixed left-0 top-16 h-full w-64 bg-white border-r z-40 shadow-sm">
-            <div class="p-4 flex flex-col items-center">
-                <nav class="w-full mt-2">
-                    <a href="calendar.html" class="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-green-50 hover:translate-x-1 transition-all">
-                        <span class="text-xl">📅</span>
-                        <span class="font-medium text-sm">Calendário</span>
-                    </a>
-                    <a href="catalog.html" class="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-green-50 hover:translate-x-1 transition-all mt-2">
-                        <span class="text-xl">🛒</span>
-                        <span class="font-medium text-sm">Catálogo</span>
-                    </a>
-                    <a href="empresas/index.html" class="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-green-50 hover:translate-x-1 transition-all mt-2">
-                        <span class="text-xl">💼</span>
-                        <span class="font-medium text-sm">Vender Produção</span>
-                    </a>
-                </nav>
-
-                <div class="mt-auto w-full pt-4">
-                    <a href="relatorio.html" class="block w-full text-center px-4 py-3 bg-green-700 text-white rounded-lg hover:bg-green-800">Ver Relatório</a>
-                </div>
+    <div id="slideMenu" class="fixed inset-0 z-[9998] hidden">
+        <div class="absolute inset-0 bg-black/40 z-[9998]" onclick="toggleMenu(false)"></div>
+        <div class="absolute left-0 top-0 h-full w-72 bg-white border-r shadow-xl overflow-y-auto z-[9999]">
+            <div class="flex items-center justify-between p-5 border-b border-gray-200">
+                <span class="flex items-center gap-2">
+                    <img src="img/logo.png" alt="Cycle Sown" class="h-12 w-auto">
+                    <span class="text-lg font-semibold text-gray-900">Menu</span>
+                </span>
+                <button type="button" aria-label="Fechar menu" onclick="toggleMenu(false)" class="text-gray-600 hover:text-gray-900">
+                    <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" xmlns="http://www.w3.org/2000/svg">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
             </div>
-        </aside>
+            <nav class="p-5 space-y-3">
+                <hr class="my-3">
+                <a href="calendar.html" onclick="toggleMenu(false)" class="block text-gray-900 px-4 py-3 rounded-lg hover:bg-green-50 transition-colors">Calendário</a>
+                <a href="catalogo.html" onclick="toggleMenu(false)" class="block text-gray-900 px-4 py-3 rounded-lg hover:bg-green-50 transition-colors">Catálogo</a>
+                <a href="produtividade.html" onclick="toggleMenu(false)" class="block text-gray-900 px-4 py-3 rounded-lg hover:bg-green-50 transition-colors">Produtividade</a>
+                <a href="empresas/index.html" onclick="toggleMenu(false)" class="block text-gray-900 px-4 py-3 rounded-lg hover:bg-green-50 transition-colors">Vender Produção</a>
+                <a href="profile.html" onclick="toggleMenu(false)" class="block text-green-700 font-semibold px-4 py-3 rounded-lg hover:bg-green-50 transition-colors">Meu Perfil</a>
+            </nav>
+        </div>
+    </div>
 
-        <div class="md:ml-56">
+        <div>
 
     <style>
         /* Compact layout tweaks for recommendations page */
@@ -183,6 +206,43 @@
                         
                     </div>
                 </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Filter and Sort Controls -->
+    <section class="px-4 mb-8">
+        <div class="max-w-6xl mx-auto">
+            <div class="bg-white rounded-2xl shadow-lg p-6 card-hover">
+                <div class="flex flex-wrap gap-4 items-center justify-between">
+                    <div class="flex flex-wrap gap-2">
+                        <button onclick="filterCrops('all', event)" class="filter-button active px-4 py-2 rounded-lg border border-gray-300 text-sm font-medium transition-colors">Todas</button>
+                        <button onclick="filterCrops('excellent', event)" class="filter-button px-4 py-2 rounded-lg border border-gray-300 text-sm font-medium transition-colors">Excelente (80%+)</button>
+                        <button onclick="filterCrops('good', event)" class="filter-button px-4 py-2 rounded-lg border border-gray-300 text-sm font-medium transition-colors">Boa (60-79%)</button>
+                        <button onclick="filterCrops('fair', event)" class="filter-button px-4 py-2 rounded-lg border border-gray-300 text-sm font-medium transition-colors">Regular (40-59%)</button>
+                    </div>
+                    <div class="flex items-center space-x-4">
+                        <label class="text-sm font-medium text-gray-700">Ordenar por:</label>
+                        <select id="sortSelect" onchange="sortCrops()" class="border border-gray-300 rounded-lg px-3 py-2 text-sm">
+                            <option value="compatibility">Compatibilidade</option>
+                            <option value="name">Nome</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Crop Grid -->
+    <section class="px-4 pb-10">
+        <div class="max-w-6xl mx-auto">
+            <div class="crop-grid-wrapper">
+                <div id="cropGrid" class="grid md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+            </div>
+            <div id="noResults" class="text-center py-12 hidden">
+                <div class="text-6xl mb-4">🌱</div>
+                <h3 class="text-2xl font-semibold mb-2 text-gray-600">Nenhuma cultura encontrada</h3>
+                <p class="text-gray-500">Tente ajustar os filtros ou realizar uma nova análise de solo.</p>
             </div>
         </div>
     </section>
@@ -271,43 +331,6 @@
                         Recalcular Correção de Nutrientes
                     </button>
                 </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- Filter and Sort Controls -->
-    <section class="px-4 mb-8">
-        <div class="max-w-6xl mx-auto">
-            <div class="bg-white rounded-2xl shadow-lg p-6 card-hover">
-                <div class="flex flex-wrap gap-4 items-center justify-between">
-                    <div class="flex flex-wrap gap-2">
-                        <button onclick="filterCrops('all')" class="filter-button active px-4 py-2 rounded-lg border border-gray-300 text-sm font-medium transition-colors">Todas</button>
-                        <button onclick="filterCrops('excellent')" class="filter-button px-4 py-2 rounded-lg border border-gray-300 text-sm font-medium transition-colors">Excelente (80%+)</button>
-                        <button onclick="filterCrops('good')" class="filter-button px-4 py-2 rounded-lg border border-gray-300 text-sm font-medium transition-colors">Boa (60-79%)</button>
-                        <button onclick="filterCrops('fair')" class="filter-button px-4 py-2 rounded-lg border border-gray-300 text-sm font-medium transition-colors">Regular (40-59%)</button>
-                    </div>
-                    <div class="flex items-center space-x-4">
-                        <label class="text-sm font-medium text-gray-700">Ordenar por:</label>
-                        <select id="sortSelect" onchange="sortCrops()" class="border border-gray-300 rounded-lg px-3 py-2 text-sm">
-                            <option value="compatibility">Compatibilidade</option>
-                            <option value="name">Nome</option>
-                        </select>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- Crop Grid -->
-    <section class="px-4 pb-10">
-        <div class="max-w-6xl mx-auto">
-            <div class="crop-grid-wrapper">
-                <div id="cropGrid" class="grid md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
-            </div>
-            <div id="noResults" class="text-center py-12 hidden">
-                <div class="text-6xl mb-4">🌱</div>
-                <h3 class="text-2xl font-semibold mb-2 text-gray-600">Nenhuma cultura encontrada</h3>
-                <p class="text-gray-500">Tente ajustar os filtros ou realizar uma nova análise de solo.</p>
             </div>
         </div>
     </section>
@@ -428,7 +451,10 @@
 
     </div>
 
+    <div id="site-footer"></div>
+
     <script src="main.js"></script>
+    <script src="footer.js"></script>
     <script>
         let currentFilter = 'all';
         let currentSort = 'compatibility';
@@ -444,6 +470,13 @@
             initializeAnimations();
         });
 
+        // As 4 culturas do site (mesmas chaves de cropDatabase em main.js).
+        const allowedCropKeys = ['milho', 'soja', 'tabaco', 'trigo'];
+
+        function getVisibleCropKeys() {
+            return Object.keys(cropDatabase).filter(key => allowedCropKeys.includes(key));
+        }
+
         function initializeAnimations() {
             anime({
                 targets: '.animate-fade-in',
@@ -456,15 +489,15 @@
         }
 
         function loadAnalysisData() {
-            const storedData = localStorage.getItem('soilAnalysisData');
+            const storedData = userStorage.getItem('soilAnalysisData');
             if (storedData) {
                 const analysisData = JSON.parse(storedData);
                 currentSoilData = analysisData.soilData || null;
                 updateSummary(analysisData);
 
                 if (analysisData.cropCompatibility) {
-                    Object.keys(analysisData.cropCompatibility).forEach(key => {
-                        if (cropDatabase[key]) {
+                    getVisibleCropKeys().forEach(key => {
+                        if (analysisData.cropCompatibility[key]) {
                             cropDatabase[key].compatibility = analysisData.cropCompatibility[key].compatibility || 0;
                         }
                     });
@@ -480,7 +513,7 @@
         }
 
         function getSavedReports() {
-            return JSON.parse(localStorage.getItem('soilAnalysisReports') || '[]');
+            return JSON.parse(userStorage.getItem('soilAnalysisReports') || '[]');
         }
 
         function populateReportSelectorRec() {
@@ -526,7 +559,7 @@
             if (!soil) return;
             currentSoilData = soil;
 
-            Object.keys(cropDatabase).forEach(cropKey => {
+            getVisibleCropKeys().forEach(cropKey => {
                 const breakdown = computeCropCompatibility(soil, cropKey);
                 cropDatabase[cropKey].compatibility = breakdown.overall;
                 cropDatabase[cropKey].compatibilityBreakdown = breakdown;
@@ -544,7 +577,7 @@
 
             currentSoilData = soil;
 
-            Object.keys(cropDatabase).forEach(cropKey => {
+            getVisibleCropKeys().forEach(cropKey => {
                 const breakdown = computeCropCompatibility(soil, cropKey);
                 cropDatabase[cropKey].compatibility = breakdown.overall;
                 cropDatabase[cropKey].compatibilityBreakdown = breakdown;
@@ -573,7 +606,7 @@
             const selector = document.getElementById('desiredCropSelect');
             if (!selector) return;
             const options = ['<option value="">Selecione uma cultura</option>'];
-            Object.keys(cropDatabase).forEach(key => {
+            getVisibleCropKeys().forEach(key => {
                 options.push(`<option value="${key}">${cropDatabase[key].name}</option>`);
             });
             selector.innerHTML = options.join('');
@@ -651,7 +684,9 @@
             if (chosenCropNutrientCorrections) chosenCropNutrientCorrections.innerHTML = '';
 
             const soilPH = currentSoilData.ph !== undefined && currentSoilData.ph !== null ? parseFloat(currentSoilData.ph) : null;
-            if (phCurrentEl) phCurrentEl.textContent = !isNaN(soilPH) ? soilPH.toFixed(1) : '--';
+            // isNaN(null) is false, so this must check for null explicitly —
+            // otherwise soilPH.toFixed(1) throws when pH wasn't informed.
+            if (phCurrentEl) phCurrentEl.textContent = (soilPH !== null && !isNaN(soilPH)) ? soilPH.toFixed(1) : '--';
 
             let limeRequirement = 0;
             let limeCost = 0;
@@ -928,9 +963,9 @@
                 correction: reportData
             };
 
-            const reports = JSON.parse(localStorage.getItem('cropCorrectionReports') || '[]');
+            const reports = JSON.parse(userStorage.getItem('cropCorrectionReports') || '[]');
             reports.push(report);
-            localStorage.setItem('cropCorrectionReports', JSON.stringify(reports));
+            userStorage.setItem('cropCorrectionReports', JSON.stringify(reports));
 
             updateCropReportPreview(reportData);
             alert('Relatório de correção da cultura gerado e salvo com sucesso!');
@@ -953,7 +988,7 @@
 
         function findBestCrop() {
             let bestCrop = null, highestCompatibility = 0;
-            Object.keys(cropDatabase).forEach(cropKey => {
+            getVisibleCropKeys().forEach(cropKey => {
                 const crop = cropDatabase[cropKey];
                 if (crop.compatibility > highestCompatibility) {
                     highestCompatibility = crop.compatibility;
@@ -967,7 +1002,7 @@
             const cropGrid = document.getElementById('cropGrid');
             const noResults = document.getElementById('noResults');
 
-            let crops = Object.keys(cropDatabase).map(key => ({ key: key, ...cropDatabase[key] }));
+            let crops = getVisibleCropKeys().map(key => ({ key: key, ...cropDatabase[key] }));
 
             if (currentFilter !== 'all') {
                 crops = crops.filter(crop => {
@@ -1061,10 +1096,10 @@
             return seasons[Math.floor(Math.random() * seasons.length)];
         }
 
-        function filterCrops(filter) {
+        function filterCrops(filter, evt) {
             currentFilter = filter;
             document.querySelectorAll('.filter-button').forEach(btn => btn.classList.remove('active'));
-            event.target.classList.add('active');
+            (evt || window.event)?.target.classList.add('active');
             renderCrops();
         }
 
@@ -1154,6 +1189,14 @@
             const targetPH = parseFloat(document.getElementById('phTarget').value);
             const soilType = document.getElementById('soilType').value;
 
+            // Sem cultura/relatório aplicado, phCurrent ainda mostra "--",
+            // o que virava "NaN t/ha" / "R$ NaN" na tela.
+            if (Number.isNaN(currentPH) || Number.isNaN(targetPH)) {
+                document.getElementById('limeRequirement').textContent = '-- t/ha';
+                document.getElementById('limeCost').textContent = 'R$ --';
+                return;
+            }
+
             let limeFactor = { 'clay': 8, 'loam': 6, 'sandy': 4, 'peaty': 10 }[soilType];
             const phDifference = Math.abs(targetPH - currentPH);
             let limeRequirement = phDifference * limeFactor;
@@ -1170,7 +1213,7 @@
         }
 
         function calculateNutrientCorrection() {
-            const storedData = localStorage.getItem('soilAnalysisData');
+            const storedData = userStorage.getItem('soilAnalysisData');
             if (storedData) {
                 const analysisData = JSON.parse(storedData);
                 const soilData = analysisData.soilData;
@@ -1218,6 +1261,14 @@
 
         document.getElementById('phTarget').addEventListener('input', calculatePHCorrection);
         document.getElementById('soilType').addEventListener('change', calculatePHCorrection);
+    </script>
+    <script>
+        function toggleMenu(open) {
+            const menu = document.getElementById('slideMenu');
+            if (!menu) return;
+            menu.classList.toggle('hidden', !open);
+            document.body.style.overflow = open ? 'hidden' : '';
+        }
     </script>
 </body>
 </html>
