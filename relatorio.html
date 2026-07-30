@@ -41,21 +41,48 @@
     <nav class="fixed top-0 w-full z-50 glass-effect border-b border-gray-200 no-print">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between items-center h-16">
-                <div class="flex items-center">
-                    <div class="flex-shrink-0">
-                        
-                    </div>
+                <div class="flex items-center gap-3">
+                    <button type="button" aria-label="Abrir menu" onclick="toggleMenu(true)" class="p-2 rounded-md text-gray-700 hover:bg-gray-100">
+                        <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" xmlns="http://www.w3.org/2000/svg">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+                        </svg>
+                    </button>
                 </div>
                 <div class="hidden md:block">
                     <div class="ml-10 flex items-baseline space-x-8">
                         <a href="index.html#analysis" class="text-gray-900 hover:text-green-700 px-3 py-2 text-sm font-medium transition-colors">Análise</a>
                         <a href="recommendations.html" class="text-gray-600 hover:text-green-700 px-3 py-2 text-sm font-medium transition-colors">Recomendações</a>
                         <a href="relatorio.html" class="text-gray-600 hover:text-green-700 px-3 py-2 text-sm font-medium transition-colors">Relatório</a>
+                        <a href="profile.html" class="text-gray-600 hover:text-green-700 px-3 py-2 text-sm font-medium transition-colors">👤 Perfil</a>
                     </div>
                 </div>
             </div>
         </div>
     </nav>
+
+    <div id="slideMenu" class="fixed inset-0 z-40 hidden">
+        <div class="absolute inset-0 bg-black/40" onclick="toggleMenu(false)"></div>
+        <div class="absolute left-0 top-0 h-full w-72 bg-white border-r shadow-xl overflow-y-auto">
+            <div class="flex items-center justify-between p-5 border-b border-gray-200">
+                <span class="text-lg font-semibold text-gray-900">Menu</span>
+                <button type="button" aria-label="Fechar menu" onclick="toggleMenu(false)" class="text-gray-600 hover:text-gray-900">
+                    <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" xmlns="http://www.w3.org/2000/svg">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+            <nav class="p-5 space-y-3">
+                <a href="index.html#analysis" onclick="toggleMenu(false)" class="block text-gray-900 px-4 py-3 rounded-lg hover:bg-green-50 transition-colors">Análise</a>
+                <a href="recommendations.html" onclick="toggleMenu(false)" class="block text-gray-900 px-4 py-3 rounded-lg hover:bg-green-50 transition-colors">Recomendações</a>
+                <a href="relatorio.html" onclick="toggleMenu(false)" class="block text-gray-900 px-4 py-3 rounded-lg hover:bg-green-50 transition-colors">Relatório</a>
+                <a href="calendar.html" onclick="toggleMenu(false)" class="block text-gray-900 px-4 py-3 rounded-lg hover:bg-green-50 transition-colors">📅 Calendário</a>
+                <a href="catalog.html" onclick="toggleMenu(false)" class="block text-gray-900 px-4 py-3 rounded-lg hover:bg-green-50 transition-colors">🛒 Catálogo</a>
+                <a href="empresas/index.html" onclick="toggleMenu(false)" class="block text-gray-900 px-4 py-3 rounded-lg hover:bg-green-50 transition-colors">💼 Vender Produção</a>
+                <hr class="my-3">
+                <a href="profile.html" onclick="toggleMenu(false)" class="block text-green-700 font-semibold px-4 py-3 rounded-lg hover:bg-green-50 transition-colors">👤 Meu Perfil</a>
+            </nav>
+        </div>
+    </div>
 
         <!-- Sidebar + Main wrapper -->
         <aside class="hidden md:block fixed left-0 top-16 h-full w-64 bg-white border-r z-40 shadow-sm">
@@ -192,6 +219,18 @@
 
             const report = reports[selectedIndex] || getLatestAnalysisReport();
             const data = normalizeReportData(report);
+            
+            // Exibir data do relatório se disponível
+            if (report && report.timestamp) {
+                const reportDate = new Date(report.timestamp).toLocaleDateString('pt-BR', { 
+                    day: '2-digit', 
+                    month: 'long', 
+                    year: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+                document.getElementById('currentDate').innerText = reportDate;
+            }
 
             renderReport(data);
         });
@@ -247,6 +286,16 @@
             const reports = getSavedReports();
             const report = reports[index];
             if (report) {
+                // Atualizar data do relatório
+                const reportDate = new Date(report.timestamp).toLocaleDateString('pt-BR', { 
+                    day: '2-digit', 
+                    month: 'long', 
+                    year: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+                document.getElementById('currentDate').innerText = reportDate;
+                
                 renderReport(normalizeReportData(report));
             }
         }
@@ -350,7 +399,7 @@
             document.getElementById('microContainer').innerHTML = '';
             const phNum = (data.ph !== undefined && data.ph !== null) ? parseFloat(data.ph) : NaN;
             document.getElementById('resPH').innerText = !isNaN(phNum) ? phNum.toFixed(1) : '--';
-            document.getElementById('resMO').innerText = data.mo;
+            document.getElementById('resMO').innerText = data.mo ? data.mo.toFixed(1) + '%' : '--';
             
             const phStatus = document.getElementById('resPHStatus');
             if(!isNaN(phNum)){
@@ -445,6 +494,13 @@
             }
 
             container.innerHTML = recs.map(r => `<div class="mb-2">• ${r}</div>`).join('');
+        }
+
+        function toggleMenu(open) {
+            const menu = document.getElementById('slideMenu');
+            if (!menu) return;
+            menu.classList.toggle('hidden', !open);
+            document.body.style.overflow = open ? 'hidden' : '';
         }
     </div>
 

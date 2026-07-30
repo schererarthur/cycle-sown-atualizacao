@@ -31,7 +31,7 @@
         .font-mono { font-family: 'JetBrains Mono', monospace; }
         
         .hero-bg {
-            background: linear-gradient(rgba(45, 80, 22, 0.3), rgba(45, 80, 22, 0.3)), url('resources/hero-agriculture.jpg');
+            background: linear-gradient(rgba(45, 80, 22, 0.3), rgba(45, 80, 22, 0.3)), url('empresas/campo.png');
             background-size: cover;
             background-position: center;
             background-attachment: fixed;
@@ -96,6 +96,7 @@
                         <a href="#analysis" class="text-gray-900 hover:text-green-700 px-3 py-2 text-sm font-medium transition-colors">Análise</a>
                         <a href="recommendations.html" class="text-gray-600 hover:text-green-700 px-3 py-2 text-sm font-medium transition-colors">Recomendações</a>
                         <a href="relatorio.html" class="text-gray-600 hover:text-green-700 px-3 py-2 text-sm font-medium transition-colors">Relatório</a>
+                        <a href="profile.html" class="text-gray-600 hover:text-green-700 px-3 py-2 text-sm font-medium transition-colors">👤 Perfil</a>
                     </div>
                 </div>
             </div>
@@ -120,7 +121,8 @@
                 <a href="calendar.html" onclick="toggleMenu(false)" class="block text-gray-900 px-4 py-3 rounded-lg hover:bg-green-50 transition-colors">📅 Calendário</a>
                 <a href="catalog.html" onclick="toggleMenu(false)" class="block text-gray-900 px-4 py-3 rounded-lg hover:bg-green-50 transition-colors">🛒 Catálogo</a>
                 <a href="empresas/index.html" onclick="toggleMenu(false)" class="block text-gray-900 px-4 py-3 rounded-lg hover:bg-green-50 transition-colors">💼 Vender Produção</a>
-                <a href="relatorio.html" onclick="toggleMenu(false)" class="block w-full text-center px-4 py-3 bg-green-700 text-white rounded-lg hover:bg-green-800 transition-colors">Ver Relatório</a>
+                <hr class="my-3">
+                <a href="profile.html" onclick="toggleMenu(false)" class="block text-green-700 font-semibold px-4 py-3 rounded-lg hover:bg-green-50 transition-colors">👤 Meu Perfil</a>
             </nav>
         </div>
     </div>
@@ -317,14 +319,14 @@
                                 </div>
                                 <div class="flex justify-between items-center">
                                     <span class="text-sm">Neutros (6.0-7.0)</span>
-                                    <div class="w-16 h-2 bg-gray-200 rounded">
-                                        <div class="h-2 bg-gray-400 rounded" id="neutralCrops" style="width: 0%"></div>
+                                    <div class="w-16 h-2 bg-white/20 rounded">
+                                        <div class="h-2 bg-white/40 rounded" id="neutralCrops" style="width: 0%"></div>
                                     </div>
                                 </div>
                                 <div class="flex justify-between items-center">
                                     <span class="text-sm">Alcalinos (7.0-8.0)</span>
-                                    <div class="w-16 h-2 bg-gray-200 rounded">
-                                        <div class="h-2 bg-gray-400 rounded" id="alkalineCrops" style="width: 0%"></div>
+                                    <div class="w-16 h-2 bg-white/20 rounded">
+                                        <div class="h-2 bg-white/40 rounded" id="alkalineCrops" style="width: 0%"></div>
                                     </div>
                                 </div>
                             </div>
@@ -349,17 +351,17 @@
                         <!-- Action Buttons -->
                         <div class="space-y-3">
                                 <button onclick="saveReportAndRedirect('relatorio.html')" class="w-full bg-green-700 text-white py-3 rounded-lg font-semibold hover:bg-green-800 transition-colors">
-                                    Gerar Relatório Completo
+                                    ✓ Gerar Relatório Completo
                                 </button>
                                 <button onclick="saveReport()" class="w-full border-2 border-green-700 text-green-700 py-3 rounded-lg font-semibold hover:bg-green-50 transition-colors">
-                                    Salvar Relatório
+                                    💾 Salvar Relatório
                                 </button>
                                 <button onclick="window.location.href='relatorio.html?report=last'" class="w-full bg-white text-green-700 border-2 border-green-700 py-3 rounded-lg font-semibold hover:bg-green-50 transition-colors">
-                                    Ver Relatórios Salvos
+                                    📊 Ver Relatórios Salvos
                                 </button>
                         </div>
-                            <div class="mt-4 text-sm text-gray-600">
-                                Relatórios salvos: <span id="savedReportCount">0</span>
+                            <div class="mt-4 text-sm text-gray-600 text-center">
+                                <strong id="savedReportCount">0</strong> relatório(s) salvo(s)
                             </div>
                     </div>
                 </div>
