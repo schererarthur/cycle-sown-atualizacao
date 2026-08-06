@@ -180,6 +180,89 @@
         @media (max-width: 768px) {
             .hero-bg { min-height: 72vh; }
         }
+
+        /* Upload do laudo de solo (leitura automática via IA) */
+        .laudo-upload-section {
+            width: 100%;
+        }
+
+        .laudo-upload-area {
+            border: 2px dashed #2D7A3E;
+            border-radius: 12px;
+            background: rgba(45, 122, 62, 0.04);
+            padding: 2.25rem 1.5rem;
+            text-align: center;
+            cursor: pointer;
+            transition: background-color 0.2s ease, border-color 0.2s ease, opacity 0.2s ease;
+        }
+
+        .laudo-upload-area:hover {
+            background: rgba(45, 122, 62, 0.09);
+        }
+
+        .laudo-upload-area.drag-over {
+            border-color: #D4A017;
+            background: rgba(212, 160, 23, 0.1);
+        }
+
+        .laudo-upload-area.loading {
+            opacity: 0.6;
+            pointer-events: none;
+        }
+
+        .laudo-upload-area .upload-icon {
+            color: #2D7A3E;
+            display: flex;
+            justify-content: center;
+            margin-bottom: 0.75rem;
+        }
+
+        .laudo-upload-area .upload-title {
+            font-weight: 600;
+            font-size: 1.05rem;
+            color: #1E2F22;
+            margin-bottom: 0.4rem;
+        }
+
+        .laudo-upload-area .upload-subtitle {
+            font-size: 0.85rem;
+            color: var(--medium-gray);
+            line-height: 1.5;
+        }
+
+        .laudo-status {
+            margin-top: 0.9rem;
+            padding: 0.75rem 1rem;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+
+        .laudo-status.loading {
+            background: rgba(212, 160, 23, 0.12);
+            color: #8a6a10;
+            border: 1px solid rgba(212, 160, 23, 0.35);
+        }
+
+        .laudo-status.success {
+            background: rgba(45, 122, 62, 0.1);
+            color: #1E2F22;
+            border: 1px solid rgba(45, 122, 62, 0.35);
+        }
+
+        .laudo-status.error {
+            background: rgba(184, 84, 80, 0.1);
+            color: #7a2f2c;
+            border: 1px solid rgba(184, 84, 80, 0.35);
+        }
+
+        /* Destaque nos campos preenchidos automaticamente pela IA — some assim
+           que o agricultor clicar no campo para conferir/editar o valor. */
+        input.ai-filled,
+        select.ai-filled {
+            background-color: rgba(45, 122, 62, 0.08) !important;
+            box-shadow: 0 0 0 2px rgba(45, 122, 62, 0.35);
+        }
     </style>
 </head>
 <body>
@@ -228,6 +311,7 @@
                 <a href="calendar.html" onclick="toggleMenu(false)" class="block text-gray-900 px-4 py-3 rounded-lg hover:bg-green-50 transition-colors">Calendário</a>
                 <a href="catalogo.html" onclick="toggleMenu(false)" class="block text-gray-900 px-4 py-3 rounded-lg hover:bg-green-50 transition-colors">Catálogo</a>
                 <a href="produtividade.html" onclick="toggleMenu(false)" class="block text-gray-900 px-4 py-3 rounded-lg hover:bg-green-50 transition-colors">Produtividade</a>
+                <a href="mapa-fertilidade.html" onclick="toggleMenu(false)" class="block text-gray-900 px-4 py-3 rounded-lg hover:bg-green-50 transition-colors">🗺️ Mapa de Fertilidade</a>
                 <a href="empresas/index.html" onclick="toggleMenu(false)" class="block text-gray-900 px-4 py-3 rounded-lg hover:bg-green-50 transition-colors">Vender Produção</a>
                             <a href="profile.html" onclick="toggleMenu(false)" class="block text-green-700 font-semibold px-4 py-3 rounded-lg hover:bg-green-50 transition-colors">Meu Perfil</a>
             </nav>
@@ -269,28 +353,27 @@
                 <div class="space-y-10 w-full">
                     <div class="w-full">
                         <h3 class="font-display text-2xl font-semibold mb-8 section-heading text-emerald-900">Dados do Solo</h3>
-                        
-                        <!-- Photo Upload Section -->
-                        <div class="mb-8 p-6 bg-green-50 rounded-lg border-2 border-dashed border-green-300">
-                            <h4 class="font-semibold text-lg mb-4 text-green-800">Upload do Laudo de Solo</h4>
-                            <p class="text-sm text-green-700 mb-4">
-                                Envie uma foto do seu laudo de análise de solo e nossa IA preencherá os dados automaticamente.
-                            </p>
-                            <div class="flex items-center justify-center">
-                                <label for="photoUpload" class="cursor-pointer bg-white px-6 py-3 rounded-lg border-2 border-green-300 text-green-700 font-medium hover:bg-green-50 transition-colors">
-                                    📷 Adicionar Foto do Laudo
-                                </label>
-                                <input type="file" id="photoUpload" accept="image/*" class="hidden" onchange="handlePhotoUpload(event)">
-                            </div>
-                            <div id="photoPreview" class="mt-4 hidden">
-                                <img id="previewImage" class="max-w-xs mx-auto rounded-lg shadow-lg">
-                                <div class="text-center mt-2">
-                                    <span class="text-sm text-green-600">✓ Foto carregada com sucesso!</span>
+
+                        <!-- Upload do Laudo de Análise de Solo (leitura automática via IA) -->
+                        <div class="mb-8 laudo-upload-section">
+                            <div id="laudo-upload-area" class="laudo-upload-area">
+                                <input type="file" id="laudo-file-input" accept=".pdf,.png,.jpg,.jpeg,.webp" hidden />
+                                <div class="upload-icon">
+                                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none"
+                                         stroke="currentColor" stroke-width="1.5"
+                                         stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                                        <polyline points="17 8 12 3 7 8"/>
+                                        <line x1="12" y1="3" x2="12" y2="15"/>
+                                    </svg>
                                 </div>
+                                <p class="upload-title">Importar Laudo de Análise de Solo</p>
+                                <p class="upload-subtitle">
+                                    Arraste o PDF ou foto do laudo aqui, ou clique para selecionar.<br/>
+                                    <small>A IA vai ler o laudo e preencher os campos automaticamente.</small>
+                                </p>
                             </div>
-                            <div class="mt-4 text-xs text-green-600">
-                                <strong>Em breve:</strong> IA extrairá automaticamente todos os dados do laudo
-                            </div>
+                            <div id="laudo-status" class="laudo-status" style="display: none;"></div>
                         </div>
                         
                         <!-- Basic Soil Info -->
@@ -342,9 +425,23 @@
                             </div>
                         </div>
 
+                        <button type="button" id="soilDataToggleBtn" aria-expanded="false" aria-controls="soilDataWrapper" class="w-full flex items-center justify-between gap-4 text-left group mb-8 pt-5 border-t border-gray-200 hover:border-gray-300 transition-colors">
+                            <div>
+                                <h4 class="text-lg font-semibold text-gray-800 mb-1">Acidez e Troca de Cátions</h4>
+                                <p class="text-xs text-gray-400">Mais informações abaixo: Complexo Sortivo, Textura do Solo, Macro e Micronutrientes</p>
+                            </div>
+                            <div class="flex items-center gap-1.5 shrink-0 text-gray-400 group-hover:text-gray-600">
+                                <span id="soilDataToggleLabel" class="text-xs font-medium uppercase tracking-wide">Ver mais</span>
+                                <svg id="soilDataToggleIcon" class="h-4 w-4 transition-transform duration-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" xmlns="http://www.w3.org/2000/svg">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                                </svg>
+                            </div>
+                        </button>
+                        <div id="soilDataWrapper" class="grid grid-rows-[0fr] transition-[grid-template-rows] duration-300 ease-in-out">
+                        <div class="min-h-0 overflow-hidden">
+
                         <!-- Soil Acidity / CTC -->
                         <div class="mb-8">
-                            <h4 class="text-lg font-semibold mb-4 text-gray-800">Acidez e Troca de Cátions</h4>
                             <div class="grid md:grid-cols-2 gap-6">
                                 <div>
                                     <label class="block text-sm font-medium text-gray-700 mb-2">Alumínio (Al³⁺)</label>
@@ -595,6 +692,9 @@
                                 </div>
                             </div>
                         </div>
+
+                        </div>
+                        </div>
                     </div>
                 </div>
 
@@ -636,6 +736,7 @@
 
     <div id="site-footer"></div>
 
+    <script src="js/laudo-parser-client.js"></script>
     <script src="main.js"></script>
     <script src="footer.js"></script>
     <script>
@@ -656,26 +757,9 @@
         });
 
         function scrollToAnalysis() {
-            document.getElementById('analysis').scrollIntoView({ 
-                behavior: 'smooth' 
+            document.getElementById('analysis').scrollIntoView({
+                behavior: 'smooth'
             });
-        }
-
-        function handlePhotoUpload(event) {
-            const file = event.target.files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    document.getElementById('previewImage').src = e.target.result;
-                    document.getElementById('photoPreview').classList.remove('hidden');
-                    
-                    // Simulate AI processing (for demo purposes)
-                    setTimeout(() => {
-                        alert('IA: Analisando laudo... Dados serão preenchidos automaticamente em breve!');
-                    }, 1000);
-                };
-                reader.readAsDataURL(file);
-            }
         }
 
         function toggleMenu(open) {
@@ -684,6 +768,23 @@
             menu.classList.toggle('hidden', !open);
             document.body.style.overflow = open ? 'hidden' : '';
         }
+
+        (function() {
+            const btn = document.getElementById('soilDataToggleBtn');
+            const wrapper = document.getElementById('soilDataWrapper');
+            const icon = document.getElementById('soilDataToggleIcon');
+            const label = document.getElementById('soilDataToggleLabel');
+            if (!btn || !wrapper || !icon) return;
+
+            btn.addEventListener('click', function() {
+                const isOpen = btn.getAttribute('aria-expanded') === 'true';
+                btn.setAttribute('aria-expanded', String(!isOpen));
+                wrapper.classList.toggle('grid-rows-[0fr]', isOpen);
+                wrapper.classList.toggle('grid-rows-[1fr]', !isOpen);
+                icon.classList.toggle('rotate-180', !isOpen);
+                if (label) label.textContent = isOpen ? 'Ver mais' : 'Ver menos';
+            });
+        })();
     </script>
 </body>
 </html>

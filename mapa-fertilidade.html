@@ -1,0 +1,904 @@
+<!-- ============================================================================
+     mapa-fertilidade.html — Mapa de Fertilidade interativo. O agricultor vê
+     seus talhões (parcelas/glebas) sobre imagem de satélite, coloridos
+     conforme o nível de fertilidade, pode desenhar novos talhões e alternar
+     entre camadas (Fertilidade, pH, K, P, V%). Dados vêm de
+     GET/POST/PUT/DELETE /api/talhoes (backend/routes/talhoes.js); se a API
+     não responder, cai para dados de demonstração fixos (ver DEMO_TALHOES)
+     para a tela continuar utilizável em desenvolvimento.
+     ============================================================================ -->
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mapa de Fertilidade - Cycle Sown</title>
+    <script src="userStorage.js"></script>
+    <script>
+        if (!userStorage.getCurrentUserId()) {
+            window.location.href = 'login.html';
+        }
+    </script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.css" />
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+
+        #map { width: 100%; height: 100%; background: #dbe4dc; }
+
+        .talhao-label {
+            background: rgba(15, 23, 20, 0.82);
+            color: #fff;
+            padding: 4px 8px;
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: 600;
+            white-space: nowrap;
+            text-align: center;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.25);
+            pointer-events: none;
+        }
+
+        .layer-btn.active {
+            background-color: #047857; /* emerald-700 */
+            color: #fff;
+        }
+
+        .nutrient-bar-track {
+            background: #e5e7eb;
+            border-radius: 999px;
+            height: 8px;
+            overflow: hidden;
+        }
+        .nutrient-bar-fill {
+            height: 100%;
+            border-radius: 999px;
+        }
+
+        .badge-bom { background: #dcfce7; color: #15803d; }
+        .badge-regular { background: #fef9c3; color: #a16207; }
+        .badge-ruim { background: #fee2e2; color: #b91c1c; }
+
+        .search-pin-icon {
+            background: none;
+            border: none;
+            font-size: 28px;
+            line-height: 1;
+            text-align: center;
+            filter: drop-shadow(0 2px 3px rgba(0,0,0,0.4));
+        }
+
+        @media (max-width: 700px) {
+            .map-shell { flex-direction: column; }
+            .map-shell #map { height: 55vh; }
+            .side-panel { width: 100% !important; height: auto !important; max-height: 45vh; }
+        }
+    </style>
+</head>
+<body class="pt-16 bg-slate-50">
+    <!-- Navigation (mesmo padrão das outras páginas) -->
+    <nav class="fixed top-0 w-full z-50 backdrop-blur-xl bg-white/80 border-b border-slate-200 shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center gap-3">
+                    <a href="index.html" class="flex items-center shrink-0">
+                        <img src="img/logo.png" alt="Cycle Sown" class="h-14 w-auto">
+                    </a>
+                    <button type="button" aria-label="Abrir menu" onclick="toggleMenu(true)" class="p-2 rounded-full text-slate-700 hover:bg-slate-100 transition-colors">
+                        <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" xmlns="http://www.w3.org/2000/svg">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+                        </svg>
+                    </button>
+                </div>
+                <div class="hidden md:block">
+                    <div class="ml-10 flex items-baseline space-x-8">
+                        <a href="index.html#analysis" class="text-slate-600 hover:text-emerald-700 px-3 py-2 text-sm font-medium transition-colors">Análise</a>
+                        <a href="recommendations.html" class="text-slate-600 hover:text-emerald-700 px-3 py-2 text-sm font-medium transition-colors">Recomendações</a>
+                        <a href="relatorio.html" class="text-slate-600 hover:text-emerald-700 px-3 py-2 text-sm font-medium transition-colors">Relatório</a>
+                        <a href="profile.html" class="text-slate-600 hover:text-emerald-700 px-3 py-2 text-sm font-medium transition-colors">Perfil</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div id="slideMenu" class="fixed inset-0 z-[9998] hidden">
+        <div class="absolute inset-0 bg-black/40 z-[9998]" onclick="toggleMenu(false)"></div>
+        <div class="absolute left-0 top-0 h-full w-72 bg-white border-r shadow-xl overflow-y-auto z-[9999]">
+            <div class="flex items-center justify-between p-5 border-b border-gray-200">
+                <span class="flex items-center gap-2">
+                    <img src="img/logo.png" alt="Cycle Sown" class="h-12 w-auto">
+                    <span class="text-lg font-semibold text-gray-900">Menu</span>
+                </span>
+                <button type="button" aria-label="Fechar menu" onclick="toggleMenu(false)" class="text-gray-600 hover:text-gray-900">
+                    <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" xmlns="http://www.w3.org/2000/svg">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+            <nav class="p-5 space-y-3">
+                <hr class="my-3">
+                <a href="calendar.html" onclick="toggleMenu(false)" class="block text-gray-900 px-4 py-3 rounded-lg hover:bg-green-50 transition-colors">Calendário</a>
+                <a href="catalogo.html" onclick="toggleMenu(false)" class="block text-gray-900 px-4 py-3 rounded-lg hover:bg-green-50 transition-colors">Catálogo</a>
+                <a href="produtividade.html" onclick="toggleMenu(false)" class="block text-gray-900 px-4 py-3 rounded-lg hover:bg-green-50 transition-colors">Produtividade</a>
+                <a href="mapa-fertilidade.html" onclick="toggleMenu(false)" class="block text-gray-900 px-4 py-3 rounded-lg hover:bg-green-50 transition-colors">🗺️ Mapa de Fertilidade</a>
+                <a href="empresas/index.html" onclick="toggleMenu(false)" class="block text-gray-900 px-4 py-3 rounded-lg hover:bg-green-50 transition-colors">Vender Produção</a>
+                <a href="profile.html" onclick="toggleMenu(false)" class="block text-green-700 font-semibold px-4 py-3 rounded-lg hover:bg-green-50 transition-colors">Meu Perfil</a>
+            </nav>
+        </div>
+    </div>
+
+    <!-- Barra de título + camadas -->
+    <header class="bg-white border-b border-gray-200 sticky top-16 z-40">
+        <div class="max-w-7xl mx-auto px-4 py-4 flex flex-wrap items-center justify-between gap-3">
+            <div>
+                <h1 class="text-xl font-bold text-slate-900">Mapa de Fertilidade</h1>
+                <p class="text-sm text-slate-500" id="apiStatusLabel">Carregando talhões...</p>
+            </div>
+            <div class="flex flex-wrap items-center gap-2">
+                <div class="flex rounded-lg border border-slate-200 overflow-hidden text-sm font-medium" id="layerButtons">
+                    <button type="button" class="layer-btn active px-3 py-2" data-layer="fertilidade">Fertilidade</button>
+                    <button type="button" class="layer-btn px-3 py-2 border-l border-slate-200" data-layer="ph">pH</button>
+                    <button type="button" class="layer-btn px-3 py-2 border-l border-slate-200" data-layer="K">Potássio</button>
+                    <button type="button" class="layer-btn px-3 py-2 border-l border-slate-200" data-layer="P">Fósforo</button>
+                    <button type="button" class="layer-btn px-3 py-2 border-l border-slate-200" data-layer="V">V%</button>
+                </div>
+                <button type="button" id="drawTalhaoBtn" class="px-4 py-2 rounded-lg bg-emerald-700 hover:bg-emerald-800 text-white text-sm font-semibold transition-colors">
+                    + Talhão
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Mapa + painel lateral -->
+    <div class="map-shell flex" style="height: calc(100vh - 128px);">
+        <div class="relative flex-1">
+            <div id="map"></div>
+
+            <!-- Busca por coordenadas ou local -->
+            <div class="absolute top-4 right-4 z-[1000] bg-white/95 backdrop-blur rounded-xl shadow-lg border border-slate-200 p-2 w-64 max-w-[85vw]">
+                <form id="searchForm" class="flex gap-2">
+                    <input
+                        type="text"
+                        id="searchInput"
+                        placeholder="Coordenadas (-29.635, -52.515) ou cidade"
+                        class="flex-1 min-w-0 border border-slate-300 rounded-lg px-2 py-1.5 text-xs"
+                        autocomplete="off"
+                    >
+                    <button type="submit" class="px-2.5 py-1.5 rounded-lg bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-semibold shrink-0">
+                        Ir
+                    </button>
+                </form>
+                <p id="searchStatus" class="text-xs mt-1 hidden"></p>
+            </div>
+
+            <!-- Legenda -->
+            <div class="absolute left-4 bottom-4 z-[1000] bg-white/95 backdrop-blur rounded-xl shadow-lg border border-slate-200 px-4 py-3 text-xs text-slate-700">
+                <div class="font-semibold mb-2" id="legendTitle">Fertilidade</div>
+                <div class="flex items-center gap-1">
+                    <span class="inline-block w-24 h-2 rounded-full" style="background: linear-gradient(90deg, #C62828, #E65100, #F9A825, #7CB342, #2E7D32);"></span>
+                </div>
+                <div class="flex justify-between mt-1 text-slate-500">
+                    <span>Ruim</span>
+                    <span>Bom</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Painel lateral -->
+        <aside class="side-panel w-80 shrink-0 bg-white border-l border-slate-200 overflow-y-auto p-4 space-y-4">
+            <div id="detailCard" class="hidden border border-slate-200 rounded-xl p-4">
+                <div class="flex items-center justify-between mb-1">
+                    <h2 class="font-bold text-slate-900" id="detailNome">—</h2>
+                    <span id="detailBadge" class="text-xs font-semibold px-2 py-1 rounded-full">—</span>
+                </div>
+                <p class="text-sm text-slate-500 mb-3" id="detailCultura">—</p>
+                <div class="space-y-2" id="detailNutrientes"></div>
+                <div class="mt-4 flex gap-2">
+                    <button type="button" id="editTalhaoBtn" class="flex-1 px-3 py-2 rounded-lg border border-slate-300 text-sm font-medium hover:bg-slate-50">Editar</button>
+                    <button type="button" id="deleteTalhaoBtn" class="px-3 py-2 rounded-lg border border-red-200 text-red-600 text-sm font-medium hover:bg-red-50">Excluir</button>
+                </div>
+            </div>
+
+            <div id="emptyState" class="text-sm text-slate-500 border border-dashed border-slate-300 rounded-xl p-4 text-center">
+                Clique em um talhão no mapa para ver os detalhes, ou use "+ Talhão" para desenhar um novo.
+            </div>
+
+            <div class="border border-slate-200 rounded-xl p-4">
+                <h3 class="font-semibold text-slate-900 mb-3">Resumo da propriedade</h3>
+                <div class="grid grid-cols-2 gap-3 text-sm">
+                    <div>
+                        <div class="text-slate-500">Hectares totais</div>
+                        <div class="font-bold text-slate-900 text-lg" id="summaryHa">0</div>
+                    </div>
+                    <div>
+                        <div class="text-slate-500">Fertilidade média</div>
+                        <div class="font-bold text-slate-900 text-lg" id="summaryFert">—</div>
+                    </div>
+                    <div>
+                        <div class="text-slate-500">pH médio</div>
+                        <div class="font-bold text-slate-900 text-lg" id="summaryPh">—</div>
+                    </div>
+                    <div>
+                        <div class="text-slate-500">Talhões críticos</div>
+                        <div class="font-bold text-red-600 text-lg" id="summaryCriticos">0</div>
+                    </div>
+                </div>
+            </div>
+        </aside>
+    </div>
+
+    <!-- Modal de criação/edição de talhão -->
+    <div id="talhaoModal" class="fixed inset-0 z-[2000] hidden">
+        <div class="absolute inset-0 bg-black/50" onclick="closeTalhaoModal()"></div>
+        <div class="absolute inset-0 flex items-center justify-center p-4">
+            <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
+                <div class="flex items-center justify-between px-6 py-4 border-b border-slate-200">
+                    <h2 class="text-lg font-bold text-slate-900" id="modalTitle">Novo talhão</h2>
+                    <button type="button" onclick="closeTalhaoModal()" class="text-slate-500 hover:text-slate-800">✕</button>
+                </div>
+                <form id="talhaoForm" class="px-6 py-4 space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">Nome do talhão *</label>
+                        <input type="text" name="nome" required class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">Área (ha)</label>
+                        <input type="number" step="0.01" name="area_ha" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm">
+                    </div>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700 mb-1">Cultura plantada</label>
+                            <select name="cultura_nome" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm">
+                                <option value="">—</option>
+                                <option>Soja</option>
+                                <option>Milho</option>
+                                <option>Trigo</option>
+                                <option>Fumo</option>
+                                <option>Aveia</option>
+                                <option>Pousio</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700 mb-1">Estágio</label>
+                            <input type="text" name="cultura_estagio" placeholder="Ex: Vegetativo V4" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm">
+                        </div>
+                    </div>
+
+                    <hr class="border-slate-200">
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">Usar uma análise de solo salva</label>
+                        <select id="soilReportSelect" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm">
+                            <option value="">— Preencher manualmente —</option>
+                        </select>
+                        <p id="soilReportHint" class="text-xs text-slate-500 mt-1">Preenche os campos abaixo com os dados da análise selecionada — você ainda pode ajustar antes de salvar.</p>
+                    </div>
+
+                    <p class="text-sm font-semibold text-slate-700">Dados de solo</p>
+                    <p id="soilReportUnitWarning" class="text-xs text-amber-600 hidden"></p>
+                    <div class="grid grid-cols-3 gap-3">
+                        <div><label class="block text-xs text-slate-500 mb-1">pH</label><input type="number" step="0.1" name="solo_ph" class="w-full border border-slate-300 rounded-lg px-2 py-2 text-sm"></div>
+                        <div><label class="block text-xs text-slate-500 mb-1">MO %</label><input type="number" step="0.1" name="solo_mo" class="w-full border border-slate-300 rounded-lg px-2 py-2 text-sm"></div>
+                        <div><label class="block text-xs text-slate-500 mb-1">P (mg/dm³)</label><input type="number" step="0.1" name="solo_p" class="w-full border border-slate-300 rounded-lg px-2 py-2 text-sm"></div>
+                        <div><label class="block text-xs text-slate-500 mb-1">K (mg/dm³)</label><input type="number" step="0.1" name="solo_k" class="w-full border border-slate-300 rounded-lg px-2 py-2 text-sm"></div>
+                        <div><label class="block text-xs text-slate-500 mb-1">Ca</label><input type="number" step="0.1" name="solo_ca" class="w-full border border-slate-300 rounded-lg px-2 py-2 text-sm"></div>
+                        <div><label class="block text-xs text-slate-500 mb-1">Mg</label><input type="number" step="0.1" name="solo_mg" class="w-full border border-slate-300 rounded-lg px-2 py-2 text-sm"></div>
+                        <div><label class="block text-xs text-slate-500 mb-1">V %</label><input type="number" step="0.1" name="solo_v" class="w-full border border-slate-300 rounded-lg px-2 py-2 text-sm"></div>
+                        <div><label class="block text-xs text-slate-500 mb-1">SMP</label><input type="number" step="0.1" name="solo_smp" class="w-full border border-slate-300 rounded-lg px-2 py-2 text-sm"></div>
+                    </div>
+
+                    <p id="modalError" class="text-sm text-red-600 hidden"></p>
+
+                    <div class="flex justify-end gap-2 pt-2">
+                        <button type="button" onclick="closeTalhaoModal()" class="px-4 py-2 rounded-lg border border-slate-300 text-sm font-medium hover:bg-slate-50">Cancelar</button>
+                        <button type="submit" class="px-4 py-2 rounded-lg bg-emerald-700 hover:bg-emerald-800 text-white text-sm font-semibold">Salvar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.js"></script>
+    <script>
+        function toggleMenu(open) {
+            const menu = document.getElementById('slideMenu');
+            if (!menu) return;
+            menu.classList.toggle('hidden', !open);
+            document.body.style.overflow = open ? 'hidden' : '';
+        }
+    </script>
+    <script>
+    (function () {
+        const isLocalDev = window.location.protocol === 'file:' ||
+            ['localhost', '127.0.0.1'].includes(window.location.hostname);
+        const API_BASE_URL = isLocalDev
+            ? 'http://localhost:3000/api'
+            : 'https://backend-production-2af81.up.railway.app/api';
+
+        const CROP_EMOJI = {
+            Soja: '🫘', Milho: '🌽', Trigo: '🌾', Fumo: '🍂', Aveia: '🌱', Pousio: '🟫'
+        };
+
+        // Coordenadas próximas a Vera Cruz/Santa Cruz do Sul, RS — só usadas
+        // se a API não responder (backend fora do ar durante desenvolvimento).
+        const DEMO_TALHOES = [
+            {
+                id: 'demo-1', nome: 'Talhão A1',
+                coordenadas: [[-29.632, -52.520], [-29.632, -52.512], [-29.638, -52.512], [-29.638, -52.520]],
+                area_ha: 14.2,
+                cultura: { nome: 'Soja', estagio: 'Vegetativo V4' },
+                solo: { ph: 6.2, mo: 3.8, P: 18, K: 145, Ca: 6.2, Mg: 2.8, V: 72, CTC: null, Al: null, m: null, SMP: 6.4 },
+                fertilidade: 78
+            },
+            {
+                id: 'demo-2', nome: 'Talhão B2',
+                coordenadas: [[-29.638, -52.520], [-29.638, -52.512], [-29.644, -52.512], [-29.644, -52.520]],
+                area_ha: 9.6,
+                cultura: { nome: 'Milho', estagio: 'V6' },
+                solo: { ph: 5.1, mo: 1.8, P: 5, K: 55, Ca: 3.1, Mg: 1.2, V: 38, CTC: null, Al: 1.2, m: null, SMP: 5.6 },
+                fertilidade: 34
+            },
+            {
+                id: 'demo-3', nome: 'Talhão C3',
+                coordenadas: [[-29.626, -52.522], [-29.626, -52.514], [-29.632, -52.514], [-29.632, -52.522]],
+                area_ha: 11.0,
+                cultura: { nome: 'Trigo', estagio: 'Perfilhamento' },
+                solo: { ph: 5.7, mo: 2.6, P: 10, K: 90, Ca: 4.5, Mg: 2.0, V: 55, CTC: null, Al: null, m: null, SMP: 6.0 },
+                fertilidade: 58
+            }
+        ];
+
+        let map, drawnLayer, drawControl;
+        let talhoes = [];
+        let polygonLayers = {}; // id -> { polygon, label }
+        let activeLayer = 'fertilidade';
+        let selectedTalhaoId = null;
+        let pendingDrawCoords = null; // coordenadas do polígono recém-desenhado, aguardando o modal
+        let editingTalhaoId = null;   // se != null, o submit do modal edita em vez de criar
+
+        function getToken() {
+            return localStorage.getItem('cycleSownToken');
+        }
+
+        async function apiRequest(path, method, body) {
+            const headers = { 'Content-Type': 'application/json' };
+            const token = getToken();
+            if (token) headers.Authorization = `Bearer ${token}`;
+
+            const response = await fetch(`${API_BASE_URL}${path}`, {
+                method,
+                headers,
+                body: body ? JSON.stringify(body) : undefined
+            });
+
+            let data = null;
+            try { data = await response.json(); } catch (e) { data = null; }
+
+            if (!response.ok) {
+                throw new Error((data && data.error) || 'Erro ao comunicar com o servidor.');
+            }
+            return data;
+        }
+
+        // --- Cor por score 0-100: vermelho -> laranja -> amarelo -> verde claro -> verde escuro ---
+        function scoreToColor(score) {
+            if (score == null || Number.isNaN(score)) return '#94a3b8'; // slate-400, sem dado
+            const stops = [
+                { p: 0, c: [198, 40, 40] },
+                { p: 25, c: [230, 81, 0] },
+                { p: 50, c: [249, 168, 37] },
+                { p: 75, c: [124, 179, 66] },
+                { p: 100, c: [46, 125, 50] }
+            ];
+            const s = Math.max(0, Math.min(100, score));
+            let a = stops[0], b = stops[stops.length - 1];
+            for (let i = 0; i < stops.length - 1; i++) {
+                if (s >= stops[i].p && s <= stops[i + 1].p) { a = stops[i]; b = stops[i + 1]; break; }
+            }
+            const range = b.p - a.p || 1;
+            const t = (s - a.p) / range;
+            const rgb = a.c.map((v, i) => Math.round(v + (b.c[i] - v) * t));
+            return `rgb(${rgb[0]}, ${rgb[1]}, ${rgb[2]})`;
+        }
+
+        function layerValue(talhao, layer) {
+            const solo = talhao.solo || {};
+            switch (layer) {
+                case 'fertilidade': return talhao.fertilidade;
+                case 'ph': return solo.ph != null ? ((solo.ph - 4) / 3) * 100 : null;
+                case 'K': return solo.K != null ? (solo.K / 200) * 100 : null;
+                case 'P': return solo.P != null ? (solo.P / 30) * 100 : null;
+                case 'V': return solo.V != null ? solo.V : null;
+                default: return talhao.fertilidade;
+            }
+        }
+
+        function layerDisplayValue(talhao, layer) {
+            const solo = talhao.solo || {};
+            switch (layer) {
+                case 'fertilidade': return talhao.fertilidade != null ? `${talhao.fertilidade}` : '—';
+                case 'ph': return solo.ph != null ? solo.ph.toFixed(1) : '—';
+                case 'K': return solo.K != null ? `${solo.K}` : '—';
+                case 'P': return solo.P != null ? `${solo.P}` : '—';
+                case 'V': return solo.V != null ? `${solo.V}%` : '—';
+                default: return '—';
+            }
+        }
+
+        const LAYER_TITLES = {
+            fertilidade: 'Fertilidade', ph: 'pH', K: 'Potássio', P: 'Fósforo', V: 'V%'
+        };
+
+        function initMap() {
+            map = L.map('map', { zoomControl: true }).setView([-29.635, -52.515], 13);
+
+            L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+                attribution: 'Tiles &copy; Esri',
+                maxZoom: 19
+            }).addTo(map);
+
+            drawnLayer = new L.FeatureGroup();
+            map.addLayer(drawnLayer);
+
+            drawControl = new L.Control.Draw({
+                edit: { featureGroup: drawnLayer, remove: false },
+                draw: {
+                    polygon: {
+                        allowIntersection: false,
+                        showArea: true,
+                        shapeOptions: { color: '#D4A017' }
+                    },
+                    polyline: false, rectangle: false, circle: false,
+                    marker: false, circlemarker: false
+                }
+            });
+
+            map.on(L.Draw.Event.CREATED, (e) => {
+                const layer = e.layer;
+                const latlngs = layer.getLatLngs()[0].map((ll) => [ll.lat, ll.lng]);
+                pendingDrawCoords = latlngs;
+                editingTalhaoId = null;
+                openTalhaoModal();
+                // O polígono desenhado é só um rascunho temporário — some do mapa
+                // assim que o modal fecha/salva; o de verdade vem da API depois.
+            });
+        }
+
+        // --- Busca: aceita "lat, lng" direto ou, se não for coordenada, tenta
+        // geocodificar o texto (cidade/endereço) via Nominatim (OpenStreetMap,
+        // gratuito, sem API key) para achar a fazenda mesmo sem coordenadas exatas. ---
+        let searchMarker = null;
+
+        function parseCoordinates(text) {
+            const match = text.trim().match(/^(-?\d+(?:[.,]\d+)?)\s*[,;]\s*(-?\d+(?:[.,]\d+)?)$/);
+            if (!match) return null;
+            const lat = Number(match[1].replace(',', '.'));
+            const lng = Number(match[2].replace(',', '.'));
+            if (Number.isNaN(lat) || Number.isNaN(lng)) return null;
+            if (Math.abs(lat) > 90 || Math.abs(lng) > 180) return null;
+            return { lat, lng };
+        }
+
+        function goToLocation(lat, lng, label) {
+            if (searchMarker) map.removeLayer(searchMarker);
+            searchMarker = L.marker([lat, lng], {
+                icon: L.divIcon({ className: 'search-pin-icon', html: '📍', iconSize: [28, 28], iconAnchor: [14, 26] })
+            }).addTo(map);
+            if (label) searchMarker.bindPopup(label).openPopup();
+            map.flyTo([lat, lng], 15);
+        }
+
+        function setSearchStatus(text, isError) {
+            const el = document.getElementById('searchStatus');
+            if (!text) {
+                el.classList.add('hidden');
+                return;
+            }
+            el.textContent = text;
+            el.classList.remove('hidden', 'text-red-600', 'text-slate-500');
+            el.classList.add(isError ? 'text-red-600' : 'text-slate-500');
+        }
+
+        async function handleSearch(query) {
+            const trimmed = query.trim();
+            if (!trimmed) return;
+
+            const coords = parseCoordinates(trimmed);
+            if (coords) {
+                setSearchStatus('');
+                goToLocation(coords.lat, coords.lng, `${coords.lat.toFixed(5)}, ${coords.lng.toFixed(5)}`);
+                return;
+            }
+
+            setSearchStatus('Buscando...');
+            try {
+                const url = `https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=br&q=${encodeURIComponent(trimmed)}`;
+                const response = await fetch(url, { headers: { 'Accept-Language': 'pt-BR' } });
+                const results = await response.json();
+
+                if (!results || results.length === 0) {
+                    setSearchStatus('Local não encontrado. Tente "lat, lng" (ex: -29.635, -52.515) ou o nome da cidade.', true);
+                    return;
+                }
+
+                const place = results[0];
+                setSearchStatus('');
+                goToLocation(Number(place.lat), Number(place.lon), place.display_name);
+            } catch (err) {
+                setSearchStatus('Não foi possível buscar agora. Tente digitar as coordenadas (lat, lng).', true);
+            }
+        }
+
+        function fitMapToTalhoes() {
+            const allPoints = talhoes.flatMap((t) => t.coordenadas);
+            if (allPoints.length === 0) return;
+            const bounds = L.latLngBounds(allPoints.map(([lat, lng]) => L.latLng(lat, lng)));
+            map.fitBounds(bounds, { padding: [40, 40] });
+        }
+
+        function renderTalhoes() {
+            Object.values(polygonLayers).forEach(({ polygon, label }) => {
+                map.removeLayer(polygon);
+                map.removeLayer(label);
+            });
+            polygonLayers = {};
+
+            talhoes.forEach((talhao) => {
+                const value = layerValue(talhao, activeLayer);
+                const color = scoreToColor(value);
+                const isSelected = talhao.id === selectedTalhaoId;
+
+                const polygon = L.polygon(talhao.coordenadas, {
+                    color: isSelected ? '#D4A017' : '#1e293b',
+                    weight: isSelected ? 3 : 1,
+                    fillColor: color,
+                    fillOpacity: 0.55
+                }).addTo(map);
+
+                polygon.on('mouseover', () => polygon.setStyle({ fillOpacity: 0.75, weight: 2 }));
+                polygon.on('mouseout', () => polygon.setStyle({
+                    fillOpacity: 0.55,
+                    weight: talhao.id === selectedTalhaoId ? 3 : 1
+                }));
+                polygon.on('click', () => selectTalhao(talhao.id));
+
+                const center = polygon.getBounds().getCenter();
+                const emoji = CROP_EMOJI[talhao.cultura && talhao.cultura.nome] || '📍';
+                const labelHtml = `${emoji} ${talhao.nome}<br>${LAYER_TITLES[activeLayer]}: ${layerDisplayValue(talhao, activeLayer)}`;
+                const label = L.marker(center, {
+                    icon: L.divIcon({ className: 'talhao-label', html: labelHtml, iconSize: null }),
+                    interactive: false
+                }).addTo(map);
+
+                polygonLayers[talhao.id] = { polygon, label };
+            });
+        }
+
+        function selectTalhao(id) {
+            selectedTalhaoId = id;
+            renderTalhoes();
+            renderDetailCard();
+        }
+
+        // Mesmos limiares de main.js/getAdequacyColor() (usado na "Saúde do
+        // Solo" de index.html/recommendations.html): <40 ruim, <75 regular,
+        // >=75 bom — mantém o mesmo critério em todo o site.
+        function fertilidadeBadge(score) {
+            if (score == null) return { label: 'Sem dados', cls: 'badge-regular' };
+            if (score >= 75) return { label: 'Bom', cls: 'badge-bom' };
+            if (score >= 40) return { label: 'Regular', cls: 'badge-regular' };
+            return { label: 'Ruim', cls: 'badge-ruim' };
+        }
+
+        const NUTRIENT_ROWS = [
+            { key: 'ph', label: 'pH', max: 8 },
+            { key: 'mo', label: 'MO %', max: 6 },
+            { key: 'P', label: 'P (mg/dm³)', max: 30 },
+            { key: 'K', label: 'K (mg/dm³)', max: 200 },
+            { key: 'Ca', label: 'Ca (cmolc/dm³)', max: 10 },
+            { key: 'Mg', label: 'Mg (cmolc/dm³)', max: 5 },
+            { key: 'V', label: 'V %', max: 100 }
+        ];
+
+        function renderDetailCard() {
+            const detailCard = document.getElementById('detailCard');
+            const emptyState = document.getElementById('emptyState');
+            const talhao = talhoes.find((t) => t.id === selectedTalhaoId);
+
+            if (!talhao) {
+                detailCard.classList.add('hidden');
+                emptyState.classList.remove('hidden');
+                return;
+            }
+
+            detailCard.classList.remove('hidden');
+            emptyState.classList.add('hidden');
+
+            document.getElementById('detailNome').textContent = talhao.nome;
+            const badge = fertilidadeBadge(talhao.fertilidade);
+            const badgeEl = document.getElementById('detailBadge');
+            badgeEl.textContent = badge.label;
+            badgeEl.className = `text-xs font-semibold px-2 py-1 rounded-full ${badge.cls}`;
+
+            const cultura = talhao.cultura || {};
+            const areaTxt = talhao.area_ha != null ? `${talhao.area_ha} ha` : 'Área não informada';
+            document.getElementById('detailCultura').textContent =
+                `${cultura.nome || 'Sem cultura'}${cultura.estagio ? ' · ' + cultura.estagio : ''} · ${areaTxt}`;
+
+            const nutrientesEl = document.getElementById('detailNutrientes');
+            nutrientesEl.innerHTML = '';
+            NUTRIENT_ROWS.forEach(({ key, label, max }) => {
+                const value = (talhao.solo || {})[key];
+                const pct = value != null ? Math.max(4, Math.min(100, (value / max) * 100)) : 0;
+                const row = document.createElement('div');
+                row.innerHTML = `
+                    <div class="flex justify-between text-xs text-slate-600 mb-1">
+                        <span>${label}</span><span>${value != null ? value : '—'}</span>
+                    </div>
+                    <div class="nutrient-bar-track">
+                        <div class="nutrient-bar-fill" style="width:${pct}%; background:${scoreToColor((value != null ? pct : 0))}"></div>
+                    </div>`;
+                nutrientesEl.appendChild(row);
+            });
+        }
+
+        function renderSummary() {
+            const totalHa = talhoes.reduce((sum, t) => sum + (t.area_ha || 0), 0);
+            const comFert = talhoes.filter((t) => t.fertilidade != null);
+            const fertMedia = comFert.length
+                ? Math.round(comFert.reduce((sum, t) => sum + t.fertilidade, 0) / comFert.length)
+                : null;
+            const comPh = talhoes.filter((t) => t.solo && t.solo.ph != null);
+            const phMedio = comPh.length
+                ? (comPh.reduce((sum, t) => sum + t.solo.ph, 0) / comPh.length).toFixed(1)
+                : null;
+            const criticos = talhoes.filter((t) => t.fertilidade != null && t.fertilidade < 50).length;
+
+            document.getElementById('summaryHa').textContent = totalHa.toFixed(1);
+            document.getElementById('summaryFert').textContent = fertMedia != null ? `${fertMedia}` : '—';
+            document.getElementById('summaryPh').textContent = phMedio != null ? phMedio : '—';
+            document.getElementById('summaryCriticos').textContent = criticos;
+        }
+
+        function refreshAll() {
+            renderTalhoes();
+            renderDetailCard();
+            renderSummary();
+        }
+
+        async function loadTalhoes() {
+            const statusLabel = document.getElementById('apiStatusLabel');
+            try {
+                const data = await apiRequest('/talhoes', 'GET');
+                talhoes = data.talhoes || [];
+                statusLabel.textContent = `${talhoes.length} talhão(ões) carregado(s)`;
+            } catch (err) {
+                console.warn('Não foi possível carregar talhões da API, usando dados de demonstração:', err.message);
+                talhoes = DEMO_TALHOES;
+                statusLabel.textContent = 'Modo demonstração (backend indisponível)';
+            }
+            fitMapToTalhoes();
+            refreshAll();
+        }
+
+        // --- Análises de solo salvas (mesmos relatórios de index.html/relatorio.html,
+        // guardados em userStorage sob 'soilAnalysisReports') — permite reaproveitar
+        // uma análise já feita em vez de digitar os dados de solo de novo. ---
+        function getSavedSoilReports() {
+            try {
+                return JSON.parse(userStorage.getItem('soilAnalysisReports') || '[]');
+            } catch (err) {
+                return [];
+            }
+        }
+
+        function formatReportDate(timestamp) {
+            try {
+                return new Date(timestamp).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+            } catch (err) {
+                return '';
+            }
+        }
+
+        function populateSoilReportSelect() {
+            const select = document.getElementById('soilReportSelect');
+            const hint = document.getElementById('soilReportHint');
+            const reports = getSavedSoilReports();
+
+            select.innerHTML = '<option value="">— Preencher manualmente —</option>';
+            reports.forEach((report, index) => {
+                const opt = document.createElement('option');
+                opt.value = String(index);
+                opt.textContent = `${report.title || 'Análise'} (${formatReportDate(report.timestamp)})`;
+                select.appendChild(opt);
+            });
+
+            select.disabled = reports.length === 0;
+            hint.textContent = reports.length === 0
+                ? 'Nenhuma análise salva ainda. Faça uma em "Análise" (index.html) para poder reaproveitar os dados aqui.'
+                : 'Preenche os campos abaixo com os dados da análise selecionada — você ainda pode ajustar antes de salvar.';
+        }
+
+        // Mapeia soilData (formato salvo por main.js/generateFullReport) para os
+        // campos solo_* deste formulário. As unidades esperadas aqui são as
+        // mesmas usadas por padrão em index.html (ppm/mg/dm³ para P e K,
+        // cmolc/dm³ para Ca e Mg, % para MO) — se a análise foi salva com outra
+        // unidade, avisamos em vez de converter, para o agricultor conferir.
+        const SOIL_REPORT_FIELD_MAP = [
+            { formField: 'solo_ph', get: (r) => r.soilData.ph },
+            { formField: 'solo_mo', get: (r) => r.soilData.organicMatter, unitField: 'organicMatter', expectedUnit: '%' },
+            { formField: 'solo_p', get: (r) => r.soilData.nutrients && r.soilData.nutrients.phosphorus, unitField: 'phosphorus', expectedUnit: 'ppm (mg/dm³)' },
+            { formField: 'solo_k', get: (r) => r.soilData.nutrients && r.soilData.nutrients.potassium, unitField: 'potassium', expectedUnit: 'ppm (mg/dm³)' },
+            { formField: 'solo_ca', get: (r) => r.soilData.nutrients && r.soilData.nutrients.calcium, unitField: 'calcium', expectedUnit: 'cmolc/dm³' },
+            { formField: 'solo_mg', get: (r) => r.soilData.nutrients && r.soilData.nutrients.magnesium, unitField: 'magnesium', expectedUnit: 'cmolc/dm³' },
+            { formField: 'solo_v', get: (r) => r.soilData.vPercent },
+            { formField: 'solo_smp', get: (r) => r.soilData.indiceSMP }
+        ];
+
+        function applySoilReportToForm(report) {
+            const form = document.getElementById('talhaoForm');
+            const warningEl = document.getElementById('soilReportUnitWarning');
+            const mismatchedUnits = [];
+
+            SOIL_REPORT_FIELD_MAP.forEach(({ formField, get, unitField, expectedUnit }) => {
+                const value = get(report);
+                if (value !== null && value !== undefined && value !== '') {
+                    form[formField].value = value;
+                }
+                const usedUnit = unitField && report.soilData.units && report.soilData.units[unitField];
+                if (usedUnit && usedUnit !== expectedUnit) {
+                    mismatchedUnits.push(`${formField.replace('solo_', '').toUpperCase()} (${usedUnit})`);
+                }
+            });
+
+            if (mismatchedUnits.length > 0) {
+                warningEl.textContent = `Atenção: esta análise usa unidades diferentes das esperadas aqui (mg/dm³ para P/K, cmolc/dm³ para Ca/Mg) em: ${mismatchedUnits.join(', ')}. Confira os valores antes de salvar.`;
+                warningEl.classList.remove('hidden');
+            } else {
+                warningEl.classList.add('hidden');
+            }
+        }
+
+        document.getElementById('soilReportSelect').addEventListener('change', (e) => {
+            document.getElementById('soilReportUnitWarning').classList.add('hidden');
+            const idx = e.target.value;
+            if (idx === '') return;
+            const report = getSavedSoilReports()[Number(idx)];
+            if (report) applySoilReportToForm(report);
+        });
+
+        // --- Modal de criação/edição ---
+        function openTalhaoModal(talhao) {
+            const modal = document.getElementById('talhaoModal');
+            const form = document.getElementById('talhaoForm');
+            const title = document.getElementById('modalTitle');
+            const errorEl = document.getElementById('modalError');
+            errorEl.classList.add('hidden');
+            form.reset();
+            document.getElementById('soilReportUnitWarning').classList.add('hidden');
+            populateSoilReportSelect();
+
+            if (talhao) {
+                title.textContent = `Editar ${talhao.nome}`;
+                form.nome.value = talhao.nome || '';
+                form.area_ha.value = talhao.area_ha ?? '';
+                form.cultura_nome.value = (talhao.cultura && talhao.cultura.nome) || '';
+                form.cultura_estagio.value = (talhao.cultura && talhao.cultura.estagio) || '';
+                const solo = talhao.solo || {};
+                form.solo_ph.value = solo.ph ?? '';
+                form.solo_mo.value = solo.mo ?? '';
+                form.solo_p.value = solo.P ?? '';
+                form.solo_k.value = solo.K ?? '';
+                form.solo_ca.value = solo.Ca ?? '';
+                form.solo_mg.value = solo.Mg ?? '';
+                form.solo_v.value = solo.V ?? '';
+                form.solo_smp.value = solo.SMP ?? '';
+            } else {
+                title.textContent = 'Novo talhão';
+            }
+
+            modal.classList.remove('hidden');
+        }
+
+        window.closeTalhaoModal = function () {
+            document.getElementById('talhaoModal').classList.add('hidden');
+            pendingDrawCoords = null;
+            editingTalhaoId = null;
+        };
+
+        function readTalhaoForm() {
+            const form = document.getElementById('talhaoForm');
+            const fd = new FormData(form);
+            const out = { nome: fd.get('nome').trim() };
+            ['area_ha', 'solo_ph', 'solo_mo', 'solo_p', 'solo_k', 'solo_ca', 'solo_mg', 'solo_v', 'solo_smp'].forEach((key) => {
+                const raw = fd.get(key);
+                out[key] = raw !== '' ? Number(raw) : null;
+            });
+            out.cultura_nome = fd.get('cultura_nome') || null;
+            out.cultura_estagio = fd.get('cultura_estagio') || null;
+            return out;
+        }
+
+        document.getElementById('talhaoForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const errorEl = document.getElementById('modalError');
+            errorEl.classList.add('hidden');
+
+            const payload = readTalhaoForm();
+            if (!payload.nome) {
+                errorEl.textContent = 'Informe o nome do talhão.';
+                errorEl.classList.remove('hidden');
+                return;
+            }
+
+            try {
+                if (editingTalhaoId != null) {
+                    await apiRequest(`/talhoes/${editingTalhaoId}`, 'PUT', payload);
+                } else {
+                    if (!pendingDrawCoords || pendingDrawCoords.length < 3) {
+                        errorEl.textContent = 'Desenhe o talhão no mapa antes de salvar.';
+                        errorEl.classList.remove('hidden');
+                        return;
+                    }
+                    payload.coordenadas = pendingDrawCoords;
+                    await apiRequest('/talhoes', 'POST', payload);
+                }
+                closeTalhaoModal();
+                await loadTalhoes();
+            } catch (err) {
+                errorEl.textContent = err.message;
+                errorEl.classList.remove('hidden');
+            }
+        });
+
+        document.getElementById('editTalhaoBtn').addEventListener('click', () => {
+            const talhao = talhoes.find((t) => t.id === selectedTalhaoId);
+            if (!talhao) return;
+            editingTalhaoId = talhao.id;
+            pendingDrawCoords = null;
+            openTalhaoModal(talhao);
+        });
+
+        document.getElementById('deleteTalhaoBtn').addEventListener('click', async () => {
+            const talhao = talhoes.find((t) => t.id === selectedTalhaoId);
+            if (!talhao) return;
+            if (!confirm(`Excluir o talhão "${talhao.nome}"? Essa ação não pode ser desfeita.`)) return;
+
+            try {
+                await apiRequest(`/talhoes/${talhao.id}`, 'DELETE');
+                selectedTalhaoId = null;
+                await loadTalhoes();
+            } catch (err) {
+                alert(err.message);
+            }
+        });
+
+        document.getElementById('drawTalhaoBtn').addEventListener('click', () => {
+            new L.Draw.Polygon(map, drawControl.options.draw.polygon).enable();
+        });
+
+        document.getElementById('searchForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            handleSearch(document.getElementById('searchInput').value);
+        });
+
+        document.getElementById('layerButtons').addEventListener('click', (e) => {
+            const btn = e.target.closest('.layer-btn');
+            if (!btn) return;
+            activeLayer = btn.dataset.layer;
+            document.querySelectorAll('.layer-btn').forEach((b) => b.classList.toggle('active', b === btn));
+            document.getElementById('legendTitle').textContent = LAYER_TITLES[activeLayer];
+            renderTalhoes();
+        });
+
+        document.addEventListener('DOMContentLoaded', () => {
+            initMap();
+            loadTalhoes();
+        });
+    })();
+    </script>
+</body>
+</html>

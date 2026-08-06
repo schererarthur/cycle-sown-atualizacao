@@ -259,15 +259,36 @@ CREATE TABLE planting_calendar_activities (
 
 CREATE TABLE products (
   id                INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-  category          VARCHAR(60) NOT NULL,   -- 'Corretivo','Mineral','Fertilizante',...
+  slug              VARCHAR(60) NOT NULL,    -- chave usada no JS (productDetails['calcario-dolomitico'])
+  category          VARCHAR(60) NOT NULL,    -- 'Corretivo','Mineral','Fertilizante',...
   name              VARCHAR(150) NOT NULL,
   description       TEXT NULL,
   price             DECIMAL(10,2) NOT NULL,
-  unit_description  VARCHAR(30) NOT NULL,   -- '/ 50kg', '/ Litro', ...
+  unit_description  VARCHAR(30) NOT NULL,    -- '/ 50kg', '/ Litro', ...
+  region            ENUM('norte','nordeste','centro-oeste','sudeste','sul') NOT NULL,
+  rating            DECIMAL(2,1) NOT NULL DEFAULT 0,
+  review_count      INT UNSIGNED NOT NULL DEFAULT 0,  -- redundante com COUNT(product_reviews) — mantido para exibir sem JOIN
   created_at        TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at        TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
                        ON UPDATE CURRENT_TIMESTAMP,
-  INDEX idx_products_category (category)
+  UNIQUE KEY uq_products_slug (slug),
+  INDEX idx_products_category (category),
+  INDEX idx_products_region (region)
+) ENGINE=InnoDB;
+
+-- Avaliações de clientes exibidas no modal do produto (catalogo.html:
+-- productDetails[x].reviews). "Empresa Fictícia" vendedora é fixa no
+-- front-end, por isso não existe uma FK para uma tabela de empresas aqui.
+CREATE TABLE product_reviews (
+  id            BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  product_id    INT UNSIGNED NOT NULL,
+  author_name   VARCHAR(150) NOT NULL,
+  stars         TINYINT UNSIGNED NOT NULL,   -- 1 a 5
+  reviewed_at   DATE NULL,                    -- data real; front hoje mostra texto relativo ('há 2 semanas')
+  comment       TEXT NULL,
+  CONSTRAINT fk_product_reviews_product FOREIGN KEY (product_id)
+    REFERENCES products(id) ON DELETE CASCADE,
+  INDEX idx_product_reviews_product (product_id)
 ) ENGINE=InnoDB;
 
 -- =================================================================
@@ -296,6 +317,94 @@ CREATE TABLE productivity_records (
   CONSTRAINT fk_productivity_crop FOREIGN KEY (crop_key)
     REFERENCES crops(crop_key),
   INDEX idx_productivity_user_year (user_id, harvest_year)
+) ENGINE=InnoDB;
+
+-- =================================================================
+-- 8. VENDER PRODUÇÃO — diretório de empresas compradoras
+--    (empresas/index.html: hoje é um array fixo `companies` no JS;
+--    estas tabelas são o "drop-in" para o dia em que isso virar dado
+--    dinâmico via API, igual ao que já foi feito para `products`.)
+-- =================================================================
+
+CREATE TABLE buying_companies (
+  id            INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  name          VARCHAR(150) NOT NULL,
+  region        ENUM('norte','nordeste','centro-oeste','sudeste','sul') NOT NULL,
+  city          VARCHAR(120) NOT NULL,   -- 'Sorriso, MT' etc. (cidade + UF)
+  address       VARCHAR(255) NULL,
+  founded_year  SMALLINT UNSIGNED NULL,
+  rating        DECIMAL(2,1) NOT NULL DEFAULT 0,
+  review_count  INT UNSIGNED NOT NULL DEFAULT 0,
+  phone         VARCHAR(30) NULL,
+  email         VARCHAR(190) NULL,
+  history       TEXT NULL,               -- texto "Sobre a empresa" do modal
+  created_at    TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at    TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+                  ON UPDATE CURRENT_TIMESTAMP,
+  INDEX idx_buying_companies_region (region),
+  INDEX idx_buying_companies_city (city)
+) ENGINE=InnoDB;
+
+-- Culturas que a empresa compra (tags do card/modal). Texto livre em vez
+-- de FK para crops.crop_key porque a lista aqui inclui culturas ('Café',
+-- 'Arroz', 'Algodão', 'Trigo') que não fazem parte do cropDatabase de
+-- análise de solo em main.js.
+CREATE TABLE buying_company_crops (
+  id           INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  company_id   INT UNSIGNED NOT NULL,
+  crop_label   VARCHAR(60) NOT NULL,
+  CONSTRAINT fk_bcc_company FOREIGN KEY (company_id)
+    REFERENCES buying_companies(id) ON DELETE CASCADE,
+  UNIQUE KEY uq_company_crop (company_id, crop_label),
+  INDEX idx_bcc_company (company_id)
+) ENGINE=InnoDB;
+
+-- Vendedores/contatos listados no modal ("Comprador de Grãos" etc.)
+CREATE TABLE buying_company_sellers (
+  id           INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  company_id   INT UNSIGNED NOT NULL,
+  name         VARCHAR(150) NOT NULL,
+  role         VARCHAR(100) NOT NULL,
+  sort_order   TINYINT UNSIGNED NOT NULL DEFAULT 0,
+  CONSTRAINT fk_bcs_company FOREIGN KEY (company_id)
+    REFERENCES buying_companies(id) ON DELETE CASCADE,
+  INDEX idx_bcs_company (company_id)
+) ENGINE=InnoDB;
+
+-- =================================================================
+-- 9. MAPA DE FERTILIDADE — talhões (parcelas/glebas) desenhados pelo
+--    agricultor sobre a imagem de satélite, com dados de solo e cultura
+--    plantada de cada um. `coordenadas` guarda o polígono como array
+--    JSON de pares [lat, lng]. `fertilidade_score` (0-100) é calculado
+--    no backend a partir de pH/MO/P/K/V% a cada criação/edição.
+-- =================================================================
+
+CREATE TABLE talhoes (
+  id                INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  user_id           INT UNSIGNED NOT NULL,
+  nome              VARCHAR(100) NOT NULL,
+  coordenadas       JSON NOT NULL,
+  area_ha           DECIMAL(10,2) DEFAULT NULL,
+  cultura_nome      VARCHAR(100) DEFAULT NULL,
+  cultura_estagio   VARCHAR(100) DEFAULT NULL,
+  solo_ph           DECIMAL(3,1) DEFAULT NULL,
+  solo_mo           DECIMAL(4,2) DEFAULT NULL,
+  solo_p            DECIMAL(6,1) DEFAULT NULL,
+  solo_k            DECIMAL(6,1) DEFAULT NULL,
+  solo_ca           DECIMAL(5,2) DEFAULT NULL,
+  solo_mg           DECIMAL(5,2) DEFAULT NULL,
+  solo_v            DECIMAL(5,2) DEFAULT NULL,
+  solo_ctc          DECIMAL(5,2) DEFAULT NULL,
+  solo_al           DECIMAL(5,2) DEFAULT NULL,
+  solo_m            DECIMAL(5,2) DEFAULT NULL,
+  solo_smp          DECIMAL(3,1) DEFAULT NULL,
+  fertilidade_score INT DEFAULT NULL,
+  created_at        TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at        TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+                       ON UPDATE CURRENT_TIMESTAMP,
+  CONSTRAINT fk_talhoes_user FOREIGN KEY (user_id)
+    REFERENCES users(id) ON DELETE CASCADE,
+  INDEX idx_talhoes_user (user_id)
 ) ENGINE=InnoDB;
 
 -- =================================================================

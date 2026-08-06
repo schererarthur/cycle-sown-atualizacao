@@ -13,6 +13,8 @@ const cors = require('cors');
 const helmet = require('helmet');
 
 const authRoutes = require('./routes/auth');
+const talhoesRoutes = require('./routes/talhoes');
+const laudoParserRoutes = require('./laudo-parser-route');
 
 const app = express();
 
@@ -39,7 +41,7 @@ const allowedOrigins = (process.env.CORS_ORIGIN || 'http://localhost:5500,http:/
 
 app.use(cors({
     origin: allowedOrigins,
-    methods: ['GET', 'POST'],
+    methods: ['GET', 'POST', 'PUT', 'DELETE'],
     allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
@@ -48,6 +50,12 @@ app.use(express.json());
 
 // Todas as rotas de autenticação ficam sob /api/auth/...
 app.use('/api/auth', authRoutes);
+
+// Talhões (parcelas) do Mapa de Fertilidade, sob /api/talhoes/...
+app.use('/api/talhoes', talhoesRoutes);
+
+// Leitura automática de laudo de solo via IA (POST /api/parse-laudo)
+app.use('/api', laudoParserRoutes);
 
 // Rota simples para checar se o servidor está de pé
 app.get('/api/health', (req, res) => {

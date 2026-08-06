@@ -3,7 +3,10 @@
      compradoras para o produtor encontrar contato e vender sua safra.
      As empresas são fictícias (dado estático no HTML/JS, sem backend ainda),
      cada uma com região, cidade, avaliação, culturas que compra e contato —
-     filtráveis por região, cidade e avaliação mínima.
+     filtráveis por região, cidade e avaliação mínima. schema.sql já prevê
+     as tabelas `buying_companies` / `buying_company_crops` /
+     `buying_company_sellers` para o dia em que isso virar dado dinâmico
+     via API.
      Vive em uma subpasta própria (empresas/) por isso os links do menu
      usam "../" para apontar de volta para as páginas na raiz do site.
      ============================================================================ -->
@@ -88,6 +91,7 @@
                 <a href="../calendar.html" onclick="toggleMenu(false)" class="block text-gray-900 px-4 py-3 rounded-lg hover:bg-green-50 transition-colors">Calendário</a>
                 <a href="../catalogo.html" onclick="toggleMenu(false)" class="block text-gray-900 px-4 py-3 rounded-lg hover:bg-green-50 transition-colors">Catálogo</a>
                 <a href="../produtividade.html" onclick="toggleMenu(false)" class="block text-gray-900 px-4 py-3 rounded-lg hover:bg-green-50 transition-colors">Produtividade</a>
+                <a href="../mapa-fertilidade.html" onclick="toggleMenu(false)" class="block text-gray-900 px-4 py-3 rounded-lg hover:bg-green-50 transition-colors">🗺️ Mapa de Fertilidade</a>
                 <a href="index.html" onclick="toggleMenu(false)" class="block text-gray-900 px-4 py-3 rounded-lg hover:bg-green-50 transition-colors">Vender Produção</a>
                 <a href="../profile.html" onclick="toggleMenu(false)" class="block text-green-700 font-semibold px-4 py-3 rounded-lg hover:bg-green-50 transition-colors">Meu Perfil</a>
             </nav>
