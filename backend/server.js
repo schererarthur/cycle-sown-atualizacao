@@ -14,6 +14,10 @@ const helmet = require('helmet');
 
 const authRoutes = require('./routes/auth');
 const talhoesRoutes = require('./routes/talhoes');
+const rotacaoRoutes = require('./routes/rotacao');
+const historicoRoutes = require('./routes/historico');
+const precosRoutes = require('./routes/precos');
+const relatoriosRoutes = require('./routes/relatorios');
 const laudoParserRoutes = require('./laudo-parser-route');
 
 const app = express();
@@ -53,6 +57,14 @@ app.use('/api/auth', authRoutes);
 
 // Talhões (parcelas) do Mapa de Fertilidade, sob /api/talhoes/...
 app.use('/api/talhoes', talhoesRoutes);
+
+// Planejador de Rotação de Culturas, sob /api/rotacao, /api/historico e /api/precos
+app.use('/api/rotacao', rotacaoRoutes);
+app.use('/api/historico', historicoRoutes);
+app.use('/api/precos', precosRoutes);
+
+// Central de Relatórios, sob /api/relatorios
+app.use('/api/relatorios', relatoriosRoutes);
 
 // Leitura automática de laudo de solo via IA (POST /api/parse-laudo)
 app.use('/api', laudoParserRoutes);

@@ -42,7 +42,7 @@
         }
 
         .layer-btn.active {
-            background-color: #047857; /* emerald-700 */
+            background-color: #066a04;
             color: #fff;
         }
 
@@ -57,7 +57,7 @@
             border-radius: 999px;
         }
 
-        .badge-bom { background: #dcfce7; color: #15803d; }
+        .badge-bom { background: #eaf7e2; color: #066a04; }
         .badge-regular { background: #fef9c3; color: #a16207; }
         .badge-ruim { background: #fee2e2; color: #b91c1c; }
 
@@ -94,10 +94,11 @@
                 </div>
                 <div class="hidden md:block">
                     <div class="ml-10 flex items-baseline space-x-8">
-                        <a href="index.html#analysis" class="text-slate-600 hover:text-emerald-700 px-3 py-2 text-sm font-medium transition-colors">Análise</a>
-                        <a href="recommendations.html" class="text-slate-600 hover:text-emerald-700 px-3 py-2 text-sm font-medium transition-colors">Recomendações</a>
-                        <a href="relatorio.html" class="text-slate-600 hover:text-emerald-700 px-3 py-2 text-sm font-medium transition-colors">Relatório</a>
-                        <a href="profile.html" class="text-slate-600 hover:text-emerald-700 px-3 py-2 text-sm font-medium transition-colors">Perfil</a>
+                        <a href="index.html#analysis" class="text-slate-600 hover:text-[#066a04] px-3 py-2 text-sm font-medium transition-colors">Análise</a>
+                        <a href="recommendations.html" class="text-slate-600 hover:text-[#066a04] px-3 py-2 text-sm font-medium transition-colors">Recomendações</a>
+                        <a href="relatorio.html" class="text-slate-600 hover:text-[#066a04] px-3 py-2 text-sm font-medium transition-colors">Relatório</a>
+                        <a href="relatorios.html" class="text-slate-600 hover:text-[#066a04] px-3 py-2 text-sm font-medium transition-colors">📊 Relatórios</a>
+                        <a href="profile.html" class="text-slate-600 hover:text-[#066a04] px-3 py-2 text-sm font-medium transition-colors">Perfil</a>
                     </div>
                 </div>
             </div>
@@ -120,12 +121,15 @@
             </div>
             <nav class="p-5 space-y-3">
                 <hr class="my-3">
-                <a href="calendar.html" onclick="toggleMenu(false)" class="block text-gray-900 px-4 py-3 rounded-lg hover:bg-green-50 transition-colors">Calendário</a>
-                <a href="catalogo.html" onclick="toggleMenu(false)" class="block text-gray-900 px-4 py-3 rounded-lg hover:bg-green-50 transition-colors">Catálogo</a>
-                <a href="produtividade.html" onclick="toggleMenu(false)" class="block text-gray-900 px-4 py-3 rounded-lg hover:bg-green-50 transition-colors">Produtividade</a>
-                <a href="mapa-fertilidade.html" onclick="toggleMenu(false)" class="block text-gray-900 px-4 py-3 rounded-lg hover:bg-green-50 transition-colors">🗺️ Mapa de Fertilidade</a>
-                <a href="empresas/index.html" onclick="toggleMenu(false)" class="block text-gray-900 px-4 py-3 rounded-lg hover:bg-green-50 transition-colors">Vender Produção</a>
-                <a href="profile.html" onclick="toggleMenu(false)" class="block text-green-700 font-semibold px-4 py-3 rounded-lg hover:bg-green-50 transition-colors">Meu Perfil</a>
+                <a href="calendar.html" onclick="toggleMenu(false)" class="block text-gray-900 px-4 py-3 rounded-lg hover:bg-[#eaf7e2] transition-colors">Calendário</a>
+                <a href="catalogo.html" onclick="toggleMenu(false)" class="block text-gray-900 px-4 py-3 rounded-lg hover:bg-[#eaf7e2] transition-colors">Catálogo</a>
+                <a href="produtividade.html" onclick="toggleMenu(false)" class="block text-gray-900 px-4 py-3 rounded-lg hover:bg-[#eaf7e2] transition-colors">Produtividade</a>
+                <a href="mapa-fertilidade.html" onclick="toggleMenu(false)" class="block text-gray-900 px-4 py-3 rounded-lg hover:bg-[#eaf7e2] transition-colors">Mapa de Fertilidade</a>
+                <a href="cotacoes.html" onclick="toggleMenu(false)" class="block text-gray-900 px-4 py-3 rounded-lg hover:bg-[#eaf7e2] transition-colors">Cotações</a>
+                <a href="rotacao.html" onclick="toggleMenu(false)" class="block text-gray-900 px-4 py-3 rounded-lg hover:bg-[#eaf7e2] transition-colors">Rotação</a>
+                <a href="relatorios.html" onclick="toggleMenu(false)" class="block text-gray-900 px-4 py-3 rounded-lg hover:bg-[#eaf7e2] transition-colors">📊 Relatórios</a>
+                <a href="empresas/index.html" onclick="toggleMenu(false)" class="block text-gray-900 px-4 py-3 rounded-lg hover:bg-[#eaf7e2] transition-colors">Vender Produção</a>
+                <a href="profile.html" onclick="toggleMenu(false)" class="block text-[#066a04] font-semibold px-4 py-3 rounded-lg hover:bg-[#eaf7e2] transition-colors">Meu Perfil</a>
             </nav>
         </div>
     </div>
@@ -144,8 +148,9 @@
                     <button type="button" class="layer-btn px-3 py-2 border-l border-slate-200" data-layer="K">Potássio</button>
                     <button type="button" class="layer-btn px-3 py-2 border-l border-slate-200" data-layer="P">Fósforo</button>
                     <button type="button" class="layer-btn px-3 py-2 border-l border-slate-200" data-layer="V">V%</button>
+                    <button type="button" class="layer-btn px-3 py-2 border-l border-slate-200" data-layer="recomendacao">Recomendação</button>
                 </div>
-                <button type="button" id="drawTalhaoBtn" class="px-4 py-2 rounded-lg bg-emerald-700 hover:bg-emerald-800 text-white text-sm font-semibold transition-colors">
+                <button type="button" id="drawTalhaoBtn" class="px-4 py-2 rounded-lg bg-[#066a04] hover:bg-[#055503] text-white text-sm font-semibold transition-colors">
                     + Talhão
                 </button>
             </div>
@@ -167,7 +172,7 @@
                         class="flex-1 min-w-0 border border-slate-300 rounded-lg px-2 py-1.5 text-xs"
                         autocomplete="off"
                     >
-                    <button type="submit" class="px-2.5 py-1.5 rounded-lg bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-semibold shrink-0">
+                    <button type="submit" class="px-2.5 py-1.5 rounded-lg bg-[#066a04] hover:bg-[#055503] text-white text-xs font-semibold shrink-0">
                         Ir
                     </button>
                 </form>
@@ -178,7 +183,7 @@
             <div class="absolute left-4 bottom-4 z-[1000] bg-white/95 backdrop-blur rounded-xl shadow-lg border border-slate-200 px-4 py-3 text-xs text-slate-700">
                 <div class="font-semibold mb-2" id="legendTitle">Fertilidade</div>
                 <div class="flex items-center gap-1">
-                    <span class="inline-block w-24 h-2 rounded-full" style="background: linear-gradient(90deg, #C62828, #E65100, #F9A825, #7CB342, #2E7D32);"></span>
+                    <span class="inline-block w-24 h-2 rounded-full" style="background: linear-gradient(90deg, #C62828, #E65100, #F9A825, #5dc135, #066a04);"></span>
                 </div>
                 <div class="flex justify-between mt-1 text-slate-500">
                     <span>Ruim</span>
@@ -293,7 +298,7 @@
 
                     <div class="flex justify-end gap-2 pt-2">
                         <button type="button" onclick="closeTalhaoModal()" class="px-4 py-2 rounded-lg border border-slate-300 text-sm font-medium hover:bg-slate-50">Cancelar</button>
-                        <button type="submit" class="px-4 py-2 rounded-lg bg-emerald-700 hover:bg-emerald-800 text-white text-sm font-semibold">Salvar</button>
+                        <button type="submit" class="px-4 py-2 rounded-lg bg-[#066a04] hover:bg-[#055503] text-white text-sm font-semibold">Salvar</button>
                     </div>
                 </form>
             </div>
@@ -355,6 +360,7 @@
         let talhoes = [];
         let polygonLayers = {}; // id -> { polygon, label }
         let activeLayer = 'fertilidade';
+        let recomendacoesPorTalhao = {}; // talhao.id -> { cultura, emoji, score, lucro_ha, cobertura } (camada "Recomendação")
         let selectedTalhaoId = null;
         let pendingDrawCoords = null; // coordenadas do polígono recém-desenhado, aguardando o modal
         let editingTalhaoId = null;   // se != null, o submit do modal edita em vez de criar
@@ -390,8 +396,8 @@
                 { p: 0, c: [198, 40, 40] },
                 { p: 25, c: [230, 81, 0] },
                 { p: 50, c: [249, 168, 37] },
-                { p: 75, c: [124, 179, 66] },
-                { p: 100, c: [46, 125, 50] }
+                { p: 75, c: [93, 193, 53] },
+                { p: 100, c: [6, 106, 4] }
             ];
             const s = Math.max(0, Math.min(100, score));
             let a = stops[0], b = stops[stops.length - 1];
@@ -412,6 +418,10 @@
                 case 'K': return solo.K != null ? (solo.K / 200) * 100 : null;
                 case 'P': return solo.P != null ? (solo.P / 30) * 100 : null;
                 case 'V': return solo.V != null ? solo.V : null;
+                case 'recomendacao': {
+                    const rec = recomendacoesPorTalhao[talhao.id];
+                    return rec ? rec.score : null;
+                }
                 default: return talhao.fertilidade;
             }
         }
@@ -424,13 +434,43 @@
                 case 'K': return solo.K != null ? `${solo.K}` : '—';
                 case 'P': return solo.P != null ? `${solo.P}` : '—';
                 case 'V': return solo.V != null ? `${solo.V}%` : '—';
+                case 'recomendacao': {
+                    const rec = recomendacoesPorTalhao[talhao.id];
+                    return rec ? `${rec.emoji} ${rec.cultura}` : 'sem recomendação';
+                }
                 default: return '—';
             }
         }
 
         const LAYER_TITLES = {
-            fertilidade: 'Fertilidade', ph: 'pH', K: 'Potássio', P: 'Fósforo', V: 'V%'
+            fertilidade: 'Fertilidade', ph: 'pH', K: 'Potássio', P: 'Fósforo', V: 'V%', recomendacao: 'Recomendação'
         };
+
+        // Busca a recomendação de rotação (routes/rotacao.js) de todos os
+        // talhões de uma vez, pra colorir/rotular a camada "Recomendação".
+        // Não bloqueia o carregamento do mapa: se falhar, a camada só fica
+        // sem dado (cinza) até o agricultor tentar de novo.
+        async function loadRecomendacoes() {
+            try {
+                const data = await apiRequest('/rotacao', 'GET');
+                const mapa = {};
+                (data.planejamento || []).forEach((item) => {
+                    if (item.top_recomendacao) {
+                        mapa[item.talhao.id] = {
+                            cultura: item.top_recomendacao.cultura,
+                            emoji: item.top_recomendacao.emoji,
+                            score: item.top_recomendacao.score,
+                            lucro_ha: item.top_recomendacao.lucro_ha,
+                            cobertura: item.top_recomendacao.cobertura
+                        };
+                    }
+                });
+                recomendacoesPorTalhao = mapa;
+                if (activeLayer === 'recomendacao') renderTalhoes();
+            } catch (err) {
+                console.warn('Não foi possível carregar recomendações de rotação:', err.message);
+            }
+        }
 
         function initMap() {
             map = L.map('map', { zoomControl: true }).setView([-29.635, -52.515], 13);
@@ -897,6 +937,7 @@
         document.addEventListener('DOMContentLoaded', () => {
             initMap();
             loadTalhoes();
+            loadRecomendacoes();
         });
     })();
     </script>

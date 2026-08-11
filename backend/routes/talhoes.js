@@ -336,4 +336,12 @@ router.delete('/:id', async (req, res) => {
     }
 });
 
+// Reexportados para o Relatório Nutricional (routes/relatorios.js) usar a
+// MESMA classificação de solo do Mapa de Fertilidade — em vez de duplicar
+// esta tabela uma terceira vez (já é uma cópia da de main.js, ver
+// comentário acima).
 module.exports = router;
+module.exports.ADEQUACY_CLASSES = ADEQUACY_CLASSES;
+module.exports.ADEQUACY_SCORE_MAP = ADEQUACY_SCORE_MAP;
+module.exports.classifyAdequacy = classifyAdequacy;
+module.exports.calcularFertilidade = calcularFertilidade;

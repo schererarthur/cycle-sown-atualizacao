@@ -408,6 +408,92 @@ CREATE TABLE talhoes (
 ) ENGINE=InnoDB;
 
 -- =================================================================
+-- 10. ROTAÇÃO DE CULTURAS  (rotacao.html)
+--     `historico_culturas` registra o que foi plantado em cada talhão a
+--     cada safra — é o histórico que alimenta o algoritmo de rotação
+--     (routes/rotacao.js) para não repetir a mesma família botânica.
+--     `precos_culturas` desacopla os preços usados no cálculo de lucro
+--     estimado do frontend hardcoded; atualizados manualmente por ora
+--     (mesmos valores de referência usados em cotacoes.html).
+--     O conhecimento agronômico (exigência de solo, benefícios,
+--     sequência ideal) é uma constante fixa no backend
+--     (backend/data/culturas.js), não uma tabela — não muda por usuário.
+-- =================================================================
+
+CREATE TABLE historico_culturas (
+  id                 INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  talhao_id          INT UNSIGNED NOT NULL,
+  user_id            INT UNSIGNED NOT NULL,
+  cultura_nome       VARCHAR(100) NOT NULL,
+  familia_botanica   VARCHAR(50) DEFAULT NULL,
+  safra_tipo         ENUM('verao', 'inverno') NOT NULL,
+  safra_ano          VARCHAR(9) NOT NULL,
+  data_plantio       DATE DEFAULT NULL,
+  data_colheita      DATE DEFAULT NULL,
+  produtividade_real DECIMAL(8,2) DEFAULT NULL,
+  observacoes        TEXT DEFAULT NULL,
+  created_at         TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT fk_historico_talhao FOREIGN KEY (talhao_id)
+    REFERENCES talhoes(id) ON DELETE CASCADE,
+  CONSTRAINT fk_historico_user FOREIGN KEY (user_id)
+    REFERENCES users(id) ON DELETE CASCADE,
+  INDEX idx_hist_talhao (talhao_id),
+  INDEX idx_hist_user (user_id)
+) ENGINE=InnoDB;
+
+CREATE TABLE precos_culturas (
+  id            INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  cultura_nome  VARCHAR(100) NOT NULL UNIQUE,
+  preco_saca    DECIMAL(10,2) DEFAULT NULL,
+  unidade       VARCHAR(20) DEFAULT 'R$/sc 60kg',
+  fonte         VARCHAR(100) DEFAULT 'CEPEA/ESALQ',
+  atualizado_em TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+                  ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB;
+
+INSERT INTO precos_culturas (cultura_nome, preco_saca, unidade, fonte) VALUES
+  ('Soja', 136.73, 'R$/sc 60kg', 'CEPEA/ESALQ'),
+  ('Milho', 64.86, 'R$/sc 60kg', 'CEPEA/ESALQ'),
+  ('Trigo', 78.50, 'R$/sc 60kg', 'CEPEA/ESALQ'),
+  ('Feijão', 320.00, 'R$/sc 60kg', 'CEPEA/ESALQ'),
+  ('Cevada', 65.00, 'R$/sc 60kg', 'Estimativa'),
+  ('Canola', 110.00, 'R$/sc 60kg', 'Estimativa'),
+  ('Sorgo', 45.00, 'R$/sc 60kg', 'Estimativa'),
+  ('Fumo', 12000.00, 'R$/ton', 'AFUBRA'),
+  ('Aveia Preta', 0, 'cobertura', 'N/A'),
+  ('Centeio', 0, 'cobertura', 'N/A'),
+  ('Ervilhaca', 0, 'cobertura', 'N/A'),
+  ('Nabo Forrageiro', 0, 'cobertura', 'N/A')
+ON DUPLICATE KEY UPDATE preco_saca = VALUES(preco_saca);
+
+-- =================================================================
+-- 11. RELATÓRIOS  (relatorios.html)
+--     Snapshot dos 4 relatórios gerados a partir dos dados já existentes
+--     de `talhoes` / `historico_culturas` / `precos_culturas`. `dados`
+--     guarda o JSON completo usado para renderizar o relatório no momento
+--     em que foi gerado — mesmo que os dados de origem mudem depois
+--     (preço da saca sobe, solo é corrigido), o relatório salvo continua
+--     mostrando o que existia naquele instante.
+-- =================================================================
+
+CREATE TABLE relatorios (
+  id            INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  user_id       INT UNSIGNED NOT NULL,
+  talhao_id     INT UNSIGNED NOT NULL,
+  tipo          ENUM('nutricional', 'recomendacao', 'rotacao', 'produtividade') NOT NULL,
+  titulo        VARCHAR(200) NOT NULL,
+  dados         JSON NOT NULL,
+  resumo        VARCHAR(500) DEFAULT NULL,
+  data_geracao  TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT fk_relatorios_user FOREIGN KEY (user_id)
+    REFERENCES users(id) ON DELETE CASCADE,
+  CONSTRAINT fk_relatorios_talhao FOREIGN KEY (talhao_id)
+    REFERENCES talhoes(id) ON DELETE CASCADE,
+  INDEX idx_relatorios_user (user_id),
+  INDEX idx_relatorios_talhao (talhao_id)
+) ENGINE=InnoDB;
+
+-- =================================================================
 -- NOTAS / DECISÕES QUE PRECISAM DE CONFIRMAÇÃO — ver mensagem de
 -- acompanhamento com a lista de pontos em aberto antes de aplicar.
 -- =================================================================

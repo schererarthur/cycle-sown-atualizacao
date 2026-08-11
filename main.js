@@ -378,7 +378,7 @@ function getAdequacyColor(score) {
     const normalized = Math.max(0, Math.min(100, Number(score) || 0));
     if (normalized < 40) return '#ef4444';
     if (normalized < 75) return '#facc15';
-    return '#22c55e';
+    return '#5dc135';
 }
 
 function getNutrientAdequacyScore(nutrient, value) {
@@ -401,9 +401,9 @@ function getAdequacyGradient(score) {
         return 'linear-gradient(90deg, #ef4444 0%, #f97316 55%, #facc15 100%)';
     }
     if (normalized < 75) {
-        return 'linear-gradient(90deg, #facc15 0%, #84cc16 100%)';
+        return 'linear-gradient(90deg, #facc15 0%, #5dc135 100%)';
     }
-    return 'linear-gradient(90deg, #22c55e 0%, #15803d 100%)';
+    return 'linear-gradient(90deg, #5dc135 0%, #066a04 100%)';
 }
 
 // Parses a form field as a number, correctly preserving 0 as a real value
@@ -460,49 +460,61 @@ function updateAnalysis() {
     updateSoilChemistryIndicators();
 }
 
-// Calculate overall soil health score
-function updateHealthScore() {
+// Calcula a saúde geral do solo a partir de um objeto soilData (mesmo shape
+// do `soilData` global: ph, organicMatter, aluminum, potentialAcidity,
+// nutrients{...}). Função pura — usada por updateHealthScore() (index.html,
+// ao vivo) e também por relatorio.html/recommendations.html a partir de
+// relatórios salvos, para que a mesma nota apareça em todas as páginas.
+function calculateHealthScoreFromData(data) {
+    if (!data) return 0;
+
     let totalScore = 0;
     let factorsCount = 0;
-    
+
     // pH score based on user reference classes
-    if (soilData.ph !== null) {
-        const label = classifyAdequacy('pH', soilData.ph);
+    if (data.ph !== null && data.ph !== undefined) {
+        const label = classifyAdequacy('pH', data.ph);
         totalScore += adequacyScoreMap[label] || 0;
         factorsCount++;
     }
-    
+
     // Organic matter score based on user reference classes
-    if (soilData.organicMatter !== null) {
-        const label = classifyAdequacy('organicMatter', soilData.organicMatter);
+    if (data.organicMatter !== null && data.organicMatter !== undefined) {
+        const label = classifyAdequacy('organicMatter', data.organicMatter);
         totalScore += adequacyScoreMap[label] || 0;
         factorsCount++;
     }
 
     // Aluminum toxicity score (lower is better)
-    if (soilData.aluminum !== null) {
-        const label = classifyAdequacy('aluminum', soilData.aluminum);
+    if (data.aluminum !== null && data.aluminum !== undefined) {
+        const label = classifyAdequacy('aluminum', data.aluminum);
         totalScore += adequacyScoreMap[label] || 0;
         factorsCount++;
     }
 
     // Potential acidity (H+Al) score (lower is better)
-    if (soilData.potentialAcidity !== null) {
-        const label = classifyAdequacy('potentialAcidity', soilData.potentialAcidity);
+    if (data.potentialAcidity !== null && data.potentialAcidity !== undefined) {
+        const label = classifyAdequacy('potentialAcidity', data.potentialAcidity);
         totalScore += adequacyScoreMap[label] || 0;
         factorsCount++;
     }
 
     // Nutrient scores based on user reference classes
-    Object.keys(soilData.nutrients).forEach(nutrient => {
-        if (soilData.nutrients[nutrient] !== null) {
-            totalScore += getNutrientAdequacyScore(nutrient, soilData.nutrients[nutrient]);
+    Object.keys(data.nutrients || {}).forEach(nutrient => {
+        const value = data.nutrients[nutrient];
+        if (value !== null && value !== undefined) {
+            totalScore += getNutrientAdequacyScore(nutrient, value);
             factorsCount++;
         }
     });
-    
-    const healthScore = factorsCount > 0 ? Math.round(totalScore / factorsCount) : 0;
-    
+
+    return factorsCount > 0 ? Math.round(totalScore / factorsCount) : 0;
+}
+
+// Calculate overall soil health score
+function updateHealthScore() {
+    const healthScore = calculateHealthScoreFromData(soilData);
+
     const healthScoreElement = document.getElementById('healthScore');
     const healthBarElement = document.getElementById('healthBar');
     
@@ -608,7 +620,7 @@ function updateSoilChemistryIndicators() {
                 aluminumWarning.className = 'mt-3 text-sm font-medium text-red-600';
                 aluminumWarning.textContent = `⚠ Alumínio tóxico (${label}): pode limitar o desenvolvimento radicular de culturas sensíveis.`;
             } else {
-                aluminumWarning.className = 'mt-3 text-sm font-medium text-green-600';
+                aluminumWarning.className = 'mt-3 text-sm font-medium text-[#066a04]';
                 aluminumWarning.textContent = `✓ Alumínio em nível ${label.toLowerCase()} — sem risco de toxidez.`;
             }
         }
@@ -675,8 +687,8 @@ function atualizarBarraV(v) {
     barra.style.width = largura + '%';
     if (v < 45) barra.style.backgroundColor = '#B85450';
     else if (v < 65) barra.style.backgroundColor = '#E6B17A';
-    else if (v <= 80) barra.style.backgroundColor = '#87A96B';
-    else barra.style.backgroundColor = '#2D5016';
+    else if (v <= 80) barra.style.backgroundColor = '#5dc135';
+    else barra.style.backgroundColor = '#066a04';
 }
 
 // Barra visual do m% (Saturação por Alumínio): verde ≤ 10%, amarelo 11-20%,
@@ -686,7 +698,7 @@ function atualizarBarraM(m) {
     if (!barra) return;
     const largura = Math.min(100, Math.max(0, m));
     barra.style.width = largura + '%';
-    if (m <= 10) barra.style.backgroundColor = '#2D5016';
+    if (m <= 10) barra.style.backgroundColor = '#066a04';
     else if (m <= 20) barra.style.backgroundColor = '#E6B17A';
     else barra.style.backgroundColor = '#B85450';
 }
@@ -933,12 +945,15 @@ function createAnalysisReport(title = null) {
     const formattedTitle = title && title.trim().length > 0 ? title.trim() :
         `Relatório ${new Date().toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}`;
 
+    const plantedCropSelect = document.getElementById('plantedCropFollowUp');
+
     return {
         id: timestamp,
         title: formattedTitle,
         timestamp,
         soilData: JSON.parse(JSON.stringify(soilData)),
-        cropCompatibility: JSON.parse(JSON.stringify(cropDatabase))
+        cropCompatibility: JSON.parse(JSON.stringify(cropDatabase)),
+        plantedCropFollowUp: plantedCropSelect ? plantedCropSelect.value : ''
     };
 }
 

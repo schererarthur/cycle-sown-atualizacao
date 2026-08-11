@@ -26,10 +26,10 @@
     <link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:wght@400;600;700&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <style>
         :root {
-            --forest-green: #2D5016;
+            --forest-green: #066a04;
             --terracotta: #B85450;
             --golden-wheat: #E6B17A;
-            --sage-green: #87A96B;
+            --sage-green: #5dc135;
             --cream-white: #FAF8F5;
             --charcoal-gray: #3A3A3A;
             --light-border: #E5E7EB;
@@ -57,7 +57,7 @@
 
         .product-card:hover {
             border-color: var(--sage-green);
-            box-shadow: 0 10px 20px rgba(45, 80, 22, 0.05);
+            box-shadow: 0 10px 20px rgba(6, 106, 4, 0.05);
         }
 
         .category-tag {
@@ -159,10 +159,11 @@
                 </div>
                 <div class="hidden md:block">
                     <div class="ml-10 flex items-baseline space-x-8">
-                        <a href="index.html#analysis" class="text-slate-800 hover:text-emerald-700 px-3 py-2 text-sm font-medium transition-colors">Análise</a>
-                        <a href="recommendations.html" class="text-slate-600 hover:text-emerald-700 px-3 py-2 text-sm font-medium transition-colors">Recomendações</a>
-                        <a href="relatorio.html" class="text-slate-600 hover:text-emerald-700 px-3 py-2 text-sm font-medium transition-colors">Relatório</a>
-                        <a href="profile.html" class="text-slate-600 hover:text-emerald-700 px-3 py-2 text-sm font-medium transition-colors">Perfil</a>
+                        <a href="index.html#analysis" class="text-slate-800 hover:text-[#066a04] px-3 py-2 text-sm font-medium transition-colors">Análise</a>
+                        <a href="recommendations.html" class="text-slate-600 hover:text-[#066a04] px-3 py-2 text-sm font-medium transition-colors">Recomendações</a>
+                        <a href="relatorio.html" class="text-slate-600 hover:text-[#066a04] px-3 py-2 text-sm font-medium transition-colors">Relatório</a>
+                        <a href="relatorios.html" class="text-slate-600 hover:text-[#066a04] px-3 py-2 text-sm font-medium transition-colors">📊 Relatórios</a>
+                        <a href="profile.html" class="text-slate-600 hover:text-[#066a04] px-3 py-2 text-sm font-medium transition-colors">Perfil</a>
                     </div>
                 </div>
             </div>
@@ -185,12 +186,15 @@
             </div>
             <nav class="p-5 space-y-3">
                 <hr class="my-3">
-                <a href="calendar.html" onclick="toggleMenu(false)" class="block text-gray-900 px-4 py-3 rounded-lg hover:bg-green-50 transition-colors">Calendário</a>
-                <a href="catalogo.html" onclick="toggleMenu(false)" class="block text-gray-900 px-4 py-3 rounded-lg hover:bg-green-50 transition-colors">Catálogo</a>
-                <a href="produtividade.html" onclick="toggleMenu(false)" class="block text-gray-900 px-4 py-3 rounded-lg hover:bg-green-50 transition-colors">Produtividade</a>
-                <a href="mapa-fertilidade.html" onclick="toggleMenu(false)" class="block text-gray-900 px-4 py-3 rounded-lg hover:bg-green-50 transition-colors">🗺️ Mapa de Fertilidade</a>
-                <a href="empresas/index.html" onclick="toggleMenu(false)" class="block text-gray-900 px-4 py-3 rounded-lg hover:bg-green-50 transition-colors">Vender Produção</a>
-                <a href="profile.html" onclick="toggleMenu(false)" class="block text-green-700 font-semibold px-4 py-3 rounded-lg hover:bg-green-50 transition-colors">Meu Perfil</a>
+                <a href="calendar.html" onclick="toggleMenu(false)" class="block text-gray-900 px-4 py-3 rounded-lg hover:bg-[#eaf7e2] transition-colors">Calendário</a>
+                <a href="catalogo.html" onclick="toggleMenu(false)" class="block text-gray-900 px-4 py-3 rounded-lg hover:bg-[#eaf7e2] transition-colors">Catálogo</a>
+                <a href="produtividade.html" onclick="toggleMenu(false)" class="block text-gray-900 px-4 py-3 rounded-lg hover:bg-[#eaf7e2] transition-colors">Produtividade</a>
+                <a href="mapa-fertilidade.html" onclick="toggleMenu(false)" class="block text-gray-900 px-4 py-3 rounded-lg hover:bg-[#eaf7e2] transition-colors">Mapa de Fertilidade</a>
+                <a href="cotacoes.html" onclick="toggleMenu(false)" class="block text-gray-900 px-4 py-3 rounded-lg hover:bg-[#eaf7e2] transition-colors">Cotações</a>
+                <a href="rotacao.html" onclick="toggleMenu(false)" class="block text-gray-900 px-4 py-3 rounded-lg hover:bg-[#eaf7e2] transition-colors">Rotação</a>
+                <a href="relatorios.html" onclick="toggleMenu(false)" class="block text-gray-900 px-4 py-3 rounded-lg hover:bg-[#eaf7e2] transition-colors">📊 Relatórios</a>
+                <a href="empresas/index.html" onclick="toggleMenu(false)" class="block text-gray-900 px-4 py-3 rounded-lg hover:bg-[#eaf7e2] transition-colors">Vender Produção</a>
+                <a href="profile.html" onclick="toggleMenu(false)" class="block text-[#066a04] font-semibold px-4 py-3 rounded-lg hover:bg-[#eaf7e2] transition-colors">Meu Perfil</a>
             </nav>
         </div>
     </div>
@@ -211,13 +215,13 @@
                 <svg class="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" xmlns="http://www.w3.org/2000/svg">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-4.35-4.35m0 0A7.5 7.5 0 104.5 4.5a7.5 7.5 0 0012.15 12.15z" />
                 </svg>
-                <input type="text" id="searchInput" placeholder="Pesquisar insumo, fertilizante..." class="w-full pl-10 pr-4 py-3 rounded-lg border border-gray-200 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-green-600">
+                <input type="text" id="searchInput" placeholder="Pesquisar insumo, fertilizante..." class="w-full pl-10 pr-4 py-3 rounded-lg border border-gray-200 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-[#066a04]">
             </div>
 
             <div class="flex flex-col sm:flex-row gap-6 sm:items-end bg-white border border-gray-200 rounded-lg p-4">
                 <div class="sm:w-56">
                     <label for="categoryFilter" class="block text-xs text-gray-400 uppercase font-bold mb-1">Categoria</label>
-                    <select id="categoryFilter" class="w-full rounded-lg border border-gray-200 bg-white px-4 py-2.5 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-green-600">
+                    <select id="categoryFilter" class="w-full rounded-lg border border-gray-200 bg-white px-4 py-2.5 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#066a04]">
                         <option value="">Todos os produtos</option>
                         <option value="corretivos">Corretivos</option>
                         <option value="fertilizantes">Fertilizantes</option>
@@ -229,7 +233,7 @@
 
                 <div class="sm:w-56">
                     <label for="regionFilter" class="block text-xs text-gray-400 uppercase font-bold mb-1">Região</label>
-                    <select id="regionFilter" class="w-full rounded-lg border border-gray-200 bg-white px-4 py-2.5 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-green-600">
+                    <select id="regionFilter" class="w-full rounded-lg border border-gray-200 bg-white px-4 py-2.5 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#066a04]">
                         <option value="">Todas as regiões</option>
                         <option value="norte">Norte</option>
                         <option value="nordeste">Nordeste</option>
@@ -257,7 +261,7 @@
         <div id="productsGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
 
             <div class="product-card rounded-xl p-6 animate-card cursor-pointer" data-price="42.00" data-region="sudeste" data-group="corretivos" data-product="calcario-dolomitico" role="button" tabindex="0">
-                <span class="category-tag bg-green-100 text-green-800">Corretivo</span>
+                <span class="category-tag bg-[#eaf7e2] text-[#066a04]">Corretivo</span>
                 <h3 class="font-display text-xl font-bold mt-3 mb-2">Calcário Dolomítico</h3>
                 <p class="text-sm text-gray-600 mb-6">Utilizado para elevar o pH do solo e fornecer Cálcio e Magnésio. Essencial para a correção de acidez.</p>
                 <div class="flex flex-col border-t pt-4">
@@ -268,7 +272,7 @@
             </div>
 
             <div class="product-card rounded-xl p-6 animate-card cursor-pointer" data-price="39.00" data-region="sul" data-group="corretivos" data-product="calcario-calcitico" role="button" tabindex="0">
-                <span class="category-tag bg-green-100 text-green-800">Corretivo</span>
+                <span class="category-tag bg-[#eaf7e2] text-[#066a04]">Corretivo</span>
                 <h3 class="font-display text-xl font-bold mt-3 mb-2">Calcário Calcítico</h3>
                 <p class="text-sm text-gray-600 mb-6">Corretivo de acidez com maior teor de Cálcio e menor de Magnésio, indicado para solos já bem supridos em Mg.</p>
                 <div class="flex flex-col border-t pt-4">
@@ -279,7 +283,7 @@
             </div>
 
             <div class="product-card rounded-xl p-6 animate-card cursor-pointer" data-price="48.00" data-region="centro-oeste" data-group="corretivos" data-product="gesso-agricola" role="button" tabindex="0">
-                <span class="category-tag bg-green-100 text-green-800">Corretivo</span>
+                <span class="category-tag bg-[#eaf7e2] text-[#066a04]">Corretivo</span>
                 <h3 class="font-display text-xl font-bold mt-3 mb-2">Gesso Agrícola</h3>
                 <p class="text-sm text-gray-600 mb-6">Fonte de Cálcio e Enxofre que melhora o ambiente radicular em profundidade, sem alterar o pH do solo.</p>
                 <div class="flex flex-col border-t pt-4">
@@ -290,7 +294,7 @@
             </div>
 
             <div class="product-card rounded-xl p-6 animate-card cursor-pointer" data-price="45.00" data-region="nordeste" data-group="corretivos" data-product="calcario-filler" role="button" tabindex="0">
-                <span class="category-tag bg-green-100 text-green-800">Corretivo</span>
+                <span class="category-tag bg-[#eaf7e2] text-[#066a04]">Corretivo</span>
                 <h3 class="font-display text-xl font-bold mt-3 mb-2">Calcário Filler</h3>
                 <p class="text-sm text-gray-600 mb-6">Calcário moído fino, de reação rápida, indicado para correções pontuais e canteiros.</p>
                 <div class="flex flex-col border-t pt-4">
@@ -301,7 +305,7 @@
             </div>
 
             <div class="product-card rounded-xl p-6 animate-card cursor-pointer" data-price="65.00" data-region="sul" data-group="corretivos" data-product="silicato-calcio-magnesio" role="button" tabindex="0">
-                <span class="category-tag bg-green-100 text-green-800">Corretivo</span>
+                <span class="category-tag bg-[#eaf7e2] text-[#066a04]">Corretivo</span>
                 <h3 class="font-display text-xl font-bold mt-3 mb-2">Silicato de Cálcio e Magnésio</h3>
                 <p class="text-sm text-gray-600 mb-6">Corretivo alternativo à base de silicato, fornece Ca, Mg e Silício disponível às plantas.</p>
                 <div class="flex flex-col border-t pt-4">
@@ -312,7 +316,7 @@
             </div>
 
             <div class="product-card rounded-xl p-6 animate-card cursor-pointer" data-price="185.00" data-region="centro-oeste" data-group="fertilizantes" data-product="cloreto-potassio" role="button" tabindex="0">
-                <span class="category-tag bg-green-100 text-green-800">Mineral</span>
+                <span class="category-tag bg-[#eaf7e2] text-[#066a04]">Mineral</span>
                 <h3 class="font-display text-xl font-bold mt-3 mb-2">Cloreto de Potássio (KCl)</h3>
                 <p class="text-sm text-gray-600 mb-6">Principal fonte de Potássio para as culturas, essencial para o transporte de açúcares e resistência à seca.</p>
                 <div class="flex flex-col border-t pt-4">
@@ -356,7 +360,7 @@
             </div>
 
             <div class="product-card rounded-xl p-6 animate-card cursor-pointer" data-price="15.00" data-region="sudeste" data-group="adubos" data-product="esterco-galinha" role="button" tabindex="0">
-                <span class="category-tag bg-emerald-100 text-emerald-800">Fertilizante Orgânico</span>
+                <span class="category-tag bg-[#eaf7e2] text-[#066a04]">Fertilizante Orgânico</span>
                 <h3 class="font-display text-xl font-bold mt-3 mb-2">Esterco de Galinha Curtido</h3>
                 <p class="text-sm text-gray-600 mb-6">Fonte rica de Nitrogênio e matéria orgânica para rápida mineralização e nutrição vegetal.</p>
                 <div class="flex flex-col border-t pt-4">
@@ -477,7 +481,7 @@
             </div>
 
             <div class="product-card rounded-xl p-6 animate-card cursor-pointer" data-price="35.00" data-region="nordeste" data-group="corretivos" data-product="cal-hidratada" role="button" tabindex="0">
-                <span class="category-tag bg-green-100 text-green-800">Corretivo</span>
+                <span class="category-tag bg-[#eaf7e2] text-[#066a04]">Corretivo</span>
                 <h3 class="font-display text-xl font-bold mt-3 mb-2">Cal Hidratada Agrícola</h3>
                 <p class="text-sm text-gray-600 mb-6">Corretivo de ação rápida à base de hidróxido de cálcio, eleva o pH do solo em pouco tempo.</p>
                 <div class="flex flex-col border-t pt-4">
@@ -510,7 +514,7 @@
             </div>
 
             <div class="product-card rounded-xl p-6 animate-card cursor-pointer" data-price="18.00" data-region="sul" data-group="adubos" data-product="esterco-bovino" role="button" tabindex="0">
-                <span class="category-tag bg-emerald-100 text-emerald-800">Adubo Orgânico</span>
+                <span class="category-tag bg-[#eaf7e2] text-[#066a04]">Adubo Orgânico</span>
                 <h3 class="font-display text-xl font-bold mt-3 mb-2">Esterco Bovino Curtido</h3>
                 <p class="text-sm text-gray-600 mb-6">Adubo orgânico tradicional, melhora a estrutura do solo e fornece matéria orgânica de liberação lenta.</p>
                 <div class="flex flex-col border-t pt-4">
@@ -521,7 +525,7 @@
             </div>
 
             <div class="product-card rounded-xl p-6 animate-card cursor-pointer" data-price="25.00" data-region="sudeste" data-group="adubos" data-product="composto-organico" role="button" tabindex="0">
-                <span class="category-tag bg-emerald-100 text-emerald-800">Adubo Orgânico</span>
+                <span class="category-tag bg-[#eaf7e2] text-[#066a04]">Adubo Orgânico</span>
                 <h3 class="font-display text-xl font-bold mt-3 mb-2">Composto Orgânico Compostado</h3>
                 <p class="text-sm text-gray-600 mb-6">Composto maturado a partir de resíduos vegetais, rico em matéria orgânica estável para o solo.</p>
                 <div class="flex flex-col border-t pt-4">
@@ -532,7 +536,7 @@
             </div>
 
             <div class="product-card rounded-xl p-6 animate-card cursor-pointer" data-price="22.00" data-region="sudeste" data-group="adubos" data-product="humus-minhoca" role="button" tabindex="0">
-                <span class="category-tag bg-emerald-100 text-emerald-800">Adubo Orgânico</span>
+                <span class="category-tag bg-[#eaf7e2] text-[#066a04]">Adubo Orgânico</span>
                 <h3 class="font-display text-xl font-bold mt-3 mb-2">Húmus de Minhoca</h3>
                 <p class="text-sm text-gray-600 mb-6">Adubo orgânico premium rico em microrganismos benéficos e nutrientes prontamente disponíveis.</p>
                 <div class="flex flex-col border-t pt-4">
@@ -543,7 +547,7 @@
             </div>
 
             <div class="product-card rounded-xl p-6 animate-card cursor-pointer" data-price="58.00" data-region="nordeste" data-group="adubos" data-product="farinha-osso" role="button" tabindex="0">
-                <span class="category-tag bg-emerald-100 text-emerald-800">Adubo Orgânico</span>
+                <span class="category-tag bg-[#eaf7e2] text-[#066a04]">Adubo Orgânico</span>
                 <h3 class="font-display text-xl font-bold mt-3 mb-2">Farinha de Osso</h3>
                 <p class="text-sm text-gray-600 mb-6">Adubo orgânico rico em Fósforo e Cálcio de liberação lenta, ideal para plantio de árvores frutíferas.</p>
                 <div class="flex flex-col border-t pt-4">
@@ -554,7 +558,7 @@
             </div>
 
             <div class="product-card rounded-xl p-6 animate-card cursor-pointer" data-price="40.00" data-region="centro-oeste" data-group="adubos" data-product="torta-mamona" role="button" tabindex="0">
-                <span class="category-tag bg-emerald-100 text-emerald-800">Adubo Orgânico</span>
+                <span class="category-tag bg-[#eaf7e2] text-[#066a04]">Adubo Orgânico</span>
                 <h3 class="font-display text-xl font-bold mt-3 mb-2">Torta de Mamona</h3>
                 <p class="text-sm text-gray-600 mb-6">Adubo orgânico e biofumigante natural, rico em Nitrogênio e com ação repelente de nematoides.</p>
                 <div class="flex flex-col border-t pt-4">
@@ -753,7 +757,7 @@
             'calcario-dolomitico': {
                 name: 'Calcário Dolomítico',
                 categoryLabel: 'Corretivo',
-                categoryClass: 'bg-green-100 text-green-800',
+                categoryClass: 'bg-[#eaf7e2] text-[#066a04]',
                 description: 'Corretivo de acidez do solo composto por carbonatos de cálcio e magnésio. Eleva o pH gradualmente, melhora a disponibilidade de nutrientes e fortalece a estrutura radicular. Recomenda-se aplicação 60 a 90 dias antes do plantio, incorporado aos 20cm superficiais do solo.',
                 priceLabel: 'R$ 42,00 / 50kg',
                 region: 'sudeste',
@@ -768,7 +772,7 @@
             'calcario-calcitico': {
                 name: 'Calcário Calcítico',
                 categoryLabel: 'Corretivo',
-                categoryClass: 'bg-green-100 text-green-800',
+                categoryClass: 'bg-[#eaf7e2] text-[#066a04]',
                 description: 'Corretivo de acidez do solo à base de carbonato de cálcio, com menor teor de magnésio que o dolomítico. Indicado para solos que já possuem bons níveis de Mg, evitando desequilíbrio na relação Ca:Mg. Reação mais rápida no solo.',
                 priceLabel: 'R$ 39,00 / 50kg',
                 region: 'sul',
@@ -782,7 +786,7 @@
             'gesso-agricola': {
                 name: 'Gesso Agrícola',
                 categoryLabel: 'Corretivo',
-                categoryClass: 'bg-green-100 text-green-800',
+                categoryClass: 'bg-[#eaf7e2] text-[#066a04]',
                 description: 'Subproduto da produção de superfosfato triplo, rico em Cálcio e Enxofre na forma de sulfato. Ajuda a neutralizar o alumínio tóxico em subsuperfície e melhora o desenvolvimento radicular em profundidade, sendo um complemento à calagem e não um substituto.',
                 priceLabel: 'R$ 48,00 / 50kg',
                 region: 'centro-oeste',
@@ -796,7 +800,7 @@
             'calcario-filler': {
                 name: 'Calcário Filler',
                 categoryLabel: 'Corretivo',
-                categoryClass: 'bg-green-100 text-green-800',
+                categoryClass: 'bg-[#eaf7e2] text-[#066a04]',
                 description: 'Calcário calcítico moído em granulometria extra fina (filler), com altíssima reatividade e ação rápida sobre o pH do solo. Indicado para pequenas áreas, canteiros e correções pontuais onde se busca resposta em curto prazo.',
                 priceLabel: 'R$ 45,00 / 50kg',
                 region: 'nordeste',
@@ -810,7 +814,7 @@
             'silicato-calcio-magnesio': {
                 name: 'Silicato de Cálcio e Magnésio',
                 categoryLabel: 'Corretivo',
-                categoryClass: 'bg-green-100 text-green-800',
+                categoryClass: 'bg-[#eaf7e2] text-[#066a04]',
                 description: 'Corretivo de acidez à base de escória silicatada, fornece Cálcio, Magnésio e Silício em forma assimilável. O Silício confere maior resistência das plantas a pragas, doenças e acamamento, sendo bastante usado em cana-de-açúcar e arroz.',
                 priceLabel: 'R$ 65,00 / 25kg',
                 region: 'sul',
@@ -824,7 +828,7 @@
             'cloreto-potassio': {
                 name: 'Cloreto de Potássio (KCl)',
                 categoryLabel: 'Mineral',
-                categoryClass: 'bg-green-100 text-green-800',
+                categoryClass: 'bg-[#eaf7e2] text-[#066a04]',
                 description: 'Fertilizante mineral com alta concentração de Potássio (58-60% K2O), essencial para o transporte de açúcares, ativação enzimática e resistência das plantas a estresse hídrico e doenças. Indicado para adubação de cobertura em culturas de grãos e fruticultura.',
                 priceLabel: 'R$ 185,00 / 50kg',
                 region: 'centro-oeste',
@@ -880,7 +884,7 @@
             'esterco-galinha': {
                 name: 'Esterco de Galinha Curtido',
                 categoryLabel: 'Fertilizante Orgânico',
-                categoryClass: 'bg-emerald-100 text-emerald-800',
+                categoryClass: 'bg-[#eaf7e2] text-[#066a04]',
                 description: 'Fertilizante orgânico rico em Nitrogênio e matéria orgânica, já curtido para reduzir odor e evitar queima das raízes. Melhora a estrutura e a atividade biológica do solo, com liberação de nutrientes de rápida a média mineralização.',
                 priceLabel: 'R$ 15,00 / 20kg',
                 region: 'sudeste',
@@ -1035,7 +1039,7 @@
             'cal-hidratada': {
                 name: 'Cal Hidratada Agrícola',
                 categoryLabel: 'Corretivo',
-                categoryClass: 'bg-green-100 text-green-800',
+                categoryClass: 'bg-[#eaf7e2] text-[#066a04]',
                 description: 'Corretivo de acidez obtido pela hidratação da cal virgem, com reação muito mais rápida que o calcário. Indicado para correções emergenciais e para desinfecção de viveiros e instalações, mas exige cuidado no manuseio por ser cáustico.',
                 priceLabel: 'R$ 35,00 / 40kg',
                 region: 'nordeste',
@@ -1077,7 +1081,7 @@
             'esterco-bovino': {
                 name: 'Esterco Bovino Curtido',
                 categoryLabel: 'Adubo Orgânico',
-                categoryClass: 'bg-emerald-100 text-emerald-800',
+                categoryClass: 'bg-[#eaf7e2] text-[#066a04]',
                 description: 'Esterco de gado curtido por período mínimo de 90 dias, reduzindo patógenos e sementes de plantas daninhas. Fornece matéria orgânica de liberação lenta, melhora a retenção de água e a atividade microbiológica do solo.',
                 priceLabel: 'R$ 18,00 / 20kg',
                 region: 'sul',
@@ -1091,7 +1095,7 @@
             'composto-organico': {
                 name: 'Composto Orgânico Compostado',
                 categoryLabel: 'Adubo Orgânico',
-                categoryClass: 'bg-emerald-100 text-emerald-800',
+                categoryClass: 'bg-[#eaf7e2] text-[#066a04]',
                 description: 'Composto orgânico produzido pela compostagem controlada de resíduos vegetais, totalmente maturado e estabilizado. Melhora a capacidade de troca catiônica (CTC) e a retenção de água do solo, sendo indicado para qualquer tipo de cultivo.',
                 priceLabel: 'R$ 25,00 / 25kg',
                 region: 'sudeste',
@@ -1105,7 +1109,7 @@
             'humus-minhoca': {
                 name: 'Húmus de Minhoca',
                 categoryLabel: 'Adubo Orgânico',
-                categoryClass: 'bg-emerald-100 text-emerald-800',
+                categoryClass: 'bg-[#eaf7e2] text-[#066a04]',
                 description: 'Produzido pela digestão de matéria orgânica por minhocas californianas, o húmus é um dos adubos orgânicos mais ricos em microrganismos benéficos e ácidos húmicos. Nutrientes já estão em forma prontamente disponível para as plantas.',
                 priceLabel: 'R$ 22,00 / 5kg',
                 region: 'sudeste',
@@ -1119,7 +1123,7 @@
             'farinha-osso': {
                 name: 'Farinha de Osso',
                 categoryLabel: 'Adubo Orgânico',
-                categoryClass: 'bg-emerald-100 text-emerald-800',
+                categoryClass: 'bg-[#eaf7e2] text-[#066a04]',
                 description: 'Subproduto animal moído, rico em Fósforo e Cálcio de liberação lenta e gradual. Muito indicado para o plantio de árvores frutíferas e perenes, fornecendo fósforo de forma sustentada ao longo dos meses.',
                 priceLabel: 'R$ 58,00 / 25kg',
                 region: 'nordeste',
@@ -1133,7 +1137,7 @@
             'torta-mamona': {
                 name: 'Torta de Mamona',
                 categoryLabel: 'Adubo Orgânico',
-                categoryClass: 'bg-emerald-100 text-emerald-800',
+                categoryClass: 'bg-[#eaf7e2] text-[#066a04]',
                 description: 'Subproduto da extração do óleo de mamona, rico em Nitrogênio orgânico (aproximadamente 5-6% N). Além do valor nutricional, possui ação biofumigante natural, ajudando no controle de nematoides do solo.',
                 priceLabel: 'R$ 40,00 / 20kg',
                 region: 'centro-oeste',
