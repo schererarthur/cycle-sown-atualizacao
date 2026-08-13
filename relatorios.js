@@ -495,16 +495,16 @@
     // nota de Saúde Geral bater com index.html/recommendations.html.
     // ========================================================================
     const LAUDO_NUTRIENT_LABELS = {
-        nitrogen: 'Nitrogênio (N)', phosphorus: 'Fósforo (P)', potassium: 'Potássio (K)',
+        phosphorus: 'Fósforo (P)', potassium: 'Potássio (K)',
         calcium: 'Cálcio (Ca)', magnesium: 'Magnésio (Mg)', sulfur: 'Enxofre (S)',
         iron: 'Ferro (Fe)', manganese: 'Manganês (Mn)', zinc: 'Zinco (Zn)',
-        copper: 'Cobre (Cu)', boron: 'Boro (B)', molybdenum: 'Molibdênio (Mo)'
+        copper: 'Cobre (Cu)', boron: 'Boro (B)'
     };
-    const LAUDO_MACRO_KEYS = ['Nitrogênio (N)', 'Fósforo (P)', 'Potássio (K)', 'Cálcio (Ca)', 'Magnésio (Mg)', 'Enxofre (S)'];
+    const LAUDO_MACRO_KEYS = ['Fósforo (P)', 'Potássio (K)', 'Cálcio (Ca)', 'Magnésio (Mg)', 'Enxofre (S)'];
     const LAUDO_REFERENCE_VALUES = {
-        'Nitrogênio (N)': 30, 'Fósforo (P)': 20, 'Potássio (K)': 150, 'Cálcio (Ca)': 1000,
+        'Fósforo (P)': 20, 'Potássio (K)': 150, 'Cálcio (Ca)': 1000,
         'Magnésio (Mg)': 120, 'Enxofre (S)': 15, 'Ferro (Fe)': 50, 'Manganês (Mn)': 25,
-        'Zinco (Zn)': 2.0, 'Cobre (Cu)': 1.0, 'Boro (B)': 1.0, 'Molibdênio (Mo)': 0.15
+        'Zinco (Zn)': 2.0, 'Cobre (Cu)': 1.0, 'Boro (B)': 1.0
     };
     const LAUDO_CROP_LABELS = { milho: 'Milho', soja: 'Soja', trigo: 'Trigo', tabaco: 'Tabaco' };
 

@@ -74,7 +74,6 @@ CAMPOS QUE VOCÊ DEVE EXTRAIR:
   "zinc": { "value": number ou null, "unit": "mgdm3 | mgkg | ppm" },
   "copper": { "value": number ou null, "unit": "mgdm3 | mgkg | ppm" },
   "boron": { "value": number ou null, "unit": "mgdm3 | mgkg | ppm" },
-  "molybdenum": { "value": number ou null, "unit": "mgdm3 | mgkg | ppm" },
 
   "sb": { "value": number ou null, "unit": "cmolcdm3 | mmolcdm3" },
   "ctcEffective": { "value": number ou null, "unit": "cmolcdm3 | mmolcdm3" },
@@ -84,10 +83,10 @@ CAMPOS QUE VOCÊ DEVE EXTRAIR:
 }
 
 ATENÇÃO:
-- NÃO extraia Nitrogênio (N). Laudos de solo quase nunca trazem N.
+- NÃO extraia Nitrogênio (N) nem Molibdênio (Mo). Laudos de solo padrão ROLAS RS/SC não trazem esses dois.
 - NÃO extraia Região, Estado ou Tipo de Solo — isso o agricultor preenche.
 - Se o laudo trouxer SB, CTC, V% e m% calculados, extraia. Se não, retorne null (o frontend calcula automaticamente).
-- Abreviações comuns: P = Fósforo, K = Potássio, Ca = Cálcio, Mg = Magnésio, S = Enxofre, Al = Alumínio, H+Al = Acidez potencial, MO = Matéria orgânica, B/Cu/Fe/Mn/Zn/Mo = Micronutrientes.`;
+- Abreviações comuns: P = Fósforo, K = Potássio, Ca = Cálcio, Mg = Magnésio, S = Enxofre, Al = Alumínio, H+Al = Acidez potencial, MO = Matéria orgânica, B/Cu/Fe/Mn/Zn = Micronutrientes.`;
 
 // Encontra o primeiro objeto JSON top-level no texto, contando chaves
 // balanceadas (ignorando chaves dentro de strings) em vez de um regex guloso

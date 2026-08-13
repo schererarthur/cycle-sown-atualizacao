@@ -63,8 +63,6 @@ const LAUDO_FIELD_MAP = [
     { path: 'copper.unit', elementId: 'copper_unit', isUnit: true },
     { path: 'boron.value', elementId: 'boron' },
     { path: 'boron.unit', elementId: 'boron_unit', isUnit: true },
-    { path: 'molybdenum.value', elementId: 'molybdenum' },
-    { path: 'molybdenum.unit', elementId: 'molybdenum_unit', isUnit: true },
 
     // Complexo sortivo — preenchidos por último de propósito (ver comentário acima).
     { path: 'sb.value', elementId: 'sb' },

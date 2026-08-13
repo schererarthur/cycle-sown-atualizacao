@@ -579,15 +579,6 @@
                             <h4 class="text-lg font-semibold mb-4 text-gray-800">Macronutrientes</h4>
                             <div class="grid md:grid-cols-3 gap-4">
                                 <div>
-                                    <label class="block text-sm font-medium text-gray-700 mb-2">Nitrogênio (N)</label>
-                                    <div class="field-with-unit">
-                                        <input type="number" id="nitrogen" min="0" max="200" step="1" placeholder="25"
-                                               class="px-4 py-3 border border-gray-300 rounded-lg input-focus font-mono"
-                                               oninput="updateAnalysis()">
-                                        <select id="nitrogen_unit" class="unit-select" onchange="updateAnalysis()"></select>
-                                    </div>
-                                </div>
-                                <div>
                                     <label class="block text-sm font-medium text-gray-700 mb-2">Fósforo (P)</label>
                                     <div class="field-with-unit">
                                         <input type="number" id="phosphorus" min="0" max="200" step="1" placeholder="15"
@@ -682,15 +673,6 @@
                                                class="px-4 py-3 border border-gray-300 rounded-lg input-focus font-mono"
                                                oninput="updateAnalysis()">
                                         <select id="boron_unit" class="unit-select" onchange="updateAnalysis()"></select>
-                                    </div>
-                                </div>
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700 mb-2">Molibdênio (Mo)</label>
-                                    <div class="field-with-unit">
-                                        <input type="number" id="molybdenum" min="0" max="2" step="0.01" placeholder="0.15"
-                                               class="px-4 py-3 border border-gray-300 rounded-lg input-focus font-mono"
-                                               oninput="updateAnalysis()">
-                                        <select id="molybdenum_unit" class="unit-select" onchange="updateAnalysis()"></select>
                                     </div>
                                 </div>
                             </div>

@@ -266,7 +266,7 @@
                         </div>
                         <div class="flex justify-between items-center mb-4">
                             <span class="text-sm text-gray-600">pH Alvo</span>
-                            <input type="number" id="phTarget" value="6.8" min="5.0" max="8.0" step="0.1"
+                            <input type="number" id="phTarget" value="6.0" min="5.0" max="8.0" step="0.1"
                                    class="w-20 px-2 py-1 border border-gray-300 rounded calculator-input font-mono text-sm">
                         </div>
                         <div class="mb-4">
@@ -298,13 +298,6 @@
                 <div class="bg-white rounded-2xl shadow-lg p-8 card-hover">
                     <h3 class="font-display text-xl font-semibold mb-6" style="color: var(--forest-green);">Correção de Nutrientes</h3>
                     <div class="space-y-4 mb-6" id="nutrientCorrections">
-                        <div class="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-                            <div class="flex items-center space-x-3">
-                                <div class="w-3 h-3 rounded-full correction-high"></div>
-                                <span class="font-medium">Nitrogênio</span>
-                            </div>
-                            <span class="font-mono font-semibold">120 kg/ha</span>
-                        </div>
                         <div class="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
                             <div class="flex items-center space-x-3">
                                 <div class="w-3 h-3 rounded-full correction-medium"></div>
@@ -632,7 +625,6 @@
                 return parseFloat(nutrients[nutrientKey]);
             }
             const labelMap = {
-                nitrogen: 'Nitrogênio (N)',
                 phosphorus: 'Fósforo (P)',
                 potassium: 'Potássio (K)',
                 calcium: 'Cálcio (Ca)',
@@ -642,8 +634,7 @@
                 manganese: 'Manganês (Mn)',
                 zinc: 'Zinco (Zn)',
                 copper: 'Cobre (Cu)',
-                boron: 'Boro (B)',
-                molybdenum: 'Molibdênio (Mo)'
+                boron: 'Boro (B)'
             };
             const label = labelMap[nutrientKey];
             if (label && nutrients[label] !== undefined && nutrients[label] !== null) {
@@ -799,7 +790,6 @@
             let totalAmount = 0;
             // cost assumptions (can be adjusted later or externalized)
             const pricePerKg = {
-                nitrogen: 2.5,
                 phosphorus: 3.0,
                 potassium: 2.0,
                 calcium: 0.8,
@@ -809,8 +799,7 @@
                 manganese: 2.0,
                 zinc: 5.0,
                 copper: 6.0,
-                boron: 12.0,
-                molybdenum: 20.0
+                boron: 12.0
             };
 
             Object.keys(crop.nutrients).forEach(nutrient => {
@@ -1139,10 +1128,10 @@
 
             const nutrientRequirements = document.getElementById('modalNutrientRequirements');
             const nutrientNames = {
-                nitrogen: 'Nitrogênio (N)', phosphorus: 'Fósforo (P)', potassium: 'Potássio (K)',
+                phosphorus: 'Fósforo (P)', potassium: 'Potássio (K)',
                 calcium: 'Cálcio (Ca)', magnesium: 'Magnésio (Mg)', sulfur: 'Enxofre (S)',
                 iron: 'Ferro (Fe)', manganese: 'Manganês (Mn)', zinc: 'Zinco (Zn)',
-                copper: 'Cobre (Cu)', boron: 'Boro (B)', molybdenum: 'Molibdênio (Mo)'
+                copper: 'Cobre (Cu)', boron: 'Boro (B)'
             };
 
             nutrientRequirements.innerHTML = Object.keys(crop.nutrients).map(nutrient => {
@@ -1213,9 +1202,9 @@
             if (storedData) {
                 const analysisData = JSON.parse(storedData);
                 const soilData = analysisData.soilData;
-                const nutrients = ['nitrogen', 'phosphorus', 'potassium', 'calcium', 'magnesium', 'sulfur'];
+                const nutrients = ['phosphorus', 'potassium', 'calcium', 'magnesium', 'sulfur'];
                 const nutrientNames = {
-                    nitrogen: 'Nitrogênio', phosphorus: 'Fósforo', potassium: 'Potássio',
+                    phosphorus: 'Fósforo', potassium: 'Potássio',
                     calcium: 'Cálcio', magnesium: 'Magnésio', sulfur: 'Enxofre'
                 };
                 let corrections = [];

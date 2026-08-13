@@ -20,11 +20,15 @@
 // cada cultura e para as recomendações de correção.
 //
 // Dados baseados no Manual de Calagem e Adubação para os Estados do Rio
-// Grande do Sul e Santa Catarina (CQFS-RS/SC, 2016). Unidades de origem:
-// N em ppm; P, S, Fe, Mn, Zn, Cu, B, Mo em mg/dm³; Ca e Mg em cmolc/dm³;
-// K em mg/dm³ — mantidas como estavam no restante do código (nenhuma
-// conversão adicional é feita aqui, os valores só entram nos mesmos
-// campos `optimal`/`range` que já existiam).
+// Grande do Sul e Santa Catarina (CQFS-RS/SC, 2016). Unidades (mesmas de
+// laudos ROLAS RS/SC — ver fieldUnitConfig): P, S, Fe, Mn, Zn, Cu, B em
+// mg/dm³; K em mg/dm³; Ca e Mg em cmolc/dm³. Sem Nitrogênio (laudos de solo
+// não medem N diretamente — é estimado pela matéria orgânica) nem Molibdênio
+// (não faz parte do laudo padrão ROLAS).
+// "optimal" = centro da faixa adequada para a cultura; "range" = [mínimo
+// aceitável, máximo antes de excesso/toxidez] — valores de exigência da
+// cultura, não a classificação genérica de fertilidade do solo (essa é
+// `adequacyClasses`, abaixo).
 // ----------------------------------------------------------------------------
 const cropDatabase = {
     'milho': {
@@ -32,18 +36,16 @@ const cropDatabase = {
         phRange: [5.5, 6.5],
         optimalPh: 6.0,
         nutrients: {
-            nitrogen: { optimal: 40, range: [25, 60] },
-            phosphorus: { optimal: 12, range: [9, 18] },
-            potassium: { optimal: 90, range: [61, 120] },
-            calcium: { optimal: 5.0, range: [4.0, 10.0] },
-            magnesium: { optimal: 1.5, range: [1.0, 3.0] },
-            sulfur: { optimal: 12, range: [10, 20] },
-            iron: { optimal: 35, range: [20, 50] },
-            manganese: { optimal: 8, range: [5, 15] },
-            zinc: { optimal: 1.2, range: [0.5, 2.0] },
-            copper: { optimal: 0.8, range: [0.4, 1.5] },
-            boron: { optimal: 0.5, range: [0.3, 0.8] },
-            molybdenum: { optimal: 0.2, range: [0.1, 0.5] }
+            phosphorus: { optimal: 12, range: [6, 25] },
+            potassium: { optimal: 120, range: [60, 200] },
+            calcium: { optimal: 4.0, range: [2.0, 8.0] },
+            magnesium: { optimal: 1.5, range: [0.5, 3.0] },
+            sulfur: { optimal: 10, range: [5, 20] },
+            iron: { optimal: 15, range: [5, 50] },
+            manganese: { optimal: 8, range: [2.5, 30] },
+            zinc: { optimal: 0.8, range: [0.2, 2.0] },
+            copper: { optimal: 0.6, range: [0.2, 2.0] },
+            boron: { optimal: 0.4, range: [0.1, 0.8] }
         },
         compatibility: 0,
         image: ''
@@ -53,18 +55,16 @@ const cropDatabase = {
         phRange: [5.5, 6.5],
         optimalPh: 6.0,
         nutrients: {
-            nitrogen: { optimal: 20, range: [15, 30] },
-            phosphorus: { optimal: 12, range: [9, 18] },
-            potassium: { optimal: 90, range: [61, 120] },
-            calcium: { optimal: 5.0, range: [4.0, 10.0] },
-            magnesium: { optimal: 1.5, range: [1.0, 3.0] },
-            sulfur: { optimal: 12, range: [10, 20] },
-            iron: { optimal: 30, range: [20, 50] },
-            manganese: { optimal: 8, range: [5, 15] },
-            zinc: { optimal: 1.0, range: [0.5, 2.0] },
-            copper: { optimal: 0.8, range: [0.4, 1.5] },
-            boron: { optimal: 0.5, range: [0.3, 0.8] },
-            molybdenum: { optimal: 0.3, range: [0.1, 0.5] }
+            phosphorus: { optimal: 14, range: [9, 28] },
+            potassium: { optimal: 130, range: [80, 200] },
+            calcium: { optimal: 5.0, range: [2.0, 8.0] },
+            magnesium: { optimal: 1.5, range: [0.5, 3.0] },
+            sulfur: { optimal: 12, range: [5, 25] },
+            iron: { optimal: 15, range: [5, 50] },
+            manganese: { optimal: 8, range: [2.5, 30] },
+            zinc: { optimal: 0.8, range: [0.2, 2.0] },
+            copper: { optimal: 0.6, range: [0.2, 2.0] },
+            boron: { optimal: 0.4, range: [0.1, 0.8] }
         },
         compatibility: 0,
         image: ''
@@ -74,18 +74,16 @@ const cropDatabase = {
         phRange: [5.5, 6.5],
         optimalPh: 6.0,
         nutrients: {
-            nitrogen: { optimal: 30, range: [20, 50] },
-            phosphorus: { optimal: 12, range: [9, 18] },
-            potassium: { optimal: 60, range: [41, 120] },
-            calcium: { optimal: 5.0, range: [4.0, 10.0] },
-            magnesium: { optimal: 1.5, range: [1.0, 3.0] },
-            sulfur: { optimal: 8, range: [5, 20] },
-            iron: { optimal: 30, range: [20, 50] },
-            manganese: { optimal: 8, range: [5, 15] },
-            zinc: { optimal: 0.8, range: [0.5, 2.0] },
-            copper: { optimal: 0.6, range: [0.4, 1.5] },
-            boron: { optimal: 0.3, range: [0.1, 0.8] },
-            molybdenum: { optimal: 0.2, range: [0.1, 0.5] }
+            phosphorus: { optimal: 14, range: [9, 30] },
+            potassium: { optimal: 120, range: [60, 200] },
+            calcium: { optimal: 5.0, range: [2.0, 8.0] },
+            magnesium: { optimal: 1.5, range: [0.5, 3.0] },
+            sulfur: { optimal: 12, range: [5, 25] },
+            iron: { optimal: 15, range: [5, 50] },
+            manganese: { optimal: 10, range: [2.5, 35] },
+            zinc: { optimal: 0.8, range: [0.2, 2.0] },
+            copper: { optimal: 0.6, range: [0.2, 2.0] },
+            boron: { optimal: 0.4, range: [0.1, 0.8] }
         },
         compatibility: 0,
         image: ''
@@ -95,18 +93,16 @@ const cropDatabase = {
         phRange: [5.5, 6.5],
         optimalPh: 6.0,
         nutrients: {
-            nitrogen: { optimal: 35, range: [20, 50] },
-            phosphorus: { optimal: 12, range: [9, 18] },
-            potassium: { optimal: 120, range: [90, 180] },
-            calcium: { optimal: 7.0, range: [5.0, 12.0] },
-            magnesium: { optimal: 2.0, range: [1.5, 4.0] },
-            sulfur: { optimal: 14, range: [10, 20] },
-            iron: { optimal: 30, range: [20, 50] },
-            manganese: { optimal: 8, range: [5, 15] },
-            zinc: { optimal: 1.0, range: [0.5, 2.0] },
-            copper: { optimal: 0.8, range: [0.4, 1.5] },
-            boron: { optimal: 0.6, range: [0.3, 1.0] },
-            molybdenum: { optimal: 0.2, range: [0.1, 0.5] }
+            phosphorus: { optimal: 18, range: [12, 30] },
+            potassium: { optimal: 150, range: [100, 220] },
+            calcium: { optimal: 5.0, range: [2.5, 8.0] },
+            magnesium: { optimal: 1.5, range: [0.5, 3.0] },
+            sulfur: { optimal: 12, range: [5, 25] },
+            iron: { optimal: 15, range: [5, 50] },
+            manganese: { optimal: 8, range: [2.5, 30] },
+            zinc: { optimal: 0.8, range: [0.2, 2.0] },
+            copper: { optimal: 0.6, range: [0.2, 2.0] },
+            boron: { optimal: 0.4, range: [0.1, 0.8] }
         },
         compatibility: 0,
         image: ''
@@ -134,7 +130,6 @@ const fieldUnitConfig = {
     sandContent: { options: ['g/kg', '%', 'g/dm³'], default: 'g/kg' },
     siltContent: { options: ['g/kg', '%', 'g/dm³'], default: 'g/kg' },
     clayContent: { options: ['g/kg', '%', 'g/dm³'], default: 'g/kg' },
-    nitrogen: { options: ['ppm (mg/dm³)', 'mg/kg'], default: 'ppm (mg/dm³)' },
     phosphorus: { options: ['ppm (mg/dm³)', 'mg/kg'], default: 'ppm (mg/dm³)' },
     potassium: { options: ['ppm (mg/dm³)', 'mg/kg', 'cmolc/dm³'], default: 'ppm (mg/dm³)' },
     calcium: { options: ['cmolc/dm³', 'mmolc/dm³', 'mg/dm³'], default: 'cmolc/dm³' },
@@ -144,8 +139,7 @@ const fieldUnitConfig = {
     manganese: { options: ['ppm (mg/dm³)', 'mg/kg'], default: 'ppm (mg/dm³)' },
     zinc: { options: ['ppm (mg/dm³)', 'mg/kg'], default: 'ppm (mg/dm³)' },
     copper: { options: ['ppm (mg/dm³)', 'mg/kg'], default: 'ppm (mg/dm³)' },
-    boron: { options: ['ppm (mg/dm³)', 'mg/kg'], default: 'ppm (mg/dm³)' },
-    molybdenum: { options: ['ppm (mg/dm³)', 'mg/kg'], default: 'ppm (mg/dm³)' }
+    boron: { options: ['ppm (mg/dm³)', 'mg/kg'], default: 'ppm (mg/dm³)' }
 };
 
 // Rótulo compacto para exibir dentro do <select> — a grade de 3 colunas do
@@ -207,7 +201,6 @@ let soilData = {
     state: '',
     soilType: '',
     nutrients: {
-        nitrogen: null,
         phosphorus: null,
         potassium: null,
         calcium: null,
@@ -217,8 +210,7 @@ let soilData = {
         manganese: null,
         zinc: null,
         copper: null,
-        boron: null,
-        molybdenum: null
+        boron: null
     },
     // Unidade escolhida pelo agricultor para cada campo de fieldUnitConfig
     // (chave = mesmo id do campo, ex.: 'organicMatter', 'calcium'). Populado
@@ -231,7 +223,6 @@ function initializeAnalysis() {
     initUnitSelectors();
     updateAnalysis();
     updateSavedReportCount();
-    setInterval(updateAnalysis, 1000);
 
     // Recalcula o Complexo Sortivo (SB, CTC, V%, m%) sempre que Ca, Mg, K, Al
     // ou H+Al mudarem — os demais campos calculados continuam editáveis entre
@@ -358,7 +349,6 @@ function classifyAdequacy(nutrient, value) {
 
 function convertNutrientKey(nutrient) {
     const map = {
-        nitrogen: 'nitrogen',
         phosphorus: 'phosphorus',
         potassium: 'potassium',
         calcium: 'calcium',
@@ -368,8 +358,7 @@ function convertNutrientKey(nutrient) {
         manganese: 'manganese',
         zinc: 'zinc',
         copper: 'copper',
-        boron: 'boron',
-        molybdenum: 'molybdenum'
+        boron: 'boron'
     };
     return map[nutrient] || nutrient;
 }
@@ -417,8 +406,10 @@ function parseFieldValue(elementId) {
 // ----------------------------------------------------------------------------
 // SEÇÃO 4 — Motor de análise em tempo real: lê os campos do formulário,
 // recalcula soilData e atualiza todo o painel (score de saúde, compatibilidade
-// por cultura, recomendações rápidas). Roda a cada input e também a cada 1s
-// via setInterval (initializeAnalysis) para pegar mudanças programáticas.
+// por cultura, recomendações rápidas). Roda a cada input do formulário (todo
+// campo tem oninput/onchange="updateAnalysis()" em index.html) — inclusive
+// preenchimentos programáticos, já que js/laudo-parser-client.js dispara um
+// Event('input') sintético depois de preencher os campos via IA.
 // ----------------------------------------------------------------------------
 function updateAnalysis() {
     // Get soil data from form inputs
@@ -440,8 +431,8 @@ function updateAnalysis() {
     soilData.state = document.getElementById('state')?.value.trim() || '';
     soilData.soilType = document.getElementById('soilType')?.value.trim() || '';
 
-    const nutrientIds = ['nitrogen', 'phosphorus', 'potassium', 'calcium', 'magnesium', 'sulfur',
-                        'iron', 'manganese', 'zinc', 'copper', 'boron', 'molybdenum'];
+    const nutrientIds = ['phosphorus', 'potassium', 'calcium', 'magnesium', 'sulfur',
+                        'iron', 'manganese', 'zinc', 'copper', 'boron'];
 
     nutrientIds.forEach(nutrient => {
         soilData.nutrients[nutrient] = parseFieldValue(nutrient);
@@ -710,7 +701,6 @@ function updateNutrientStatus() {
     
     let statusHTML = '';
     const nutrientNames = {
-        nitrogen: 'Nitrogênio',
         phosphorus: 'Fósforo',
         potassium: 'Potássio',
         calcium: 'Cálcio',
@@ -720,8 +710,7 @@ function updateNutrientStatus() {
         manganese: 'Manganês',
         zinc: 'Zinco',
         copper: 'Cobre',
-        boron: 'Boro',
-        molybdenum: 'Molibdênio'
+        boron: 'Boro'
     };
     
     Object.keys(soilData.nutrients).forEach(nutrient => {
@@ -764,12 +753,14 @@ function updateQuickRecommendations() {
     
     let recommendations = [];
     
-    // pH recommendations
+    // pH recommendations — faixa ótima RS/SC é 5.5-6.5 (CQFS-RS/SC)
     if (soilData.ph !== null) {
         if (soilData.ph < 5.5) {
-            recommendations.push('Aplicar calcário para corrigir acidez');
+            recommendations.push('Aplicar calcário para corrigir acidez — consultar índice SMP para dosagem');
         } else if (soilData.ph > 7.5) {
             recommendations.push('Considerar aplicação de enxofre para reduzir pH');
+        } else if (soilData.ph > 6.5) {
+            recommendations.push('pH acima do ideal para a maioria das culturas do RS/SC');
         }
     }
     
@@ -800,7 +791,6 @@ function updateQuickRecommendations() {
             const score = calculateNutrientScore(nutrient, soilData.nutrients[nutrient]);
             if (score < 40) {
                 const nutrientNames = {
-                    nitrogen: 'nitrogênio',
                     phosphorus: 'fósforo',
                     potassium: 'potássio',
                     calcium: 'cálcio',
@@ -810,8 +800,7 @@ function updateQuickRecommendations() {
                     manganese: 'manganês',
                     zinc: 'zinco',
                     copper: 'cobre',
-                    boron: 'boro',
-                    molybdenum: 'molibdênio'
+                    boron: 'boro'
                 };
                 recommendations.push(`Aplicar ${nutrientNames[nutrient]} em deficiência`);
             }
@@ -866,7 +855,7 @@ function computeCropCompatibility(soil, cropKey) {
     }
 
     // Nutrient scores
-    const macroKeys = ['nitrogen','phosphorus','potassium','calcium','magnesium','sulfur'];
+    const macroKeys = ['phosphorus','potassium','calcium','magnesium','sulfur'];
     const nutrientScores = {};
     let weightedSum = 0;
     let weightSum = 0;
@@ -879,7 +868,6 @@ function computeCropCompatibility(soil, cropKey) {
             if (soilVal === undefined) {
                 // try human label keys mapping
                 const labelMap = {
-                    nitrogen: 'Nitrogênio (N)',
                     phosphorus: 'Fósforo (P)',
                     potassium: 'Potássio (K)',
                     calcium: 'Cálcio (Ca)',
@@ -889,8 +877,7 @@ function computeCropCompatibility(soil, cropKey) {
                     manganese: 'Manganês (Mn)',
                     zinc: 'Zinco (Zn)',
                     copper: 'Cobre (Cu)',
-                    boron: 'Boro (B)',
-                    molybdenum: 'Molibdênio (Mo)'
+                    boron: 'Boro (B)'
                 };
                 const maybe = soil.nutrients[labelMap[nutr]];
                 if (maybe !== undefined) soilVal = maybe && maybe.val !== undefined ? maybe.val : maybe;
