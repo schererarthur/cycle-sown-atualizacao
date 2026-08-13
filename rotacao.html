@@ -63,8 +63,7 @@
                     <div class="ml-10 flex items-baseline space-x-8">
                         <a href="index.html#analysis" class="text-slate-600 hover:text-[#066a04] px-3 py-2 text-sm font-medium transition-colors">Análise</a>
                         <a href="recommendations.html" class="text-slate-600 hover:text-[#066a04] px-3 py-2 text-sm font-medium transition-colors">Recomendações</a>
-                        <a href="relatorio.html" class="text-slate-600 hover:text-[#066a04] px-3 py-2 text-sm font-medium transition-colors">Relatório</a>
-                        <a href="relatorios.html" class="text-slate-600 hover:text-[#066a04] px-3 py-2 text-sm font-medium transition-colors">📊 Relatórios</a>
+                        <a href="relatorios.html" class="text-slate-600 hover:text-[#066a04] px-3 py-2 text-sm font-medium transition-colors">Relatórios</a>
                         <a href="profile.html" class="text-slate-600 hover:text-[#066a04] px-3 py-2 text-sm font-medium transition-colors">Perfil</a>
                     </div>
                 </div>
@@ -94,7 +93,7 @@
                 <a href="mapa-fertilidade.html" onclick="toggleMenu(false)" class="block text-gray-900 px-4 py-3 rounded-lg hover:bg-[#eaf7e2] transition-colors">Mapa de Fertilidade</a>
                 <a href="cotacoes.html" onclick="toggleMenu(false)" class="block text-gray-900 px-4 py-3 rounded-lg hover:bg-[#eaf7e2] transition-colors">Cotações</a>
                 <a href="rotacao.html" onclick="toggleMenu(false)" class="block text-gray-900 px-4 py-3 rounded-lg hover:bg-[#eaf7e2] transition-colors">Rotação</a>
-                <a href="relatorios.html" onclick="toggleMenu(false)" class="block text-gray-900 px-4 py-3 rounded-lg hover:bg-[#eaf7e2] transition-colors">📊 Relatórios</a>
+                <a href="relatorios.html" onclick="toggleMenu(false)" class="block text-gray-900 px-4 py-3 rounded-lg hover:bg-[#eaf7e2] transition-colors">Relatórios</a>
                 <a href="empresas/index.html" onclick="toggleMenu(false)" class="block text-gray-900 px-4 py-3 rounded-lg hover:bg-[#eaf7e2] transition-colors">Vender Produção</a>
                 <a href="profile.html" onclick="toggleMenu(false)" class="block text-[#066a04] font-semibold px-4 py-3 rounded-lg hover:bg-[#eaf7e2] transition-colors">Meu Perfil</a>
             </nav>
@@ -173,7 +172,7 @@
         </section>
 
         <p class="text-xs text-slate-400 text-center max-w-2xl mx-auto">
-            ⚠️ As recomendações são geradas a partir de dados agronômicos de referência (Manual CQFS-RS/SC, Embrapa)
+            As recomendações são geradas a partir de dados agronômicos de referência (Manual CQFS-RS/SC, Embrapa)
             e não substituem a orientação de um engenheiro agrônomo — consulte um profissional para o planejamento
             técnico completo da sua propriedade.
         </p>
@@ -361,7 +360,7 @@
                         ${top ? `<span class="text-xs font-bold px-2 py-1 rounded-full ${scoreBadgeClass(top.score)}">${top.score}</span>` : ''}
                     </div>
                     ${top
-                        ? `<div class="text-lg">${top.emoji} ${top.cultura}</div>
+                        ? `<div class="text-lg">${top.cultura}</div>
                            <div class="text-xs text-slate-500 mt-1">${top.cobertura ? 'Cobertura' : (top.lucro_ha != null ? `R$ ${money(top.lucro_ha)}/ha` : '—')}</div>`
                         : `<div class="text-sm text-slate-400">Sem recomendação viável</div>`
                     }
@@ -412,7 +411,7 @@
                     <div class="flex items-center justify-between mb-2 flex-wrap gap-2">
                         <div class="flex items-center gap-2">
                             <span class="text-xs font-bold text-slate-400">#${rec.rank}</span>
-                            <span class="text-lg font-bold text-slate-900">${rec.emoji} ${rec.cultura.toUpperCase()}</span>
+                            <span class="text-lg font-bold text-slate-900">${rec.cultura.toUpperCase()}</span>
                         </div>
                         <span class="text-sm font-bold px-3 py-1 rounded-full ${scoreBadgeClass(rec.score)}">Score: ${rec.score}</span>
                     </div>
@@ -436,7 +435,7 @@
         // ------------------------------------------------------------------
         function openEscolherModal(item, rec) {
             escolherPendente = { talhaoId: item.talhao.id, cultura: rec.cultura };
-            document.getElementById('escolherCulturaLabel').textContent = `${rec.emoji} ${rec.cultura}`;
+            document.getElementById('escolherCulturaLabel').textContent = rec.cultura;
             document.getElementById('escolherSafraLabel').textContent = window.__proximaSafra ? window.__proximaSafra.label : 'a próxima safra';
             document.getElementById('escolherError').classList.add('hidden');
             document.getElementById('escolherForm').reset();

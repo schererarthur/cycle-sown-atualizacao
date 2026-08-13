@@ -16,7 +16,7 @@ const CULTURAS = {
     'Soja': {
         familia: 'leguminosa',
         safra: 'verao',
-        emoji: '🫘',
+        emoji: '',
         meses_plantio: [9, 10, 11],
         meses_colheita: [2, 3, 4],
         solo_minimo: { ph: 5.5, P: 9, K: 80, V: 65 },
@@ -33,7 +33,7 @@ const CULTURAS = {
     'Milho': {
         familia: 'graminea',
         safra: 'verao',
-        emoji: '🌽',
+        emoji: '',
         meses_plantio: [8, 9, 10],
         meses_colheita: [1, 2, 3],
         solo_minimo: { ph: 5.5, P: 6, K: 60, V: 60 },
@@ -50,7 +50,7 @@ const CULTURAS = {
     'Feijão': {
         familia: 'leguminosa',
         safra: 'verao',
-        emoji: '🫘',
+        emoji: '',
         meses_plantio: [9, 10, 1, 2],
         meses_colheita: [12, 1, 4, 5],
         solo_minimo: { ph: 5.5, P: 9, K: 80, V: 60 },
@@ -67,7 +67,7 @@ const CULTURAS = {
     'Fumo': {
         familia: 'solanacea',
         safra: 'verao',
-        emoji: '🍂',
+        emoji: '',
         meses_plantio: [7, 8, 9],
         meses_colheita: [12, 1, 2],
         solo_minimo: { ph: 5.5, P: 12, K: 100, V: 65 },
@@ -87,7 +87,7 @@ const CULTURAS = {
     'Sorgo': {
         familia: 'graminea',
         safra: 'verao',
-        emoji: '🌾',
+        emoji: '',
         meses_plantio: [10, 11],
         meses_colheita: [3, 4],
         solo_minimo: { ph: 5.0, P: 4, K: 40, V: 50 },
@@ -107,7 +107,7 @@ const CULTURAS = {
     'Trigo': {
         familia: 'graminea',
         safra: 'inverno',
-        emoji: '🌾',
+        emoji: '',
         meses_plantio: [5, 6, 7],
         meses_colheita: [10, 11],
         solo_minimo: { ph: 5.5, P: 9, K: 60, V: 65 },
@@ -124,7 +124,7 @@ const CULTURAS = {
     'Cevada': {
         familia: 'graminea',
         safra: 'inverno',
-        emoji: '🌾',
+        emoji: '',
         meses_plantio: [5, 6],
         meses_colheita: [10, 11],
         solo_minimo: { ph: 5.5, P: 9, K: 60, V: 65 },
@@ -141,7 +141,7 @@ const CULTURAS = {
     'Canola': {
         familia: 'brassicacea',
         safra: 'inverno',
-        emoji: '🌼',
+        emoji: '',
         meses_plantio: [4, 5],
         meses_colheita: [9, 10],
         solo_minimo: { ph: 5.5, P: 9, K: 60, V: 60 },
@@ -158,7 +158,7 @@ const CULTURAS = {
     'Aveia Preta': {
         familia: 'graminea',
         safra: 'inverno',
-        emoji: '🌱',
+        emoji: '',
         meses_plantio: [3, 4, 5],
         meses_colheita: [8, 9],
         solo_minimo: { ph: 5.0, P: 4, K: 40, V: 45 },
@@ -176,7 +176,7 @@ const CULTURAS = {
     'Centeio': {
         familia: 'graminea',
         safra: 'inverno',
-        emoji: '🌾',
+        emoji: '',
         meses_plantio: [3, 4, 5],
         meses_colheita: [8, 9],
         solo_minimo: { ph: 5.0, P: 4, K: 40, V: 45 },
@@ -194,7 +194,7 @@ const CULTURAS = {
     'Ervilhaca': {
         familia: 'leguminosa',
         safra: 'inverno',
-        emoji: '🌿',
+        emoji: '',
         meses_plantio: [3, 4, 5],
         meses_colheita: [8, 9],
         solo_minimo: { ph: 5.0, P: 4, K: 40, V: 45 },
@@ -212,7 +212,7 @@ const CULTURAS = {
     'Nabo Forrageiro': {
         familia: 'brassicacea',
         safra: 'inverno',
-        emoji: '🥬',
+        emoji: '',
         meses_plantio: [3, 4, 5],
         meses_colheita: [7, 8],
         solo_minimo: { ph: 5.0, P: 4, K: 30, V: 40 },

@@ -13,13 +13,6 @@
         ? 'http://localhost:3000/api'
         : 'https://backend-production-2af81.up.railway.app/api';
 
-    const TIPO_META = {
-        nutricional: { emoji: '🧪', label: 'Nutricional do Solo' },
-        recomendacao: { emoji: '🌾', label: 'Recomendação de Cultura' },
-        rotacao: { emoji: '🔄', label: 'Rotação e Custos' },
-        produtividade: { emoji: '📈', label: 'Produtividade' }
-    };
-
     // Paleta categórica só para distinguir culturas nos gráficos — não faz
     // parte do esquema de status (bom/regular/ruim) do resto do site, que
     // usa exclusivamente as cores da marca (#066a04/#5dc135) + âmbar/vermelho.
@@ -97,7 +90,7 @@
     }
 
     function disclaimer(texto) {
-        return `<p class="text-xs text-slate-400 mt-6 pt-4 border-t border-slate-100">${texto} ⚠️ Consulte um engenheiro agrônomo (CREA) para orientação técnica completa (ART).</p>`;
+        return `<p class="text-xs text-slate-400 mt-6 pt-4 border-t border-slate-100">${texto} Consulte um engenheiro agrônomo (CREA) para orientação técnica completa (ART).</p>`;
     }
 
     function escapeHtml(str) {
@@ -121,7 +114,7 @@
                         <p class="text-sm text-slate-500 mt-0.5">${subtitulo}</p>
                     </div>
                     <button type="button" onclick="window.print()" class="no-print shrink-0 px-4 py-2.5 rounded-lg bg-stone-900 hover:bg-black text-white text-sm font-semibold transition-colors">
-                        Exportar PDF 🖨️
+                        Exportar PDF
                     </button>
                 </div>
                 <div class="px-6 sm:px-8 py-6">${bodyHtml}</div>
@@ -241,10 +234,10 @@
         const principalHtml = principal ? `
             <div class="border-2 border-[#066a04] rounded-2xl p-6 mb-6 report-section">
                 <div class="flex items-center justify-between flex-wrap gap-2 mb-3">
-                    <span class="text-xs font-bold text-[#066a04] uppercase tracking-wide">🥇 Recomendação principal</span>
+                    <span class="text-xs font-bold text-[#066a04] uppercase tracking-wide">Recomendação principal</span>
                     <span class="text-sm font-bold px-3 py-1 rounded-full ${scoreBadgeClass(principal.score)}">Score: ${principal.score}/100</span>
                 </div>
-                <h3 class="text-2xl font-black text-slate-900 mb-3">${principal.emoji} ${escapeHtml(principal.cultura.toUpperCase())}</h3>
+                <h3 class="text-2xl font-black text-slate-900 mb-3">${escapeHtml(principal.cultura.toUpperCase())}</h3>
                 <p class="text-xs font-bold text-slate-500 uppercase mb-2">Por que esta cultura?</p>
                 <ul class="text-sm text-slate-700 space-y-1.5 mb-2">
                     ${principal.justificativas.map((j) => `<li>${escapeHtml(j)}</li>`).join('')}
@@ -260,13 +253,13 @@
         const altHtml = dados.alternativas.map((alt, i) => `
             <div class="border border-slate-200 rounded-xl p-5 mb-4 report-section">
                 <div class="flex items-center justify-between flex-wrap gap-2 mb-2">
-                    <span class="text-xs font-bold text-slate-400 uppercase">🥈 Alternativa ${i + 2}</span>
+                    <span class="text-xs font-bold text-slate-400 uppercase">Alternativa ${i + 2}</span>
                     <span class="text-xs font-bold px-3 py-1 rounded-full ${scoreBadgeClass(alt.score)}">Score: ${alt.score}/100</span>
                 </div>
-                <h4 class="text-lg font-bold text-slate-900 mb-1">${alt.emoji} ${escapeHtml(alt.cultura)}</h4>
+                <h4 class="text-lg font-bold text-slate-900 mb-1">${escapeHtml(alt.cultura)}</h4>
                 <p class="text-sm text-slate-600 mb-1">${alt.cobertura ? `Cobertura — custo ${money(alt.custo_estimado_ha)}/ha` : `Lucro estimado: ${money(alt.lucro_estimado_ha)}/ha`}</p>
-                ${(() => { const j = alt.justificativas.find((x) => !x.startsWith('⚠️')); return j ? `<p class="text-xs text-slate-500">${escapeHtml(j)}</p>` : ''; })()}
-                ${alt.alertas.length ? `<p class="text-xs text-amber-600 mt-1">⚠️ ${alt.alertas.map(escapeHtml).join(' · ')}</p>` : ''}
+                ${(() => { const j = alt.justificativas.find((x) => !x.startsWith('')); return j ? `<p class="text-xs text-slate-500">${escapeHtml(j)}</p>` : ''; })()}
+                ${alt.alertas.length ? `<p class="text-xs text-amber-600 mt-1">${alt.alertas.map(escapeHtml).join(' · ')}</p>` : ''}
             </div>
         `).join('');
 
@@ -287,7 +280,7 @@
                 ${dados.historico_recente.map((h) => `
                     <div class="flex items-center justify-between px-4 py-2.5 text-sm">
                         <span class="text-slate-500">${h.safra_tipo === 'verao' ? 'Verão' : 'Inverno'} ${h.safra_ano}</span>
-                        <span class="font-medium">${h.emoji} ${escapeHtml(h.cultura_nome)}</span>
+                        <span class="font-medium">${escapeHtml(h.cultura_nome)}</span>
                         <span class="text-slate-500">${h.produtividade_real != null ? h.produtividade_real + ' sc/ha' : '—'}</span>
                     </div>
                 `).join('')}
@@ -300,7 +293,7 @@
                     <span class="text-xs font-bold text-slate-400 uppercase">Ciclo ${c.numero} · ${c.safra.label}</span>
                     <span class="text-xs font-bold px-3 py-1 rounded-full ${scoreBadgeClass(c.score)}">Score: ${c.score}</span>
                 </div>
-                <h4 class="text-lg font-bold text-slate-900 mb-2">${c.emoji} ${escapeHtml(c.cultura)}${c.cobertura ? ' <span class="text-xs font-normal text-slate-400">(cobertura)</span>' : ''}</h4>
+                <h4 class="text-lg font-bold text-slate-900 mb-2">${escapeHtml(c.cultura)}${c.cobertura ? ' <span class="text-xs font-normal text-slate-400">(cobertura)</span>' : ''}</h4>
                 <div class="flex flex-wrap gap-x-6 gap-y-1 text-xs text-slate-500 mb-3">
                     <span>Plantio: <strong class="text-slate-700">${c.janela_plantio}</strong></span>
                     <span>Colheita: <strong class="text-slate-700">${c.janela_colheita}</strong></span>
@@ -337,7 +330,7 @@
             <h3 class="font-bold text-slate-900 mb-3">Sequência visual</h3>
             <div class="flex flex-wrap items-center gap-2 mb-2">
                 ${dados.sequencia_visual.map((s, i) => `
-                    <span class="inline-flex items-center gap-1 px-3 py-1.5 rounded-full border border-slate-200 text-sm font-medium">${s.emoji} ${escapeHtml(s.cultura)}</span>
+                    <span class="inline-flex items-center gap-1 px-3 py-1.5 rounded-full border border-slate-200 text-sm font-medium">${escapeHtml(s.cultura)}</span>
                     ${i < dados.sequencia_visual.length - 1 ? '<span class="text-slate-300">→</span>' : ''}
                 `).join('')}
             </div>
@@ -433,12 +426,12 @@
                 </div>`;
         }).join('');
 
-        const compLabel = { acima: '✅ Acima da média regional', abaixo: '⚠️ Abaixo da média regional', na_media: '● Na média regional' }[c.comparacao_regional] || '';
+        const compLabel = { acima: 'Acima da média regional', abaixo: 'Abaixo da média regional', na_media: '● Na média regional' }[c.comparacao_regional] || '';
 
         return `
             <div class="border border-slate-200 rounded-xl p-5 mb-4 report-section">
                 <div class="flex items-center justify-between flex-wrap gap-2 mb-3">
-                    <h4 class="font-bold text-slate-900">${c.emoji} ${escapeHtml(c.cultura_nome.toUpperCase())}</h4>
+                    <h4 class="font-bold text-slate-900">${escapeHtml(c.cultura_nome.toUpperCase())}</h4>
                     <span class="text-xs text-slate-500">Média: <strong class="text-slate-800">${c.media} ${c.unidade}</strong></span>
                 </div>
                 ${linhas}
@@ -494,6 +487,248 @@
         rotacao: renderRotacao,
         produtividade: renderProdutividade
     };
+
+    // ========================================================================
+    // LAUDO DE FERTILIDADE — antigo relatorios.html. Não depende de talhão nem
+    // de backend: lê userStorage.soilAnalysisReports (gravado por index.html
+    // via main.js) e usa calculateHealthScoreFromData() do main.js para a
+    // nota de Saúde Geral bater com index.html/recommendations.html.
+    // ========================================================================
+    const LAUDO_NUTRIENT_LABELS = {
+        nitrogen: 'Nitrogênio (N)', phosphorus: 'Fósforo (P)', potassium: 'Potássio (K)',
+        calcium: 'Cálcio (Ca)', magnesium: 'Magnésio (Mg)', sulfur: 'Enxofre (S)',
+        iron: 'Ferro (Fe)', manganese: 'Manganês (Mn)', zinc: 'Zinco (Zn)',
+        copper: 'Cobre (Cu)', boron: 'Boro (B)', molybdenum: 'Molibdênio (Mo)'
+    };
+    const LAUDO_MACRO_KEYS = ['Nitrogênio (N)', 'Fósforo (P)', 'Potássio (K)', 'Cálcio (Ca)', 'Magnésio (Mg)', 'Enxofre (S)'];
+    const LAUDO_REFERENCE_VALUES = {
+        'Nitrogênio (N)': 30, 'Fósforo (P)': 20, 'Potássio (K)': 150, 'Cálcio (Ca)': 1000,
+        'Magnésio (Mg)': 120, 'Enxofre (S)': 15, 'Ferro (Fe)': 50, 'Manganês (Mn)': 25,
+        'Zinco (Zn)': 2.0, 'Cobre (Cu)': 1.0, 'Boro (B)': 1.0, 'Molibdênio (Mo)': 0.15
+    };
+    const LAUDO_CROP_LABELS = { milho: 'Milho', soja: 'Soja', trigo: 'Trigo', tabaco: 'Tabaco' };
+
+    let laudoReports = [];
+
+    function normalizeLaudoData(report) {
+        const defaultData = { ph: 6.0, mo: 3.2, nutrients: {} };
+        const soilData = report && (report.soilData || report);
+        if (!soilData || !soilData.nutrients) return defaultData;
+
+        const nutrients = {};
+        Object.entries(soilData.nutrients).forEach(([key, value]) => {
+            const label = LAUDO_NUTRIENT_LABELS[key] || key;
+            const refValue = LAUDO_REFERENCE_VALUES[label] || Math.max(value || 0, 1);
+            nutrients[label] = { val: value, ref: refValue };
+        });
+
+        const phVal = soilData.ph ?? soilData.pH ?? soilData.soilPH ?? defaultData.ph;
+        return { ph: phVal, mo: soilData.organicMatter ?? defaultData.mo, nutrients };
+    }
+
+    function laudoNutrientCard(name, info) {
+        const hasValue = info.val !== null && info.val !== undefined && !Number.isNaN(Number(info.val));
+        if (!hasValue) {
+            return `
+                <div class="border border-slate-200 rounded-xl p-4 report-section">
+                    <div class="flex items-center justify-between gap-3 mb-2">
+                        <span class="font-semibold text-slate-800 text-sm">${escapeHtml(name)}</span>
+                        ${statusBadge('indisponivel')}
+                    </div>
+                    <div class="text-2xl font-black text-slate-300">—</div>
+                </div>`;
+        }
+        const percent = Math.min((Number(info.val) / info.ref) * 100, 100);
+        const status = percent >= 90 ? 'bom' : (percent < 60 ? 'ruim' : 'regular');
+        return `
+            <div class="border border-slate-200 rounded-xl p-4 report-section">
+                <div class="flex items-center justify-between gap-3 mb-2">
+                    <span class="font-semibold text-slate-800 text-sm">${escapeHtml(name)}</span>
+                    ${statusBadge(status)}
+                </div>
+                <div class="flex items-baseline gap-1.5 mb-2">
+                    <span class="text-2xl font-black text-slate-900">${info.val}</span>
+                    <span class="text-xs text-slate-400">ppm</span>
+                </div>
+                <div class="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
+                    <div class="h-full" style="width:${percent}%; background:${barColor(status)}"></div>
+                </div>
+            </div>`;
+    }
+
+    function laudoRecommendations(data) {
+        const recs = [];
+        if (data.ph !== undefined && data.ph !== null) {
+            if (data.ph < 5.5) recs.push('Solo ácido: aplicar calcário para corrigir acidez.');
+            else if (data.ph > 7.5) recs.push('Solo alcalino: considerar aplicação de enxofre para reduzir pH.');
+            else recs.push('pH dentro da faixa adequada para muitas culturas.');
+        }
+        if (data.mo !== undefined && data.mo !== null) {
+            if (data.mo < 2) recs.push('Baixa matéria orgânica: adicionar composto ou esterco para melhorar estrutura e retenção de água.');
+            else recs.push('Matéria orgânica adequada. Continue manejos que aumentem conteúdo orgânico.');
+        }
+        Object.entries(data.nutrients || {}).forEach(([label, info]) => {
+            const val = parseFloat(info.val);
+            const ref = parseFloat(info.ref) || 1;
+            if (Number.isNaN(val)) return;
+            const short = label.split(' (')[0];
+            if (val < ref * 0.6) recs.push(`${short}: nível muito baixo (${val} ppm). Recomenda-se correção pontual antes do plantio.`);
+            else if (val < ref * 0.9) recs.push(`${short}: nível moderadamente baixo (${val} ppm). Monitorar e, se necessário, corrigir.`);
+        });
+        return recs;
+    }
+
+    function laudoAdequacy(report, data) {
+        const soil = report && (report.soilData || report);
+        const ph = soil && (soil.ph ?? soil.pH ?? soil.soilPH);
+        const om = soil && (soil.organicMatter ?? soil.mo);
+        const entries = [];
+        if (ph !== undefined && ph !== null) {
+            const value = parseFloat(ph);
+            entries.push({ label: 'pH', value, status: value >= 5.5 && value <= 7.5 ? 'Adequado' : 'Precisa correção' });
+        }
+        if (om !== undefined && om !== null) {
+            const value = parseFloat(om);
+            entries.push({ label: 'Matéria orgânica', value, status: value >= 2 && value <= 6 ? 'Adequado' : 'Precisa correção' });
+        }
+        Object.entries(data.nutrients || {}).forEach(([label, info]) => {
+            const value = parseFloat(info.val);
+            const ref = parseFloat(info.ref) || 1;
+            if (!Number.isNaN(value) && ref > 0) {
+                const status = value >= ref * 0.8 && value <= ref * 1.2 ? 'Adequado' : 'Precisa correção';
+                entries.push({ label, value, ref, status });
+            }
+        });
+        return entries;
+    }
+
+    function renderLaudo(idx) {
+        const report = laudoReports[idx];
+        const data = normalizeLaudoData(report);
+        const rawSoil = report && (report.soilData || report);
+        const score = (typeof calculateHealthScoreFromData === 'function' && rawSoil)
+            ? calculateHealthScoreFromData(rawSoil) : 0;
+
+        const phNum = (data.ph !== undefined && data.ph !== null) ? parseFloat(data.ph) : NaN;
+        let phLabel = 'Detectando...', phColor = '#94a3b8';
+        if (!Number.isNaN(phNum)) {
+            if (phNum < 6) { phLabel = 'Ácido'; phColor = '#c62828'; }
+            else if (phNum <= 7) { phLabel = 'Ideal'; phColor = '#066a04'; }
+            else { phLabel = 'Alcalino'; phColor = '#F9A825'; }
+        }
+
+        const macroHtml = LAUDO_MACRO_KEYS.filter((k) => data.nutrients[k]).map((k) => laudoNutrientCard(k, data.nutrients[k])).join('');
+        const microHtml = Object.entries(data.nutrients).filter(([k]) => !LAUDO_MACRO_KEYS.includes(k)).map(([k, v]) => laudoNutrientCard(k, v)).join('');
+
+        const recs = laudoRecommendations(data);
+        const recsHtml = recs.length
+            ? recs.map((r) => `<div class="mb-2">${escapeHtml(r)}</div>`).join('')
+            : '<div>Sem recomendações necessárias — solo em boas condições.</div>';
+
+        const adequacyEntries = laudoAdequacy(report, data);
+        const adequacyHtml = adequacyEntries.length
+            ? adequacyEntries.map((item) => `
+                <div class="bg-white p-4 rounded-xl border border-amber-100">
+                    <div class="flex items-center justify-between gap-3">
+                        <strong>${escapeHtml(item.label)}</strong>
+                        <span class="px-3 py-1 rounded-full text-xs font-bold ${item.status === 'Adequado' ? 'badge-bom' : 'badge-regular'}">${item.status}</span>
+                    </div>
+                    <div class="text-sm text-slate-600 mt-1">Valor informado: ${Number.isNaN(item.value) ? '—' : item.value}${item.ref ? ` · Referência usada: ${item.ref}` : ''}</div>
+                </div>`).join('')
+            : '<div>Nenhum dado informado para comparar.</div>';
+
+        const plantedCrop = report && report.plantedCropFollowUp;
+        const plantedCropHtml = plantedCrop ? `
+            <div class="mt-6 bg-slate-50 p-5 rounded-2xl border border-slate-200 report-section">
+                <h4 class="text-slate-700 font-bold mb-2 text-sm">Cultura plantada posteriormente</h4>
+                <p class="text-slate-700 text-sm">${escapeHtml(LAUDO_CROP_LABELS[plantedCrop] || plantedCrop)}</p>
+            </div>` : '';
+
+        const seletorHtml = laudoReports.length > 1 ? `
+            <div class="mb-6 no-print">
+                <label class="block text-xs font-bold uppercase text-slate-500 mb-2">Análise salva</label>
+                <select onchange="trocarLaudo(this.value)" class="w-full sm:w-96 border border-slate-300 rounded-lg px-3 py-2.5 text-sm">
+                    ${laudoReports.map((r, i) => `<option value="${i}" ${i === idx ? 'selected' : ''}>${escapeHtml(r.title || 'Relatório ' + (i + 1))} — ${formatDate(r.timestamp)}</option>`).join('')}
+                </select>
+            </div>` : '';
+
+        const bodyHtml = `
+            ${seletorHtml}
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8 report-section">
+                <div class="rounded-2xl border border-slate-200 bg-slate-50 p-6 text-center">
+                    <div class="text-xs font-bold text-slate-500 uppercase tracking-wide mb-2">Saúde Geral</div>
+                    <div class="text-3xl font-black text-slate-900">${score}%</div>
+                    <div class="w-full bg-slate-200 h-1.5 rounded-full overflow-hidden mt-3"><div class="h-full bg-[#066a04]" style="width:${score}%"></div></div>
+                </div>
+                <div class="rounded-2xl border border-slate-200 bg-slate-50 p-6 text-center">
+                    <div class="text-xs font-bold text-slate-500 uppercase tracking-wide mb-2">pH</div>
+                    <div class="text-3xl font-black text-slate-900">${Number.isNaN(phNum) ? '—' : phNum.toFixed(1)}</div>
+                    <div class="text-xs font-bold mt-2" style="color:${phColor}">${phLabel}</div>
+                </div>
+                <div class="rounded-2xl border border-slate-200 bg-slate-50 p-6 text-center">
+                    <div class="text-xs font-bold text-slate-500 uppercase tracking-wide mb-2">Matéria Orgânica</div>
+                    <div class="text-3xl font-black text-slate-900">${data.mo != null ? Number(data.mo).toFixed(1) + '%' : '—'}</div>
+                </div>
+            </div>
+
+            <h3 class="font-bold text-slate-900 mb-4">Macronutrientes</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">${macroHtml}</div>
+
+            <h3 class="font-bold text-slate-900 mb-4">Micronutrientes</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">${microHtml}</div>
+
+            <div class="rounded-2xl border border-slate-200 bg-slate-50 p-6 mb-6 report-section">
+                <h3 class="font-bold text-xs uppercase tracking-widest text-[#066a04] mb-3">Parecer técnico</h3>
+                <p class="text-slate-700 text-base leading-relaxed italic mb-4">${laudoVerdictText(score)}</p>
+                <div class="bg-white p-4 rounded-lg border border-slate-200">
+                    <h5 class="text-[#066a04] font-bold mb-2 text-sm">Recomendações</h5>
+                    <div class="text-slate-700 text-sm">${recsHtml}</div>
+                </div>
+            </div>
+
+            <div class="rounded-2xl border border-amber-200 bg-amber-50 p-6 mb-6 report-section">
+                <h5 class="text-amber-800 font-bold mb-4 text-sm">Adequação dos dados informados</h5>
+                <div class="space-y-3">${adequacyHtml}</div>
+            </div>
+            ${plantedCropHtml}
+            ${disclaimer('Cálculo de saúde geral e parecer técnico gerados a partir dos valores informados na Análise de Solo.')}
+        `;
+
+        renderReportShell(
+            'Laudo de Fertilidade',
+            `${escapeHtml(report && report.title ? report.title : 'Análise de Solo')} · ${formatDate(report && report.timestamp)}`,
+            bodyHtml
+        );
+    }
+
+    function laudoVerdictText(score) {
+        return score > 80
+            ? 'Análise conclui um solo de altíssima produtividade. O equilíbrio químico permite o plantio imediato com foco apenas na adubação de arranque.'
+            : 'Atenção necessária em pontos específicos de deficiência. Recomenda-se a correção pontual dos nutrientes marcados em vermelho antes do início do ciclo vegetativo.';
+    }
+
+    window.trocarLaudo = function (idx) {
+        renderLaudo(Number(idx));
+    };
+
+    function gerarLaudo() {
+        const errorEl = document.getElementById('laudoError');
+        laudoReports = JSON.parse(userStorage.getItem('soilAnalysisReports') || '[]');
+
+        if (laudoReports.length === 0) {
+            const latest = userStorage.getItem('soilAnalysisData');
+            if (latest) laudoReports = [{ title: 'Análise atual', timestamp: new Date().toISOString(), ...JSON.parse(latest) }];
+        }
+
+        if (laudoReports.length === 0) {
+            errorEl.textContent = 'Nenhuma análise de solo encontrada. Faça uma análise em "Análise" primeiro.';
+            errorEl.classList.remove('hidden');
+            return;
+        }
+
+        errorEl.classList.add('hidden');
+        renderLaudo(laudoReports.length - 1);
+    }
 
     // ----------------------------------------------------------------------
     // Título/resumo automáticos para salvar cada tipo de relatório gerado
@@ -612,12 +847,10 @@
         empty.classList.add('hidden');
         list.classList.remove('hidden');
         list.innerHTML = filtrados.map((r) => {
-            const meta = TIPO_META[r.tipo] || { emoji: '📄', label: r.tipo };
             return `
                 <div class="border border-slate-200 rounded-xl p-4 flex flex-wrap items-center justify-between gap-3">
                     <div class="min-w-0">
                         <div class="flex items-center gap-2 mb-1">
-                            <span class="text-lg">${meta.emoji}</span>
                             <span class="font-semibold text-slate-900 truncate">${escapeHtml(r.titulo)}</span>
                         </div>
                         <p class="text-xs text-slate-500">${escapeHtml(r.talhao_nome)} · ${formatDate(r.data_geracao)}</p>
@@ -688,8 +921,13 @@
         });
         document.getElementById('filtroTipo').addEventListener('change', renderRelatoriosSalvos);
         document.getElementById('filtroTalhao').addEventListener('change', renderRelatoriosSalvos);
+        document.getElementById('gerarLaudoBtn').addEventListener('click', gerarLaudo);
 
         loadTalhoes();
         loadRelatoriosSalvos();
+
+        if (new URLSearchParams(window.location.search).get('laudo') === 'last') {
+            gerarLaudo();
+        }
     });
 })();

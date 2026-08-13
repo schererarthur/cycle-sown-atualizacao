@@ -62,12 +62,13 @@
         .badge-ruim { background: #fee2e2; color: #b91c1c; }
 
         .search-pin-icon {
-            background: none;
-            border: none;
-            font-size: 28px;
-            line-height: 1;
-            text-align: center;
-            filter: drop-shadow(0 2px 3px rgba(0,0,0,0.4));
+            width: 20px;
+            height: 20px;
+            background: #066a04;
+            border: 3px solid #fff;
+            border-radius: 50% 50% 50% 0;
+            transform: rotate(-45deg);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.4);
         }
 
         @media (max-width: 700px) {
@@ -96,8 +97,7 @@
                     <div class="ml-10 flex items-baseline space-x-8">
                         <a href="index.html#analysis" class="text-slate-600 hover:text-[#066a04] px-3 py-2 text-sm font-medium transition-colors">Análise</a>
                         <a href="recommendations.html" class="text-slate-600 hover:text-[#066a04] px-3 py-2 text-sm font-medium transition-colors">Recomendações</a>
-                        <a href="relatorio.html" class="text-slate-600 hover:text-[#066a04] px-3 py-2 text-sm font-medium transition-colors">Relatório</a>
-                        <a href="relatorios.html" class="text-slate-600 hover:text-[#066a04] px-3 py-2 text-sm font-medium transition-colors">📊 Relatórios</a>
+                        <a href="relatorios.html" class="text-slate-600 hover:text-[#066a04] px-3 py-2 text-sm font-medium transition-colors">Relatórios</a>
                         <a href="profile.html" class="text-slate-600 hover:text-[#066a04] px-3 py-2 text-sm font-medium transition-colors">Perfil</a>
                     </div>
                 </div>
@@ -127,7 +127,7 @@
                 <a href="mapa-fertilidade.html" onclick="toggleMenu(false)" class="block text-gray-900 px-4 py-3 rounded-lg hover:bg-[#eaf7e2] transition-colors">Mapa de Fertilidade</a>
                 <a href="cotacoes.html" onclick="toggleMenu(false)" class="block text-gray-900 px-4 py-3 rounded-lg hover:bg-[#eaf7e2] transition-colors">Cotações</a>
                 <a href="rotacao.html" onclick="toggleMenu(false)" class="block text-gray-900 px-4 py-3 rounded-lg hover:bg-[#eaf7e2] transition-colors">Rotação</a>
-                <a href="relatorios.html" onclick="toggleMenu(false)" class="block text-gray-900 px-4 py-3 rounded-lg hover:bg-[#eaf7e2] transition-colors">📊 Relatórios</a>
+                <a href="relatorios.html" onclick="toggleMenu(false)" class="block text-gray-900 px-4 py-3 rounded-lg hover:bg-[#eaf7e2] transition-colors">Relatórios</a>
                 <a href="empresas/index.html" onclick="toggleMenu(false)" class="block text-gray-900 px-4 py-3 rounded-lg hover:bg-[#eaf7e2] transition-colors">Vender Produção</a>
                 <a href="profile.html" onclick="toggleMenu(false)" class="block text-[#066a04] font-semibold px-4 py-3 rounded-lg hover:bg-[#eaf7e2] transition-colors">Meu Perfil</a>
             </nav>
@@ -323,10 +323,6 @@
             ? 'http://localhost:3000/api'
             : 'https://backend-production-2af81.up.railway.app/api';
 
-        const CROP_EMOJI = {
-            Soja: '🫘', Milho: '🌽', Trigo: '🌾', Fumo: '🍂', Aveia: '🌱', Pousio: '🟫'
-        };
-
         // Coordenadas próximas a Vera Cruz/Santa Cruz do Sul, RS — só usadas
         // se a API não responder (backend fora do ar durante desenvolvimento).
         const DEMO_TALHOES = [
@@ -436,7 +432,7 @@
                 case 'V': return solo.V != null ? `${solo.V}%` : '—';
                 case 'recomendacao': {
                     const rec = recomendacoesPorTalhao[talhao.id];
-                    return rec ? `${rec.emoji} ${rec.cultura}` : 'sem recomendação';
+                    return rec ? rec.cultura : 'sem recomendação';
                 }
                 default: return '—';
             }
@@ -458,7 +454,6 @@
                     if (item.top_recomendacao) {
                         mapa[item.talhao.id] = {
                             cultura: item.top_recomendacao.cultura,
-                            emoji: item.top_recomendacao.emoji,
                             score: item.top_recomendacao.score,
                             lucro_ha: item.top_recomendacao.lucro_ha,
                             cobertura: item.top_recomendacao.cobertura
@@ -525,7 +520,7 @@
         function goToLocation(lat, lng, label) {
             if (searchMarker) map.removeLayer(searchMarker);
             searchMarker = L.marker([lat, lng], {
-                icon: L.divIcon({ className: 'search-pin-icon', html: '📍', iconSize: [28, 28], iconAnchor: [14, 26] })
+                icon: L.divIcon({ className: 'search-pin-icon', iconSize: [26, 26], iconAnchor: [13, 26] })
             }).addTo(map);
             if (label) searchMarker.bindPopup(label).openPopup();
             map.flyTo([lat, lng], 15);
@@ -606,8 +601,7 @@
                 polygon.on('click', () => selectTalhao(talhao.id));
 
                 const center = polygon.getBounds().getCenter();
-                const emoji = CROP_EMOJI[talhao.cultura && talhao.cultura.nome] || '📍';
-                const labelHtml = `${emoji} ${talhao.nome}<br>${LAYER_TITLES[activeLayer]}: ${layerDisplayValue(talhao, activeLayer)}`;
+                const labelHtml = `${talhao.nome}<br>${LAYER_TITLES[activeLayer]}: ${layerDisplayValue(talhao, activeLayer)}`;
                 const label = L.marker(center, {
                     icon: L.divIcon({ className: 'talhao-label', html: labelHtml, iconSize: null }),
                     interactive: false
@@ -724,7 +718,7 @@
             refreshAll();
         }
 
-        // --- Análises de solo salvas (mesmos relatórios de index.html/relatorio.html,
+        // --- Análises de solo salvas (mesmos relatórios de index.html/relatorios.html,
         // guardados em userStorage sob 'soilAnalysisReports') — permite reaproveitar
         // uma análise já feita em vez de digitar os dados de solo de novo. ---
         function getSavedSoilReports() {

@@ -111,8 +111,7 @@
                     <div class="ml-10 flex items-baseline space-x-8">
                         <a href="index.html#analysis" class="text-slate-800 hover:text-[#066a04] px-3 py-2 text-sm font-medium transition-colors">Análise</a>
                         <a href="recommendations.html" class="text-slate-600 hover:text-[#066a04] px-3 py-2 text-sm font-medium transition-colors">Recomendações</a>
-                        <a href="relatorio.html" class="text-slate-600 hover:text-[#066a04] px-3 py-2 text-sm font-medium transition-colors">Relatório</a>
-                        <a href="relatorios.html" class="text-slate-600 hover:text-[#066a04] px-3 py-2 text-sm font-medium transition-colors">📊 Relatórios</a>
+                        <a href="relatorios.html" class="text-slate-600 hover:text-[#066a04] px-3 py-2 text-sm font-medium transition-colors">Relatórios</a>
                         <a href="profile.html" class="text-slate-600 hover:text-[#066a04] px-3 py-2 text-sm font-medium transition-colors">Perfil</a>
                     </div>
                 </div>
@@ -142,7 +141,7 @@
                 <a href="mapa-fertilidade.html" onclick="toggleMenu(false)" class="block text-gray-900 px-4 py-3 rounded-lg hover:bg-[#eaf7e2] transition-colors">Mapa de Fertilidade</a>
                 <a href="cotacoes.html" onclick="toggleMenu(false)" class="block text-gray-900 px-4 py-3 rounded-lg hover:bg-[#eaf7e2] transition-colors">Cotações</a>
                 <a href="rotacao.html" onclick="toggleMenu(false)" class="block text-gray-900 px-4 py-3 rounded-lg hover:bg-[#eaf7e2] transition-colors">Rotação</a>
-                <a href="relatorios.html" onclick="toggleMenu(false)" class="block text-gray-900 px-4 py-3 rounded-lg hover:bg-[#eaf7e2] transition-colors">📊 Relatórios</a>
+                <a href="relatorios.html" onclick="toggleMenu(false)" class="block text-gray-900 px-4 py-3 rounded-lg hover:bg-[#eaf7e2] transition-colors">Relatórios</a>
                 <a href="empresas/index.html" onclick="toggleMenu(false)" class="block text-gray-900 px-4 py-3 rounded-lg hover:bg-[#eaf7e2] transition-colors">Vender Produção</a>
                 <a href="profile.html" onclick="toggleMenu(false)" class="block text-[#066a04] font-semibold px-4 py-3 rounded-lg hover:bg-[#eaf7e2] transition-colors">Meu Perfil</a>
             </nav>
@@ -245,7 +244,7 @@
                 <div id="cropGrid" class="grid md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
             </div>
             <div id="noResults" class="text-center py-12 hidden">
-                <div class="text-6xl mb-4">🌱</div>
+                <div class="text-6xl mb-4"></div>
                 <h3 class="text-2xl font-semibold mb-2 text-gray-600">Nenhuma cultura encontrada</h3>
                 <p class="text-gray-500">Tente ajustar os filtros ou realizar uma nova análise de solo.</p>
             </div>
@@ -418,7 +417,7 @@
                     <div class="grid lg:grid-cols-2 gap-8">
                         <div>
                             <div class="w-full h-64 rounded-lg mb-6 flex items-center justify-center" style="background: linear-gradient(135deg, var(--sage-green) 0%, var(--forest-green) 100%);">
-                                <span class="text-8xl">🌱</span>
+                                <span class="text-8xl"></span>
                             </div>
                             <div class="mb-6">
                                 <h3 class="font-semibold text-lg mb-3">Requisitos de pH</h3>
@@ -977,7 +976,7 @@
         }
 
         // Delega para a mesma fórmula usada em index.html (Saúde Geral do
-        // Solo) e relatorio.html (Saúde Geral), definida em main.js, para
+        // Solo) e relatorios.html (Saúde Geral), definida em main.js, para
         // que a nota de saúde do solo seja idêntica em todas as páginas.
         function calculateHealthScore(soilData) {
             return calculateHealthScoreFromData(soilData);
@@ -1034,7 +1033,7 @@
                 <div class="bg-white rounded-2xl shadow-lg overflow-hidden card-hover compact-crop-card" onclick="openCropModal('${crop.key}')">
                     <div class="p-3">
                         <div class="crop-image mb-3 flex items-center justify-center" style="background: linear-gradient(135deg, var(--sage-green) 0%, var(--forest-green) 100%); border-radius: 12px;">
-                            <span class="text-4xl">🌱</span>
+                            <span class="text-4xl"></span>
                         </div>
                         <h3 class="font-display text-lg font-semibold mb-1" style="color: var(--forest-green);">${crop.name}</h3>
                         <div class="mb-3">

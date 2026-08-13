@@ -71,7 +71,7 @@
 
         const footer = document.createElement('footer');
         // Carry over any classes put on the placeholder (e.g. "no-print"
-        // on relatorio.html so the footer doesn't show up on the printed laudo).
+        // on relatorios.html so the footer doesn't show up on the printed laudo).
         footer.className = ['text-white', mountPoint.className].filter(Boolean).join(' ');
         footer.style.backgroundColor = 'var(--forest-green)';
         footer.innerHTML = FOOTER_HTML;

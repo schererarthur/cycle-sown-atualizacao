@@ -5,7 +5,7 @@
 O site tinha um bug de vazamento de dados entre contas: `login.html`/`register.html`
 já autenticam de verdade contra o backend (MySQL + JWT), mas todo o resto do site
 (`index.html`, `calendar.html`, `catalogo.html`, `recommendations.html`,
-`relatorio.html`, `profile.html`) continuava lendo/escrevendo direto no
+`relatorios.html`, `profile.html`) continuava lendo/escrevendo direto no
 `localStorage` do navegador, em chaves globais (`soilAnalysisReports`,
 `soilAnalysisData`, `cropCorrectionReports`, `userProfile`, `userSettings`).
 Como o `localStorage` é compartilhado por todas as contas que já logaram
@@ -52,7 +52,7 @@ Endpoints que precisarão existir (nenhum foi criado nesta task):
 | Página                                    | Endpoints necessários                                   | Tabelas já existentes no schema         |
 |--------------------------------------------|----------------------------------------------------------|------------------------------------------|
 | `index.html` (gerar análise)                | `POST /api/soil-reports`                                  | `soil_reports`, `soil_report_nutrients`, `soil_report_crop_compatibility` |
-| `relatorio.html` / `recommendations.html`   | `GET /api/soil-reports`, `GET /api/soil-reports/:id`      | idem                                      |
+| `relatorios.html` / `recommendations.html`   | `GET /api/soil-reports`, `GET /api/soil-reports/:id`      | idem                                      |
 | `recommendations.html` (correção de cultura)| `GET /api/crop-correction-reports`, `POST /api/crop-correction-reports` | `crop_correction_reports`, `crop_correction_report_items` |
 | `profile.html` (dados da conta)             | `GET /api/me` (já existe), `PATCH /api/me`                | `users`                                   |
 | `profile.html` (configurações)              | `GET /api/settings`, `PUT /api/settings`                  | `user_settings`                           |

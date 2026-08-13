@@ -65,8 +65,7 @@
                     <div class="ml-10 flex items-baseline space-x-8">
                         <a href="index.html#analysis" class="text-slate-600 hover:text-[#066a04] px-3 py-2 text-sm font-medium transition-colors">Análise</a>
                         <a href="recommendations.html" class="text-slate-600 hover:text-[#066a04] px-3 py-2 text-sm font-medium transition-colors">Recomendações</a>
-                        <a href="relatorio.html" class="text-slate-600 hover:text-[#066a04] px-3 py-2 text-sm font-medium transition-colors">Relatório</a>
-                        <a href="relatorios.html" class="text-[#066a04] px-3 py-2 text-sm font-semibold transition-colors">📊 Relatórios</a>
+                        <a href="relatorios.html" class="text-[#066a04] px-3 py-2 text-sm font-semibold transition-colors">Relatórios</a>
                         <a href="profile.html" class="text-slate-600 hover:text-[#066a04] px-3 py-2 text-sm font-medium transition-colors">Perfil</a>
                     </div>
                 </div>
@@ -105,8 +104,8 @@
 
     <header class="bg-white border-b border-gray-200 no-print">
         <div class="max-w-7xl mx-auto px-4 py-6">
-            <h1 class="text-2xl font-bold text-slate-900">📊 Central de Relatórios</h1>
-            <p class="text-sm text-slate-500 mt-1">Relatórios gerados a partir dos dados já cadastrados nos seus talhões — nada é digitado de novo aqui.</p>
+            <h1 class="text-2xl font-bold text-slate-900">Central de Relatórios</h1>
+            <p class="text-sm text-slate-500 mt-1">Relatórios gerados a partir dos dados já cadastrados nos seus talhões e da sua Análise de Solo — nada é digitado de novo aqui.</p>
         </div>
     </header>
 
@@ -115,6 +114,13 @@
         <!-- Gerar novo relatório -->
         <section class="bg-white border border-slate-200 rounded-2xl p-6 no-print">
             <h2 class="text-lg font-bold text-slate-900 mb-4">Gerar novo relatório</h2>
+
+            <div class="gerar-card border-2 border-slate-200 rounded-xl p-5 flex flex-col mb-6">
+                <h3 class="font-bold text-slate-900 mb-1">Laudo de Fertilidade</h3>
+                <p class="text-xs text-slate-500 mb-4 flex-1">Nitrogênio, fósforo, potássio e mais 8 nutrientes — a partir da sua Análise de Solo (não depende de talhão).</p>
+                <button type="button" id="gerarLaudoBtn" class="px-4 py-2 rounded-lg bg-[#066a04] hover:bg-[#055503] text-white text-sm font-semibold transition-colors self-start">Gerar</button>
+                <p id="laudoError" class="hidden text-sm text-red-600 mt-3"></p>
+            </div>
 
             <div id="talhoesLoading" class="text-sm text-slate-500">Carregando talhões...</div>
 
@@ -131,25 +137,21 @@
 
                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                     <div class="gerar-card border-2 border-slate-200 rounded-xl p-5 flex flex-col">
-                        <span class="text-3xl mb-2">🧪</span>
                         <h3 class="font-bold text-slate-900 mb-1">Nutricional do Solo</h3>
                         <p class="text-xs text-slate-500 mb-4 flex-1">pH, matéria orgânica, macro/micro e status de cada parâmetro do solo.</p>
                         <button type="button" data-tipo="nutricional" class="gerar-btn px-4 py-2 rounded-lg bg-[#066a04] hover:bg-[#055503] text-white text-sm font-semibold transition-colors">Gerar</button>
                     </div>
                     <div class="gerar-card border-2 border-slate-200 rounded-xl p-5 flex flex-col">
-                        <span class="text-3xl mb-2">🌾</span>
                         <h3 class="font-bold text-slate-900 mb-1">Recomendação de Cultura</h3>
                         <p class="text-xs text-slate-500 mb-4 flex-1">Qual cultura plantar na próxima safra e por quê, com projeção financeira.</p>
                         <button type="button" data-tipo="recomendacao" class="gerar-btn px-4 py-2 rounded-lg bg-[#066a04] hover:bg-[#055503] text-white text-sm font-semibold transition-colors">Gerar</button>
                     </div>
                     <div class="gerar-card border-2 border-slate-200 rounded-xl p-5 flex flex-col">
-                        <span class="text-3xl mb-2">🔄</span>
                         <h3 class="font-bold text-slate-900 mb-1">Rotação e Custos</h3>
                         <p class="text-xs text-slate-500 mb-4 flex-1">Plano de rotação para os próximos 4 ciclos (2 anos), com receita/custo/lucro.</p>
                         <button type="button" data-tipo="rotacao" class="gerar-btn px-4 py-2 rounded-lg bg-[#066a04] hover:bg-[#055503] text-white text-sm font-semibold transition-colors">Gerar</button>
                     </div>
                     <div class="gerar-card border-2 border-slate-200 rounded-xl p-5 flex flex-col">
-                        <span class="text-3xl mb-2">📈</span>
                         <h3 class="font-bold text-slate-900 mb-1">Produtividade</h3>
                         <p class="text-xs text-slate-500 mb-4 flex-1">Evolução da produtividade por cultura, com gráficos e tendências.</p>
                         <button type="button" data-tipo="produtividade" class="gerar-btn px-4 py-2 rounded-lg bg-[#066a04] hover:bg-[#055503] text-white text-sm font-semibold transition-colors">Gerar</button>
@@ -166,10 +168,10 @@
                 <div class="flex gap-2">
                     <select id="filtroTipo" class="border border-slate-300 rounded-lg px-3 py-2 text-sm">
                         <option value="">Todos os tipos</option>
-                        <option value="nutricional">🧪 Nutricional</option>
-                        <option value="recomendacao">🌾 Recomendação</option>
-                        <option value="rotacao">🔄 Rotação</option>
-                        <option value="produtividade">📈 Produtividade</option>
+                        <option value="nutricional">Nutricional</option>
+                        <option value="recomendacao">Recomendação</option>
+                        <option value="rotacao">Rotação</option>
+                        <option value="produtividade">Produtividade</option>
                     </select>
                     <select id="filtroTalhao" class="border border-slate-300 rounded-lg px-3 py-2 text-sm">
                         <option value="">Todos os talhões</option>
@@ -188,7 +190,7 @@
         <section id="reportViewer" class="scroll-mt-24"></section>
 
         <p class="text-xs text-slate-400 text-center max-w-2xl mx-auto no-print">
-            ⚠️ Relatórios gerados automaticamente a partir de dados agronômicos de referência (Manual CQFS-RS/SC, Embrapa)
+            Relatórios gerados automaticamente a partir de dados agronômicos de referência (Manual CQFS-RS/SC, Embrapa)
             e não substituem a orientação de um engenheiro agrônomo — consulte um profissional (CREA/ART) para o
             planejamento técnico completo da sua propriedade.
         </p>
@@ -204,6 +206,7 @@
             document.body.style.overflow = open ? 'hidden' : '';
         }
     </script>
+    <script src="main.js"></script>
     <script src="relatorios.js"></script>
 </body>
 </html>

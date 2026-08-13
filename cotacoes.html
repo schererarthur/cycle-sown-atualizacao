@@ -141,8 +141,7 @@
                     <div class="ml-10 flex items-baseline space-x-8">
                         <a href="index.html#analysis" class="text-slate-600 hover:text-[#066a04] px-3 py-2 text-sm font-medium transition-colors">Análise</a>
                         <a href="recommendations.html" class="text-slate-600 hover:text-[#066a04] px-3 py-2 text-sm font-medium transition-colors">Recomendações</a>
-                        <a href="relatorio.html" class="text-slate-600 hover:text-[#066a04] px-3 py-2 text-sm font-medium transition-colors">Relatório</a>
-                        <a href="relatorios.html" class="text-slate-600 hover:text-[#066a04] px-3 py-2 text-sm font-medium transition-colors">📊 Relatórios</a>
+                        <a href="relatorios.html" class="text-slate-600 hover:text-[#066a04] px-3 py-2 text-sm font-medium transition-colors">Relatórios</a>
                         <a href="profile.html" class="text-slate-600 hover:text-[#066a04] px-3 py-2 text-sm font-medium transition-colors">Perfil</a>
                     </div>
                 </div>
@@ -172,7 +171,7 @@
                 <a href="mapa-fertilidade.html" onclick="toggleMenu(false)" class="block text-gray-900 px-4 py-3 rounded-lg hover:bg-[#eaf7e2] transition-colors">Mapa de Fertilidade</a>
                 <a href="cotacoes.html" onclick="toggleMenu(false)" class="block text-gray-900 px-4 py-3 rounded-lg hover:bg-[#eaf7e2] transition-colors">Cotações</a>
                 <a href="rotacao.html" onclick="toggleMenu(false)" class="block text-gray-900 px-4 py-3 rounded-lg hover:bg-[#eaf7e2] transition-colors">Rotação</a>
-                <a href="relatorios.html" onclick="toggleMenu(false)" class="block text-gray-900 px-4 py-3 rounded-lg hover:bg-[#eaf7e2] transition-colors">📊 Relatórios</a>
+                <a href="relatorios.html" onclick="toggleMenu(false)" class="block text-gray-900 px-4 py-3 rounded-lg hover:bg-[#eaf7e2] transition-colors">Relatórios</a>
                 <a href="empresas/index.html" onclick="toggleMenu(false)" class="block text-gray-900 px-4 py-3 rounded-lg hover:bg-[#eaf7e2] transition-colors">Vender Produção</a>
                 <a href="profile.html" onclick="toggleMenu(false)" class="block text-[#066a04] font-semibold px-4 py-3 rounded-lg hover:bg-[#eaf7e2] transition-colors">Meu Perfil</a>
             </nav>
@@ -196,7 +195,7 @@
             <div class="grid grid-cols-2 lg:grid-cols-4 gap-5" id="quoteCardsGrid">
                 <div class="quote-card stat-card rounded-xl p-5" data-commodity="soja">
                     <div class="flex items-center justify-between mb-2">
-                        <span class="text-2xl">🫘</span>
+                        <span class="text-2xl"></span>
                         <span class="illustrative-badge">Ilustrativo</span>
                     </div>
                     <div class="text-sm text-gray-500 font-medium">Soja</div>
@@ -208,7 +207,7 @@
 
                 <div class="quote-card stat-card rounded-xl p-5" data-commodity="milho">
                     <div class="flex items-center justify-between mb-2">
-                        <span class="text-2xl">🌽</span>
+                        <span class="text-2xl"></span>
                         <span class="illustrative-badge">Ilustrativo</span>
                     </div>
                     <div class="text-sm text-gray-500 font-medium">Milho</div>
@@ -220,7 +219,7 @@
 
                 <div class="quote-card stat-card rounded-xl p-5" data-commodity="trigo">
                     <div class="flex items-center justify-between mb-2">
-                        <span class="text-2xl">🌾</span>
+                        <span class="text-2xl"></span>
                         <span class="illustrative-badge">Ilustrativo</span>
                     </div>
                     <div class="text-sm text-gray-500 font-medium">Trigo</div>
@@ -232,7 +231,7 @@
 
                 <div class="quote-card stat-card rounded-xl p-5" data-commodity="dolar">
                     <div class="flex items-center justify-between mb-2">
-                        <span class="text-2xl">💵</span>
+                        <span class="text-2xl"></span>
                         <span class="illustrative-badge" id="liveBadgeDolar">Ilustrativo</span>
                     </div>
                     <div class="text-sm text-gray-500 font-medium">Dólar</div>
@@ -364,12 +363,12 @@
         };
 
         const TABLE_ROWS_REFERENCE = [
-            { label: '🫘 Soja',            preco: 136.73, variacao: 0.8,  praca: 'Paranaguá/PR', fonte: 'CEPEA' },
-            { label: '🫘 Soja (físico)',   preco: 132.50, variacao: 0.5,  praca: 'RS',           fonte: 'CEPEA' },
-            { label: '🌽 Milho',           preco: 64.86,  variacao: -0.3, praca: 'Campinas/SP',  fonte: 'CEPEA/B3' },
-            { label: '🌽 Milho (físico)',  preco: 58.20,  variacao: 0.2,  praca: 'RS',           fonte: 'CEPEA' },
-            { label: '🌾 Trigo',           preco: 78.50,  variacao: 0.2,  praca: 'RS',           fonte: 'CEPEA' },
-            { label: '🌾 Trigo',           preco: 82.30,  variacao: -0.1, praca: 'PR',           fonte: 'CEPEA' }
+            { label: 'Soja',            preco: 136.73, variacao: 0.8,  praca: 'Paranaguá/PR', fonte: 'CEPEA' },
+            { label: 'Soja (físico)',   preco: 132.50, variacao: 0.5,  praca: 'RS',           fonte: 'CEPEA' },
+            { label: 'Milho',           preco: 64.86,  variacao: -0.3, praca: 'Campinas/SP',  fonte: 'CEPEA/B3' },
+            { label: 'Milho (físico)',  preco: 58.20,  variacao: 0.2,  praca: 'RS',           fonte: 'CEPEA' },
+            { label: 'Trigo',           preco: 78.50,  variacao: 0.2,  praca: 'RS',           fonte: 'CEPEA' },
+            { label: 'Trigo',           preco: 82.30,  variacao: -0.1, praca: 'PR',           fonte: 'CEPEA' }
         ];
 
         const CROP_DEFAULTS = {
@@ -468,8 +467,8 @@
             const euro = state.euro || Object.assign({}, REFERENCE_DATA.euro, { isLive: false });
 
             const rows = TABLE_ROWS_REFERENCE.concat([
-                { label: '💵 Dólar', preco: dolar.preco, variacao: dolar.variacao, praca: 'Comercial', fonte: dolar.isLive ? 'AwesomeAPI' : 'BCB (referência)' },
-                { label: '💶 Euro',  preco: euro.preco,  variacao: euro.variacao,  praca: 'Comercial', fonte: euro.isLive ? 'AwesomeAPI' : 'BCB (referência)' }
+                { label: 'Dólar', preco: dolar.preco, variacao: dolar.variacao, praca: 'Comercial', fonte: dolar.isLive ? 'AwesomeAPI' : 'BCB (referência)' },
+                { label: 'Euro',  preco: euro.preco,  variacao: euro.variacao,  praca: 'Comercial', fonte: euro.isLive ? 'AwesomeAPI' : 'BCB (referência)' }
             ]);
 
             tbody.innerHTML = rows.map((r, i) => `

@@ -154,7 +154,7 @@ function montarJustificativas({ dados, nomeCultura, ultimaCulturaNome, ultimaCul
     if (soloAvaliado.ok && soloAvaliado.checked) {
         j.push(`✓ Solo compatível com as exigências da cultura`);
     }
-    soloAvaliado.alertas.forEach((a) => j.push(`⚠️ Solo precisa correção: ${a}`));
+    soloAvaliado.alertas.forEach((a) => j.push(`Solo precisa correção: ${a}`));
 
     if (dados.cobertura) {
         j.push(`✓ Baixo custo (R$ ${dados.custo_estimado_ha}/ha), protege o solo`);

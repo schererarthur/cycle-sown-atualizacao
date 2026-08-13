@@ -74,8 +74,7 @@
                     <div class="ml-10 flex items-baseline space-x-8">
                         <a href="index.html#analysis" class="text-slate-800 hover:text-[#066a04] px-3 py-2 text-sm font-medium transition-colors">Análise</a>
                         <a href="recommendations.html" class="text-slate-600 hover:text-[#066a04] px-3 py-2 text-sm font-medium transition-colors">Recomendações</a>
-                        <a href="relatorio.html" class="text-slate-600 hover:text-[#066a04] px-3 py-2 text-sm font-medium transition-colors">Relatório</a>
-                        <a href="relatorios.html" class="text-slate-600 hover:text-[#066a04] px-3 py-2 text-sm font-medium transition-colors">📊 Relatórios</a>
+                        <a href="relatorios.html" class="text-slate-600 hover:text-[#066a04] px-3 py-2 text-sm font-medium transition-colors">Relatórios</a>
                         <a href="profile.html" class="text-slate-600 hover:text-[#066a04] px-3 py-2 text-sm font-medium transition-colors">Perfil</a>
                     </div>
                 </div>
@@ -105,7 +104,7 @@
                 <a href="mapa-fertilidade.html" onclick="toggleMenu(false)" class="block text-gray-900 px-4 py-3 rounded-lg hover:bg-[#eaf7e2] transition-colors">Mapa de Fertilidade</a>
                 <a href="cotacoes.html" onclick="toggleMenu(false)" class="block text-gray-900 px-4 py-3 rounded-lg hover:bg-[#eaf7e2] transition-colors">Cotações</a>
                 <a href="rotacao.html" onclick="toggleMenu(false)" class="block text-gray-900 px-4 py-3 rounded-lg hover:bg-[#eaf7e2] transition-colors">Rotação</a>
-                <a href="relatorios.html" onclick="toggleMenu(false)" class="block text-gray-900 px-4 py-3 rounded-lg hover:bg-[#eaf7e2] transition-colors">📊 Relatórios</a>
+                <a href="relatorios.html" onclick="toggleMenu(false)" class="block text-gray-900 px-4 py-3 rounded-lg hover:bg-[#eaf7e2] transition-colors">Relatórios</a>
                 <a href="empresas/index.html" onclick="toggleMenu(false)" class="block text-gray-900 px-4 py-3 rounded-lg hover:bg-[#eaf7e2] transition-colors">Vender Produção</a>
                 <a href="profile.html" onclick="toggleMenu(false)" class="block text-[#066a04] font-semibold px-4 py-3 rounded-lg hover:bg-[#eaf7e2] transition-colors">Meu Perfil</a>
             </nav>
@@ -119,7 +118,7 @@
             <div class="mb-8">
                 <div class="gradient-header p-8 text-white rounded-md">
                     <div class="flex flex-col md:flex-row items-center gap-6">
-                        <div class="avatar">👨‍🌾</div>
+                        <div class="avatar"></div>
                         <div class="text-center md:text-left">
                             <h1 class="font-display text-4xl font-bold mb-2" id="userNameDisplay">Agricultor Cycle Sown</h1>
                             <p class="text-[#d8f5c8] mb-4" id="userEmailDisplay">usuario@cyclesown.com</p>
@@ -250,10 +249,10 @@
                 
                 <div class="space-y-4">
                     <button onclick="userStorage.logout()" class="w-full bg-gray-700 text-white px-6 py-3 rounded-lg font-semibold hover:bg-gray-800 transition-colors text-left">
-                        🚪 Sair da Conta
+                        Sair da Conta
                     </button>
                     <button onclick="clearAllData()" class="w-full bg-red-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-red-700 transition-colors text-left">
-                        🗑️ Limpar Todos os Dados
+                        Limpar Todos os Dados
                     </button>
                     <p class="text-sm text-red-700">Isso vai deletar todas as análises e configurações salvas. Esta ação não pode ser desfeita.</p>
                 </div>
@@ -418,7 +417,7 @@
                             <p class="text-sm text-gray-600">${date} às ${time}</p>
                             <p class="text-xs text-gray-500 mt-1">pH: ${pH}</p>
                         </div>
-                        <a href="relatorio.html" class="bg-[#066a04] text-white px-4 py-2 rounded-md text-sm font-semibold hover:bg-[#055503] transition-colors">
+                        <a href="relatorios.html?laudo=last" class="bg-[#066a04] text-white px-4 py-2 rounded-md text-sm font-semibold hover:bg-[#055503] transition-colors">
                             Ver Relatório
                         </a>
                     </div>
@@ -427,7 +426,7 @@
         }
 
         function clearAllData() {
-            if (confirm('⚠️ Você tem certeza? Isso vai deletar permanentemente:\n- Todas as análises salvas\n- Configurações\n- Dados do perfil\n\nEsta ação não pode ser desfeita!')) {
+            if (confirm('Você tem certeza? Isso vai deletar permanentemente:\n- Todas as análises salvas\n- Configurações\n- Dados do perfil\n\nEsta ação não pode ser desfeita!')) {
                 // Apaga só os dados da conta logada (user:<id>:...), não o
                 // localStorage inteiro — isso preservaria/destruiria contas
                 // de outros usuários guardadas no mesmo navegador.

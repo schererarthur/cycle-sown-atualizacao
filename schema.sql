@@ -122,7 +122,7 @@ CREATE TABLE soil_type_lime_factors (
 
 -- =================================================================
 -- 3. SOIL ANALYSIS REPORTS  (index.html -> "Salvar/Gerar Relatório",
---    consumido por relatorio.html, recommendations.html e profile.html)
+--    consumido por relatorios.html, recommendations.html e profile.html)
 -- =================================================================
 
 CREATE TABLE soil_reports (
@@ -161,7 +161,7 @@ CREATE TABLE soil_report_nutrients (
 ) ENGINE=InnoDB;
 
 -- Guarda o resultado de computeCropCompatibility() por cultura,
--- assim relatorio.html/recommendations.html não precisam recalcular
+-- assim relatorios.html/recommendations.html não precisam recalcular
 -- a cada carregamento de página (mas o front pode recalcular também
 -- se preferir manter o "tempo real" client-side).
 CREATE TABLE soil_report_crop_compatibility (

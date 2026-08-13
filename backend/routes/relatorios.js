@@ -467,7 +467,7 @@ router.get('/rotacao/:talhaoId', async (req, res) => {
             data_geracao: new Date().toISOString(),
             historico_recente: historicoReal.map((h) => ({
                 cultura_nome: h.cultura_nome,
-                emoji: (CULTURAS[h.cultura_nome] || {}).emoji || '🌱',
+                emoji: (CULTURAS[h.cultura_nome] || {}).emoji || '',
                 safra_tipo: h.safra_tipo,
                 safra_ano: h.safra_ano,
                 produtividade_real: h.produtividade_real !== null && h.produtividade_real !== undefined ? Number(h.produtividade_real) : null
@@ -481,7 +481,7 @@ router.get('/rotacao/:talhaoId', async (req, res) => {
                 media_por_ha: areaHa > 0 ? round2(totais.lucro / (areaHa * numAnos)) : null
             },
             sequencia_visual: [
-                ...historicoReal.slice().reverse().map((h) => ({ cultura: h.cultura_nome, emoji: (CULTURAS[h.cultura_nome] || {}).emoji || '🌱', familia: h.familia_botanica })),
+                ...historicoReal.slice().reverse().map((h) => ({ cultura: h.cultura_nome, emoji: (CULTURAS[h.cultura_nome] || {}).emoji || '', familia: h.familia_botanica })),
                 ...ciclos.map((c) => ({ cultura: c.cultura, emoji: c.emoji, familia: c.familia }))
             ]
         });
@@ -548,7 +548,7 @@ router.get('/produtividade/:talhaoId', async (req, res) => {
                 safra_tipo: h.safra_tipo,
                 safra_ano: h.safra_ano,
                 cultura_nome: h.cultura_nome,
-                emoji: dadosCultura.emoji || '🌱',
+                emoji: dadosCultura.emoji || '',
                 cobertura: !!dadosCultura.cobertura,
                 produtividade_real: produtividade,
                 receita_estimada: (produtividade !== null && precoAtual !== null && precoAtual !== undefined)
@@ -580,7 +580,7 @@ router.get('/produtividade/:talhaoId', async (req, res) => {
 
             return {
                 cultura_nome,
-                emoji: dadosCultura.emoji || '🌱',
+                emoji: dadosCultura.emoji || '',
                 unidade: dadosCultura.produtividade_media_sc_ha ? 'sc/ha' : (dadosCultura.produtividade_ton_ha ? 'ton/ha' : 'sc/ha'),
                 media,
                 registros,
@@ -603,9 +603,9 @@ router.get('/produtividade/:talhaoId', async (req, res) => {
                 analise.push(`${c.cultura_nome} em queda — vale revisar manejo, pragas/doenças e adubação para a próxima safra dessa cultura.`);
             }
             if (c.comparacao_regional === 'abaixo') {
-                analise.push(`⚠️ ${c.cultura_nome}: média do talhão (${c.media} ${c.unidade}) abaixo da referência (${c.media_regional} ${c.unidade}) — avaliar manejo.`);
+                analise.push(`${c.cultura_nome}: média do talhão (${c.media} ${c.unidade}) abaixo da referência (${c.media_regional} ${c.unidade}) — avaliar manejo.`);
             } else if (c.comparacao_regional === 'acima') {
-                analise.push(`✅ ${c.cultura_nome}: média do talhão (${c.media} ${c.unidade}) acima da referência (${c.media_regional} ${c.unidade}).`);
+                analise.push(`${c.cultura_nome}: média do talhão (${c.media} ${c.unidade}) acima da referência (${c.media_regional} ${c.unidade}).`);
             }
         });
         if (receitaTotal > 0) {

@@ -1,7 +1,7 @@
 // ============================================================================
 // main.js — motor de análise de solo do Cycle Sown.
 // Carregado por index.html, calendar.html, recommendations.html e
-// relatorio.html (via <script src="main.js">). Não depende de nenhuma
+// relatorios.html (via <script src="main.js">). Não depende de nenhuma
 // página específica: lê/escreve nos elementos de formulário quando eles
 // existem (checagens `document.getElementById(...)?`) e expõe funções
 // globais (window.updateAnalysis, window.generateFullReport, etc.) para
@@ -463,7 +463,7 @@ function updateAnalysis() {
 // Calcula a saúde geral do solo a partir de um objeto soilData (mesmo shape
 // do `soilData` global: ph, organicMatter, aluminum, potentialAcidity,
 // nutrients{...}). Função pura — usada por updateHealthScore() (index.html,
-// ao vivo) e também por relatorio.html/recommendations.html a partir de
+// ao vivo) e também por relatorios.html/recommendations.html a partir de
 // relatórios salvos, para que a mesma nota apareça em todas as páginas.
 function calculateHealthScoreFromData(data) {
     if (!data) return 0;
@@ -618,7 +618,7 @@ function updateSoilChemistryIndicators() {
             aluminumWarning.classList.remove('hidden');
             if (soilData.aluminum > 0.5) {
                 aluminumWarning.className = 'mt-3 text-sm font-medium text-red-600';
-                aluminumWarning.textContent = `⚠ Alumínio tóxico (${label}): pode limitar o desenvolvimento radicular de culturas sensíveis.`;
+                aluminumWarning.textContent = `Alumínio tóxico (${label}): pode limitar o desenvolvimento radicular de culturas sensíveis.`;
             } else {
                 aluminumWarning.className = 'mt-3 text-sm font-medium text-[#066a04]';
                 aluminumWarning.textContent = `✓ Alumínio em nível ${label.toLowerCase()} — sem risco de toxidez.`;
@@ -919,7 +919,7 @@ function computeCropCompatibility(soil, cropKey) {
 // SEÇÃO 6 — Relatórios salvos: persiste a análise atual (soilData +
 // compatibilidade por cultura) em userStorage, sob a chave
 // 'soilAnalysisReports' (lista de relatórios) e 'soilAnalysisData' (só o
-// mais recente, para carregamento rápido). relatorio.html e
+// mais recente, para carregamento rápido). relatorios.html e
 // recommendations.html leem esses relatórios para exibir/recalcular.
 // ----------------------------------------------------------------------------
 function generateFullReport(showAlert = true, title = null) {
@@ -968,9 +968,9 @@ function saveReport() {
 
 function saveReportAndRedirect(targetPage) {
     generateFullReport(false);
-    if (targetPage && targetPage.includes('relatorio.html')) {
+    if (targetPage && targetPage.includes('relatorios.html')) {
         const sep = targetPage.includes('?') ? '&' : '?';
-        window.location.href = `${targetPage}${sep}report=last`;
+        window.location.href = `${targetPage}${sep}laudo=last`;
     } else {
         window.location.href = targetPage;
     }

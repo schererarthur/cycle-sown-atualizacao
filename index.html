@@ -4,7 +4,7 @@
      usuário digita pH, matéria orgânica, macro/micronutrientes etc.; main.js
      calcula tudo em tempo real (score de saúde, compatibilidade com as 4
      culturas) e "Gerar Relatório"/"Salvar Relatório" grava o resultado em
-     userStorage (localStorage isolado por usuário) para relatorio.html e
+     userStorage (localStorage isolado por usuário) para relatorios.html e
      recommendations.html lerem depois.
      ============================================================================ -->
 <!DOCTYPE html>
@@ -284,8 +284,7 @@
                     <div class="ml-10 flex items-baseline space-x-8">
                         <a href="#analysis" class="text-slate-800 hover:text-[#066a04] px-3 py-2 text-sm font-medium transition-colors">Análise</a>
                         <a href="recommendations.html" class="text-slate-600 hover:text-[#066a04] px-3 py-2 text-sm font-medium transition-colors">Recomendações</a>
-                        <a href="relatorio.html" class="text-slate-600 hover:text-[#066a04] px-3 py-2 text-sm font-medium transition-colors">Relatório</a>
-                        <a href="relatorios.html" class="text-slate-600 hover:text-[#066a04] px-3 py-2 text-sm font-medium transition-colors">📊 Relatórios</a>
+                        <a href="relatorios.html" class="text-slate-600 hover:text-[#066a04] px-3 py-2 text-sm font-medium transition-colors">Relatórios</a>
                         <a href="profile.html" class="text-slate-600 hover:text-[#066a04] px-3 py-2 text-sm font-medium transition-colors">Perfil</a>
                     </div>
                 </div>
@@ -315,7 +314,7 @@
                 <a href="mapa-fertilidade.html" onclick="toggleMenu(false)" class="block text-gray-900 px-4 py-3 rounded-lg hover:bg-[#eaf7e2] transition-colors">Mapa de Fertilidade</a>
                 <a href="cotacoes.html" onclick="toggleMenu(false)" class="block text-gray-900 px-4 py-3 rounded-lg hover:bg-[#eaf7e2] transition-colors">Cotações</a>
                 <a href="rotacao.html" onclick="toggleMenu(false)" class="block text-gray-900 px-4 py-3 rounded-lg hover:bg-[#eaf7e2] transition-colors">Rotação</a>
-                <a href="relatorios.html" onclick="toggleMenu(false)" class="block text-gray-900 px-4 py-3 rounded-lg hover:bg-[#eaf7e2] transition-colors">📊 Relatórios</a>
+                <a href="relatorios.html" onclick="toggleMenu(false)" class="block text-gray-900 px-4 py-3 rounded-lg hover:bg-[#eaf7e2] transition-colors">Relatórios</a>
                 <a href="empresas/index.html" onclick="toggleMenu(false)" class="block text-gray-900 px-4 py-3 rounded-lg hover:bg-[#eaf7e2] transition-colors">Vender Produção</a>
                             <a href="profile.html" onclick="toggleMenu(false)" class="block text-[#066a04] font-semibold px-4 py-3 rounded-lg hover:bg-[#eaf7e2] transition-colors">Meu Perfil</a>
             </nav>
@@ -732,11 +731,11 @@
 
                         <!-- Action Buttons -->
                         <div class="space-y-3">
-                                <button onclick="saveReportAndRedirect('relatorio.html')" class="w-full bg-[#066a04] text-white py-3 rounded-lg font-semibold hover:bg-[#055503] transition-colors">
-                                    ✓ Gerar Relatório Completo
+                                <button onclick="saveReportAndRedirect('relatorios.html')" class="w-full bg-[#066a04] text-white py-3 rounded-lg font-semibold hover:bg-[#055503] transition-colors">
+                                    Gerar Relatório Completo
                                 </button>
                                 <button onclick="saveReport()" class="w-full border-2 border-[#066a04] text-[#066a04] py-3 rounded-lg font-semibold hover:bg-[#eaf7e2] transition-colors">
-                                    💾 Salvar Relatório
+                                    Salvar Relatório
                                 </button>
                         </div>
                             <div class="mt-4 text-sm text-gray-600 text-center">
