@@ -25,34 +25,23 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:wght@400;600;700&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/theme.css">
     <style>
         :root {
-            --forest-green: #066a04;
-            --terracotta: #B85450;
-            --golden-wheat: #E6B17A;
-            --sage-green: #5dc135;
-            --cream-white: #FAF8F5;
-            --charcoal-gray: #3A3A3A;
-            --medium-gray: #6B6B6B;
-            --light-gray: #E8E6E3;
             --surface-white: rgba(255, 255, 255, 0.94);
         }
-        
+
         body {
             font-family: 'Inter', sans-serif;
             background: radial-gradient(circle at top left, rgba(6, 106, 4, 0.12), transparent 28%),
-                        radial-gradient(circle at 78% 18%, rgba(184, 84, 80, 0.08), transparent 16%),
                         var(--cream-white);
             color: var(--charcoal-gray);
             line-height: 1.6;
         }
-        
-        .font-display { font-family: 'Crimson Pro', serif; }
-        .font-mono { font-family: 'JetBrains Mono', monospace; }
-        
+
         .hero-bg {
-            background: linear-gradient(180deg, rgba(15, 23, 42, 0.24), rgba(15, 23, 42, 0.82)),
+            background: linear-gradient(180deg, rgba(4, 63, 3, 0.28), rgba(4, 63, 3, 0.85)),
                         url('empresas/campo.png');
             background-size: cover;
             background-position: center;
@@ -63,7 +52,7 @@
             max-width: 42rem;
             margin: 0 auto;
         }
-        
+
         .glass-effect {
             backdrop-filter: blur(18px);
             background: rgba(255, 255, 255, 0.78);
@@ -74,16 +63,7 @@
             border: 1px solid rgba(148, 163, 184, 0.18);
             box-shadow: 0 30px 60px rgba(15, 23, 42, 0.08);
         }
-        
-        .card-hover {
-            transition: transform 0.35s ease, box-shadow 0.35s ease;
-        }
-        
-        .card-hover:hover {
-            transform: translateY(-6px);
-            box-shadow: 0 32px 70px rgba(15, 23, 42, 0.12);
-        }
-        
+
         .input-focus {
             transition: border-color 0.25s ease, box-shadow 0.25s ease, transform 0.25s ease;
         }
@@ -159,7 +139,7 @@
             font-size: 0.75rem;
             font-weight: 600;
             color: #055503;
-            background: #FAF8F5;
+            background: var(--cream-white);
             border: 1.5px solid #066a04;
             border-radius: 0.65rem;
             padding: 0 0.6rem;
@@ -173,8 +153,8 @@
 
         .unit-select:focus {
             outline: none;
-            border-color: #D4A017;
-            box-shadow: 0 0 0 3px rgba(212, 160, 23, 0.25);
+            border-color: #F9A825;
+            box-shadow: 0 0 0 3px rgba(249, 168, 37, 0.25);
         }
 
         @media (max-width: 768px) {
@@ -201,8 +181,8 @@
         }
 
         .laudo-upload-area.drag-over {
-            border-color: #D4A017;
-            background: rgba(212, 160, 23, 0.1);
+            border-color: #F9A825;
+            background: rgba(249, 168, 37, 0.1);
         }
 
         .laudo-upload-area.loading {
@@ -239,9 +219,9 @@
         }
 
         .laudo-status.loading {
-            background: rgba(212, 160, 23, 0.12);
+            background: rgba(249, 168, 37, 0.12);
             color: #8a6a10;
-            border: 1px solid rgba(212, 160, 23, 0.35);
+            border: 1px solid rgba(249, 168, 37, 0.35);
         }
 
         .laudo-status.success {
@@ -251,9 +231,9 @@
         }
 
         .laudo-status.error {
-            background: rgba(184, 84, 80, 0.1);
-            color: #7a2f2c;
-            border: 1px solid rgba(184, 84, 80, 0.35);
+            background: rgba(198, 40, 40, 0.08);
+            color: #c62828;
+            border: 1px solid rgba(198, 40, 40, 0.25);
         }
 
         /* Destaque nos campos preenchidos automaticamente pela IA — some assim
@@ -324,7 +304,7 @@
     <div class="pt-16">
         <!-- Hero Section -->
         <section class="hero-bg min-h-screen flex items-center justify-center relative">
-        <div class="absolute inset-0 bg-gradient-to-b from-transparent to-slate-950/80 opacity-80"></div>
+        <div class="absolute inset-0 bg-gradient-to-b from-transparent to-[#043f03]/85 opacity-80"></div>
         <div class="relative z-10 text-center text-white px-4 hero-caption">
             <div class="mb-6 inline-flex items-center rounded-full bg-white/10 px-4 py-2 text-sm uppercase tracking-[0.24em] text-white/90 shadow-sm">
                 Análise de Solo Premium

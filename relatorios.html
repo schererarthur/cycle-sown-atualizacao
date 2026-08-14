@@ -23,8 +23,8 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/theme.css">
     <style>
-        :root { --forest-green: #066a04; }
         body { font-family: 'Inter', sans-serif; }
 
         .badge-bom { background: #eaf7e2; color: #066a04; }
@@ -105,7 +105,7 @@
     <header class="bg-white border-b border-gray-200 no-print">
         <div class="max-w-7xl mx-auto px-4 py-6">
             <h1 class="text-2xl font-bold text-slate-900">Central de Relatórios</h1>
-            <p class="text-sm text-slate-500 mt-1">Relatórios gerados a partir dos dados já cadastrados nos seus talhões e da sua Análise de Solo — nada é digitado de novo aqui.</p>
+            <p class="text-sm text-slate-500 mt-1">Relatórios gerados a partir dos dados já cadastrados nos seus talhões e da sua Análise de Solo — a maioria não pede nada digitado de novo aqui (a Calculadora de Adubação e Calagem é a exceção, já que depende da cultura e do rendimento esperado que você escolher).</p>
         </div>
     </header>
 
@@ -156,6 +156,24 @@
                         <p class="text-xs text-slate-500 mb-4 flex-1">Evolução da produtividade por cultura, com gráficos e tendências.</p>
                         <button type="button" data-tipo="produtividade" class="gerar-btn px-4 py-2 rounded-lg bg-[#066a04] hover:bg-[#055503] text-white text-sm font-semibold transition-colors">Gerar</button>
                     </div>
+                    <div class="gerar-card border-2 border-slate-200 rounded-xl p-5 flex flex-col">
+                        <h3 class="font-bold text-slate-900 mb-1">Adubação e Calagem</h3>
+                        <p class="text-xs text-slate-500 mb-4 flex-1">Dose de calcário, N, P₂O₅ e K₂O pelo método SMP (CQFS-RS/SC), para a cultura e o rendimento esperado que você escolher.</p>
+                        <div class="mb-3">
+                            <label class="block text-xs font-medium text-slate-600 mb-1">Cultura</label>
+                            <select id="adubacaoCultura" class="w-full border border-slate-300 rounded-lg px-2 py-1.5 text-sm">
+                                <option value="Soja">Soja</option>
+                                <option value="Milho">Milho</option>
+                                <option value="Trigo">Trigo</option>
+                                <option value="Fumo">Fumo</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="block text-xs font-medium text-slate-600 mb-1">Rendimento esperado (<span id="adubacaoRendimentoUnidade">sc/ha</span>)</label>
+                            <input type="number" id="adubacaoRendimento" min="0" step="0.1" placeholder="Ex: 55" class="w-full border border-slate-300 rounded-lg px-2 py-1.5 text-sm">
+                        </div>
+                        <button type="button" id="adubacaoGerarBtn" class="px-4 py-2 rounded-lg bg-[#066a04] hover:bg-[#055503] text-white text-sm font-semibold transition-colors self-start">Gerar</button>
+                    </div>
                 </div>
                 <p id="gerarError" class="hidden text-sm text-red-600 mt-4"></p>
             </div>
@@ -172,6 +190,7 @@
                         <option value="recomendacao">Recomendação</option>
                         <option value="rotacao">Rotação</option>
                         <option value="produtividade">Produtividade</option>
+                        <option value="adubacao">Adubação e Calagem</option>
                     </select>
                     <select id="filtroTalhao" class="border border-slate-300 rounded-lg px-3 py-2 text-sm">
                         <option value="">Todos os talhões</option>

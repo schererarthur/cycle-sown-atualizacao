@@ -21,43 +21,21 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:wght@400;600;700&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/theme.css">
     <style>
-        :root {
-            --forest-green: #066a04;
-            --terracotta: #B85450;
-            --golden-wheat: #E6B17A;
-            --sage-green: #5dc135;
-            --cream-white: #FAF8F5;
-            --charcoal-gray: #3A3A3A;
-            --medium-gray: #6B6B6B;
-            --light-gray: #E8E6E3;
-        }
-        
         body {
             font-family: 'Inter', sans-serif;
             background-color: var(--cream-white);
             color: var(--charcoal-gray);
             line-height: 1.6;
         }
-        
-        .font-display { font-family: 'Crimson Pro', serif; }
-        .font-mono { font-family: 'JetBrains Mono', monospace; }
-        
+
         .glass-effect {
             backdrop-filter: blur(10px);
-            background: rgba(250, 248, 245, 0.9);
+            background: rgba(244, 247, 242, 0.9);
         }
-        
-        .card-hover {
-            transition: all 0.3s ease;
-        }
-        
-        .card-hover:hover {
-            transform: translateY(-4px);
-            box-shadow: 0 20px 40px rgba(6, 106, 4, 0.15);
-        }
-        
+
         .animate-fade-in {
             opacity: 0;
             transform: translateY(20px);
@@ -145,7 +123,7 @@
 
     <div class="relative w-full overflow-hidden min-h-[70vh] mb-16">
         <div class="absolute inset-0 bg-cover bg-center" style="background-image: url('Plantio-de-milho.-como-aumentar-a-produtividade-da-lavoura-1024x536.jpg');"></div>
-        <div class="absolute inset-0 bg-black/30"></div>
+        <div class="absolute inset-0" style="background: linear-gradient(180deg, rgba(4, 63, 3, 0.35), rgba(4, 63, 3, 0.6));"></div>
         <div class="relative flex items-start justify-center min-h-[70vh] pt-20 px-4 lg:px-0">
             <div class="text-center text-white animate-fade-in max-w-5xl">
                 <h1 class="font-display text-5xl md:text-7xl font-bold mb-6">Planeje o seu calendário de plantio</h1>

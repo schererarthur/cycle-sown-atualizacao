@@ -1,10 +1,11 @@
 // ============================================================================
-// Rotas da Central de Relatórios (relatorios.html): 4 endpoints que GERAM
+// Rotas da Central de Relatórios (relatorios.html): 5 endpoints que GERAM
 // relatórios com dados atuais das tabelas já existentes (talhoes,
 // historico_culturas, precos_culturas) + 4 endpoints de persistência
 // (salvar/listar/buscar/excluir o snapshot gerado). Nenhum dado é inventado
 // — se um campo estiver NULL no banco, o relatório mostra "Dado não
-// informado" naquele item.
+// informado" naquele item (exceto o relatório de Adubação, que recusa
+// gerar sem os dados mínimos de solo — ver comentário na rota /adubacao).
 // ============================================================================
 
 const express = require('express');
@@ -18,6 +19,7 @@ const {
     determinarProximaSafra,
     FAMILIA_LABEL
 } = require('../utils/rotacaoEngine');
+const { calcularAdubacao, CULTURAS_SUPORTADAS: CULTURAS_ADUBACAO } = require('../utils/adubacaoEngine');
 const { classifyAdequacy, ADEQUACY_SCORE_MAP } = require('./talhoes');
 
 const router = express.Router();
@@ -633,10 +635,83 @@ router.get('/produtividade/:talhaoId', async (req, res) => {
 });
 
 // ============================================================================
+// RELATÓRIO 5 — ADUBAÇÃO E CALAGEM (Soja/Milho/Trigo/Fumo, método SMP)
+// ============================================================================
+
+// Único relatório com entrada extra do usuário (cultura + rendimento
+// esperado), então vai por querystring em vez de depender só do talhaoId —
+// os outros 4 relatórios não precisam de nenhum input além do talhão.
+router.get('/adubacao/:talhaoId', async (req, res) => {
+    try {
+        const talhao = await buscarTalhaoDoUsuario(req.params.talhaoId, req.user.userId);
+        if (!talhao) return res.status(404).json({ error: 'Talhão não encontrado' });
+
+        const cultura = req.query.cultura;
+        const rendimento = Number(req.query.rendimento);
+
+        if (!CULTURAS_ADUBACAO.includes(cultura)) {
+            return res.status(400).json({ error: `Cultura deve ser uma de: ${CULTURAS_ADUBACAO.join(', ')}` });
+        }
+        if (!Number.isFinite(rendimento) || rendimento <= 0) {
+            return res.status(400).json({ error: 'Informe a expectativa de rendimento (maior que zero).' });
+        }
+
+        // Diferente dos outros relatórios (que mostram "dado não informado"
+        // e seguem em frente), este gera uma recomendação de dose de insumo
+        // que o agricultor vai comprar/aplicar — sem os dados mínimos de
+        // solo, calcular "na sorte" seria pior do que recusar e pedir para
+        // completar o cadastro do talhão.
+        const faltando = [];
+        if (talhao.solo_smp === null) faltando.push('Índice SMP');
+        if (talhao.solo_argila === null) faltando.push('Argila (%)');
+        if (talhao.solo_p === null) faltando.push('Fósforo (P)');
+        if (talhao.solo_k === null) faltando.push('Potássio (K)');
+        if (talhao.solo_mo === null) faltando.push('Matéria Orgânica');
+        if (talhao.solo_ctc === null) faltando.push('CTC a pH 7,0');
+        if (faltando.length > 0) {
+            return res.status(400).json({
+                error: `Preencha estes dados do talhão no Mapa de Fertilidade antes de gerar a Calculadora de Adubação: ${faltando.join(', ')}.`
+            });
+        }
+
+        let culturaAnterior = null;
+        if (cultura === 'Trigo') {
+            const historico = await buscarHistoricoRecente(talhao.id, 1);
+            culturaAnterior = historico[0] ? historico[0].cultura_nome : null;
+        }
+
+        const resultado = calcularAdubacao({
+            cultura,
+            indiceSMP: Number(talhao.solo_smp),
+            argila: Number(talhao.solo_argila),
+            fosforo: Number(talhao.solo_p),
+            potassio: Number(talhao.solo_k),
+            materiaOrganica: Number(talhao.solo_mo),
+            ctc: Number(talhao.solo_ctc),
+            rendimentoEsperado: rendimento,
+            prntCalcario: talhao.calcario_prnt !== null ? Number(talhao.calcario_prnt) : 100,
+            culturaAnterior
+        });
+
+        if (resultado.erro) return res.status(400).json({ error: resultado.erro });
+
+        return res.status(200).json({
+            success: true,
+            talhao: talhaoResumo(talhao),
+            data_geracao: new Date().toISOString(),
+            ...resultado
+        });
+    } catch (err) {
+        console.error('Erro ao gerar relatório de adubação:', err.message);
+        return res.status(500).json({ error: 'Erro interno. Tente novamente mais tarde.' });
+    }
+});
+
+// ============================================================================
 // PERSISTÊNCIA — salvar / listar / buscar / excluir relatórios gerados
 // ============================================================================
 
-const TIPOS_VALIDOS = ['nutricional', 'recomendacao', 'rotacao', 'produtividade'];
+const TIPOS_VALIDOS = ['nutricional', 'recomendacao', 'rotacao', 'produtividade', 'adubacao'];
 
 // GET /api/relatorios — lista os relatórios salvos do usuário
 router.get('/', async (req, res) => {

@@ -114,8 +114,13 @@ function calcularFertilidade({ solo_ph, solo_mo, solo_p, solo_k, solo_ca, solo_m
 
 const SOLO_FIELDS = [
     'solo_ph', 'solo_mo', 'solo_p', 'solo_k', 'solo_ca', 'solo_mg',
-    'solo_v', 'solo_ctc', 'solo_al', 'solo_m', 'solo_smp'
+    'solo_v', 'solo_ctc', 'solo_al', 'solo_m', 'solo_smp', 'solo_argila'
 ];
+
+// calcario_prnt não é uma leitura de solo (é o PRNT do produto de calcário
+// que o agricultor pretende comprar) — guardado à parte no talhão para a
+// Calculadora de Adubação e Calagem reaproveitar entre gerações de relatório.
+const CALCARIO_FIELDS = ['calcario_prnt'];
 
 // Converte number|string|null/undefined para número ou null, para não
 // gravar `undefined`/`NaN` no banco.
@@ -146,8 +151,10 @@ function rowToTalhao(row) {
             CTC: row.solo_ctc !== null ? Number(row.solo_ctc) : null,
             Al: row.solo_al !== null ? Number(row.solo_al) : null,
             m: row.solo_m !== null ? Number(row.solo_m) : null,
-            SMP: row.solo_smp !== null ? Number(row.solo_smp) : null
+            SMP: row.solo_smp !== null ? Number(row.solo_smp) : null,
+            argila: row.solo_argila !== null ? Number(row.solo_argila) : null
         },
+        calcario_prnt: row.calcario_prnt !== null ? Number(row.calcario_prnt) : null,
         fertilidade: row.fertilidade_score,
         created_at: row.created_at,
         updated_at: row.updated_at
@@ -193,6 +200,10 @@ router.post('/', async (req, res) => {
     SOLO_FIELDS.forEach((field) => {
         soloValores[field] = toNumberOrNull(body[field]);
     });
+    const calcarioValores = {};
+    CALCARIO_FIELDS.forEach((field) => {
+        calcarioValores[field] = toNumberOrNull(body[field]);
+    });
 
     const fertilidadeScore = calcularFertilidade({
         solo_ph: soloValores.solo_ph,
@@ -208,8 +219,8 @@ router.post('/', async (req, res) => {
             `INSERT INTO talhoes (
                 user_id, nome, coordenadas, area_ha, cultura_nome, cultura_estagio,
                 solo_ph, solo_mo, solo_p, solo_k, solo_ca, solo_mg, solo_v,
-                solo_ctc, solo_al, solo_m, solo_smp, fertilidade_score
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                solo_ctc, solo_al, solo_m, solo_smp, solo_argila, calcario_prnt, fertilidade_score
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
             [
                 req.user.userId,
                 nome,
@@ -220,6 +231,7 @@ router.post('/', async (req, res) => {
                 soloValores.solo_ph, soloValores.solo_mo, soloValores.solo_p, soloValores.solo_k,
                 soloValores.solo_ca, soloValores.solo_mg, soloValores.solo_v,
                 soloValores.solo_ctc, soloValores.solo_al, soloValores.solo_m, soloValores.solo_smp,
+                soloValores.solo_argila, calcarioValores.calcario_prnt,
                 fertilidadeScore
             ]
         );
@@ -271,6 +283,12 @@ router.put('/:id', async (req, res) => {
                 ? toNumberOrNull(body[field])
                 : existing[field];
         });
+        const calcarioValores = {};
+        CALCARIO_FIELDS.forEach((field) => {
+            calcarioValores[field] = body[field] !== undefined
+                ? toNumberOrNull(body[field])
+                : existing[field];
+        });
 
         const areaHa = body.area_ha !== undefined ? toNumberOrNull(body.area_ha) : existing.area_ha;
         const culturaNome = body.cultura_nome !== undefined
@@ -280,25 +298,33 @@ router.put('/:id', async (req, res) => {
             ? (typeof body.cultura_estagio === 'string' ? body.cultura_estagio.trim() || null : null)
             : existing.cultura_estagio;
 
+        // Corrigido: antes passava solo_v (ignorado por calcularFertilidade,
+        // que só lê ph/mo/p/k/ca/mg) e nunca passava Ca/Mg — a atualização de
+        // um talhão fazia a "Saúde do Solo" recalcular sem Cálcio/Magnésio,
+        // divergindo do valor calculado na criação (rota POST, que já
+        // passava ca/mg corretamente).
         const fertilidadeScore = calcularFertilidade({
             solo_ph: soloValores.solo_ph,
             solo_mo: soloValores.solo_mo,
             solo_p: soloValores.solo_p,
             solo_k: soloValores.solo_k,
-            solo_v: soloValores.solo_v
+            solo_ca: soloValores.solo_ca,
+            solo_mg: soloValores.solo_mg
         });
 
         await pool.query(
             `UPDATE talhoes SET
                 nome = ?, coordenadas = ?, area_ha = ?, cultura_nome = ?, cultura_estagio = ?,
                 solo_ph = ?, solo_mo = ?, solo_p = ?, solo_k = ?, solo_ca = ?, solo_mg = ?, solo_v = ?,
-                solo_ctc = ?, solo_al = ?, solo_m = ?, solo_smp = ?, fertilidade_score = ?
+                solo_ctc = ?, solo_al = ?, solo_m = ?, solo_smp = ?, solo_argila = ?, calcario_prnt = ?,
+                fertilidade_score = ?
              WHERE id = ? AND user_id = ?`,
             [
                 nome, JSON.stringify(coordenadas), areaHa, culturaNome, culturaEstagio,
                 soloValores.solo_ph, soloValores.solo_mo, soloValores.solo_p, soloValores.solo_k,
                 soloValores.solo_ca, soloValores.solo_mg, soloValores.solo_v,
                 soloValores.solo_ctc, soloValores.solo_al, soloValores.solo_m, soloValores.solo_smp,
+                soloValores.solo_argila, calcarioValores.calcario_prnt,
                 fertilidadeScore,
                 id, req.user.userId
             ]

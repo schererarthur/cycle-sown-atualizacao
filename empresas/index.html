@@ -18,11 +18,10 @@
     <title>Vender Produção - Cycle Sown</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:wght@400;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../css/theme.css">
     <style>
-        :root { --forest-green: #066a04; --light-border: #E5E7EB; --sage-green: #5dc135; }
-        body { font-family: Inter, sans-serif; background:#FAF8F5; color:#333; }
-        .font-display { font-family: 'Crimson Pro', Georgia, serif; }
+        body { font-family: 'Inter', sans-serif; background: var(--cream-white); color: var(--charcoal-gray); }
         .company-card {
             transition: all 0.3s ease;
             border: 1px solid var(--light-border);
@@ -64,6 +63,7 @@
                     <div class="ml-10 flex items-baseline space-x-8">
                         <a href="../index.html#analysis" class="text-slate-800 hover:text-[#066a04] px-3 py-2 text-sm font-medium transition-colors">Análise</a>
                         <a href="../recommendations.html" class="text-slate-600 hover:text-[#066a04] px-3 py-2 text-sm font-medium transition-colors">Recomendações</a>
+                        <a href="../relatorios.html" class="text-slate-600 hover:text-[#066a04] px-3 py-2 text-sm font-medium transition-colors">Relatórios</a>
                         <a href="../profile.html" class="text-slate-600 hover:text-[#066a04] px-3 py-2 text-sm font-medium transition-colors">Perfil</a>
                     </div>
                 </div>
@@ -93,17 +93,22 @@
                 <a href="../mapa-fertilidade.html" onclick="toggleMenu(false)" class="block text-gray-900 px-4 py-3 rounded-lg hover:bg-[#eaf7e2] transition-colors">Mapa de Fertilidade</a>
                 <a href="../cotacoes.html" onclick="toggleMenu(false)" class="block text-gray-900 px-4 py-3 rounded-lg hover:bg-[#eaf7e2] transition-colors">Cotações</a>
                 <a href="../rotacao.html" onclick="toggleMenu(false)" class="block text-gray-900 px-4 py-3 rounded-lg hover:bg-[#eaf7e2] transition-colors">Rotação</a>
+                <a href="../relatorios.html" onclick="toggleMenu(false)" class="block text-gray-900 px-4 py-3 rounded-lg hover:bg-[#eaf7e2] transition-colors">Relatórios</a>
                 <a href="index.html" onclick="toggleMenu(false)" class="block text-gray-900 px-4 py-3 rounded-lg hover:bg-[#eaf7e2] transition-colors">Vender Produção</a>
                 <a href="../profile.html" onclick="toggleMenu(false)" class="block text-[#066a04] font-semibold px-4 py-3 rounded-lg hover:bg-[#eaf7e2] transition-colors">Meu Perfil</a>
             </nav>
         </div>
     </div>
 
-    <main class="max-w-6xl mx-auto mt-12 pb-16 px-4">
-        <h2 class="font-display text-3xl font-bold" style="color: var(--forest-green);">Vender Produção</h2>
-        <p class="mt-3 text-gray-500 italic max-w-2xl">Empresas compradoras de safra, com a cultura que cada uma procura e o contato para negociar diretamente.</p>
+    <header class="py-12 page-header-band">
+        <div class="max-w-6xl mx-auto px-4 text-center">
+            <h2 class="font-display text-3xl font-bold">Vender Produção</h2>
+            <p class="mt-3 italic max-w-2xl mx-auto">Empresas compradoras de safra, com a cultura que cada uma procura e o contato para negociar diretamente.</p>
+        </div>
+    </header>
 
-        <div class="mt-8 relative">
+    <main class="max-w-6xl mx-auto mt-8 pb-16 px-4">
+        <div class="relative">
             <svg class="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" xmlns="http://www.w3.org/2000/svg">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-4.35-4.35m0 0A7.5 7.5 0 104.5 4.5a7.5 7.5 0 0012.15 12.15z" />
             </svg>

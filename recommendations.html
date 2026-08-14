@@ -22,19 +22,9 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:wght@400;600;700&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/theme.css">
     <style>
-        :root {
-            --forest-green: #066a04;
-            --terracotta: #B85450;
-            --golden-wheat: #E6B17A;
-            --sage-green: #5dc135;
-            --cream-white: #FAF8F5;
-            --charcoal-gray: #3A3A3A;
-            --medium-gray: #6B6B6B;
-            --light-gray: #E8E6E3;
-        }
-
         body {
             font-family: 'Inter', sans-serif;
             background-color: var(--cream-white);
@@ -42,21 +32,9 @@
             line-height: 1.6;
         }
 
-        .font-display { font-family: 'Crimson Pro', serif; }
-        .font-mono { font-family: 'JetBrains Mono', monospace; }
-
         .glass-effect {
             backdrop-filter: blur(10px);
-            background: rgba(250, 248, 245, 0.9);
-        }
-
-        .card-hover {
-            transition: all 0.3s ease;
-        }
-
-        .card-hover:hover {
-            transform: translateY(-4px);
-            box-shadow: 0 20px 40px rgba(6, 106, 4, 0.15);
+            background: rgba(244, 247, 242, 0.9);
         }
 
         .compatibility-excellent { background-color: var(--forest-green); }
@@ -169,7 +147,7 @@
     </style>
 
     <!-- Header Section -->
-    <section class="pt-24 pb-12 px-4" style="background: linear-gradient(135deg, var(--sage-green) 0%, var(--forest-green) 100%);">
+    <section class="pt-24 pb-12 px-4 page-header-band">
         <div class="max-w-6xl mx-auto text-center text-white">
             <h1 class="font-display text-5xl font-bold mb-6 animate-fade-in">Culturas Recomendadas</h1>
             <p class="text-xl mb-8 max-w-3xl mx-auto animate-fade-in">

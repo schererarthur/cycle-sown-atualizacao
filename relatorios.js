@@ -1,6 +1,6 @@
 // ============================================================================
 // relatorios.js — lógica da Central de Relatórios (relatorios.html).
-// Busca talhões e relatórios salvos, chama os 4 endpoints de geração
+// Busca talhões e relatórios salvos, chama os 5 endpoints de geração
 // (backend/routes/relatorios.js), renderiza cada tipo de relatório e salva
 // automaticamente o resultado (POST /api/relatorios) para reabrir depois
 // sem recalcular. Gráficos do relatório de Produtividade são SVG puro.
@@ -481,11 +481,106 @@
         );
     }
 
+    // ========================================================================
+    // RELATÓRIO 5 — ADUBAÇÃO E CALAGEM
+    // ========================================================================
+    function classeNutrienteBadgeClass(classe) {
+        if (classe === 'Alto' || classe === 'Muito Alto') return 'badge-bom';
+        if (classe === 'Médio') return 'badge-regular';
+        return 'badge-ruim'; // Muito Baixo / Baixo
+    }
+
+    function renderAdubacao(dados) {
+        const c = dados.calagem;
+        const n = dados.nitrogenio;
+        const p = dados.fosforo;
+        const k = dados.potassio;
+        const custo = dados.custo;
+        const unidadeRendimento = dados.cultura === 'Fumo' ? 'ton/ha' : 'sc/ha';
+
+        const calagemHtml = c ? `
+            <div class="rounded-2xl border border-slate-200 bg-slate-50 p-6 mb-6 report-section">
+                <div class="flex flex-wrap items-center justify-between gap-4 mb-2">
+                    <h3 class="font-bold text-slate-900">Calagem (método SMP)</h3>
+                    <div class="text-right">
+                        <div class="text-3xl font-black text-slate-900">${c.dose_real_ton_ha} t/ha</div>
+                        <div class="text-xs text-slate-500 uppercase font-bold tracking-wide">Dose de calcário</div>
+                    </div>
+                </div>
+                <div class="text-sm text-slate-600 space-y-1">
+                    <p>Índice SMP: <strong>${c.indice_smp}</strong> · pH-alvo: <strong>${c.ph_alvo}</strong></p>
+                    <p>Dose a PRNT 100%: <strong>${c.dose_prnt100_ton_ha} t/ha</strong> · PRNT do calcário usado: <strong>${c.prnt_usado}%</strong></p>
+                </div>
+                ${c.observacao ? `<p class="text-sm text-amber-700 mt-3 bg-amber-50 border border-amber-100 rounded-lg p-3">${escapeHtml(c.observacao)}</p>` : ''}
+            </div>
+        ` : '<p class="text-sm text-slate-500 mb-6">Índice SMP não informado — dose de calcário não pôde ser calculada.</p>';
+
+        const nutrientesHtml = `
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                <div class="border border-slate-200 rounded-xl p-4 report-section">
+                    <span class="font-semibold text-slate-800 text-sm">Nitrogênio (N)</span>
+                    <div class="text-2xl font-black text-slate-900 my-2">${n.dose_kg_ha} <span class="text-xs font-normal text-slate-400">kg/ha</span></div>
+                    <p class="text-xs text-slate-600">${escapeHtml(n.observacao)}</p>
+                </div>
+                <div class="border border-slate-200 rounded-xl p-4 report-section">
+                    <div class="flex items-center justify-between gap-3 mb-2">
+                        <span class="font-semibold text-slate-800 text-sm">Fósforo (P₂O₅)</span>
+                        <span class="text-xs font-bold px-3 py-1 rounded-full ${classeNutrienteBadgeClass(p.classe)}">${escapeHtml(p.classe)}</span>
+                    </div>
+                    <div class="text-2xl font-black text-slate-900 mb-2">${p.dose_P2O5_kg_ha} <span class="text-xs font-normal text-slate-400">kg/ha</span></div>
+                    <p class="text-xs text-slate-500">P no solo: ${p.valor_solo} mg/dm³ (classe de solo ${p.classe_solo})</p>
+                </div>
+                <div class="border border-slate-200 rounded-xl p-4 report-section">
+                    <div class="flex items-center justify-between gap-3 mb-2">
+                        <span class="font-semibold text-slate-800 text-sm">Potássio (K₂O)</span>
+                        <span class="text-xs font-bold px-3 py-1 rounded-full ${classeNutrienteBadgeClass(k.classe)}">${escapeHtml(k.classe)}</span>
+                    </div>
+                    <div class="text-2xl font-black text-slate-900 mb-2">${k.dose_K2O_kg_ha} <span class="text-xs font-normal text-slate-400">kg/ha</span></div>
+                    <p class="text-xs text-slate-500">K no solo: ${k.valor_solo} mg/dm³ (classe CTC ${k.classe_ctc})</p>
+                </div>
+            </div>
+        `;
+
+        const custoHtml = `
+            <div class="rounded-2xl border border-slate-200 bg-slate-50 p-6 mb-6 report-section">
+                <h3 class="font-bold text-slate-900 mb-4">Custo estimado (insumos)</h3>
+                <div class="space-y-1 text-sm">
+                    <div class="flex justify-between"><span class="text-slate-500">Calcário</span><strong>${money(custo.calcario)}</strong></div>
+                    <div class="flex justify-between"><span class="text-slate-500">Nitrogênio (ureia)</span><strong>${money(custo.nitrogenio)}</strong></div>
+                    <div class="flex justify-between"><span class="text-slate-500">Fósforo (superfosfato triplo)</span><strong>${money(custo.fosforo)}</strong></div>
+                    <div class="flex justify-between"><span class="text-slate-500">Potássio (${escapeHtml(custo.fonte_k)})</span><strong>${money(custo.potassio)}</strong></div>
+                    <div class="flex justify-between border-t border-slate-200 pt-2 mt-1"><span class="font-bold text-slate-900">Total por hectare</span><strong class="text-[#066a04]">${money(custo.total_ha)}</strong></div>
+                </div>
+                <p class="text-xs text-slate-400 mt-3">Preços de insumos são estimativas de referência — cotações reais variam por região e fornecedor.</p>
+            </div>
+        `;
+
+        const observacoesHtml = (dados.observacoes && dados.observacoes.length > 0) ? `
+            <h3 class="font-bold text-slate-900 mb-3">Observações técnicas</h3>
+            <div class="rounded-2xl border border-slate-200 bg-slate-50 p-6 mb-6 report-section">
+                <ul class="text-sm text-slate-700 space-y-2">
+                    ${dados.observacoes.map((o) => `<li>• ${escapeHtml(o)}</li>`).join('')}
+                </ul>
+            </div>
+        ` : '';
+
+        const culturaAnteriorHtml = dados.culturaAnteriorUsada
+            ? `<p class="text-xs text-slate-400 mb-4">Cultura anterior considerada para o cálculo de N: <strong>${escapeHtml(dados.culturaAnteriorUsada)}</strong></p>`
+            : (dados.cultura === 'Trigo' ? '<p class="text-xs text-slate-400 mb-4">Nenhuma cultura anterior registrada no histórico deste talhão — N calculado no cenário mais conservador (após gramínea).</p>' : '');
+
+        renderReportShell(
+            'Calculadora de Adubação e Calagem',
+            `${escapeHtml(dados.talhao.nome)} · ${escapeHtml(dados.cultura)} · Rendimento esperado: ${dados.rendimentoEsperado} ${unidadeRendimento}`,
+            `${culturaAnteriorHtml}${calagemHtml}${nutrientesHtml}${custoHtml}${observacoesHtml}${disclaimer('Cálculo pelo método do índice SMP, CQFS-RS/SC (2016). Preços de insumos são estimativas.')}`
+        );
+    }
+
     const RENDERERS = {
         nutricional: renderNutricional,
         recomendacao: renderRecomendacao,
         rotacao: renderRotacao,
-        produtividade: renderProdutividade
+        produtividade: renderProdutividade,
+        adubacao: renderAdubacao
     };
 
     // ========================================================================
@@ -754,6 +849,12 @@
                 resumo: `Lucro projetado: ${money(dados.resumo_financeiro.lucro_total)}`
             };
         }
+        if (tipo === 'adubacao') {
+            return {
+                titulo: `Adubação e Calagem — ${talhaoNome} — ${dados.cultura}`,
+                resumo: `${dados.cultura}: calcário ${dados.calagem ? dados.calagem.dose_real_ton_ha + ' t/ha' : '—'} · N ${dados.nitrogenio.dose_kg_ha} · P₂O₅ ${dados.fosforo.dose_P2O5_kg_ha} · K₂O ${dados.potassio.dose_K2O_kg_ha} kg/ha · Custo ${money(dados.custo.total_ha)}/ha`
+            };
+        }
         return {
             titulo: `Relatório de Produtividade — ${talhaoNome}`,
             resumo: dados.sem_dados ? 'Sem histórico suficiente ainda' : `Receita histórica estimada: ${money(dados.resumo.receita_total_estimada)}`
@@ -763,7 +864,7 @@
     // ----------------------------------------------------------------------
     // Gerar novo relatório: busca dados atuais, renderiza, salva
     // ----------------------------------------------------------------------
-    async function gerarRelatorio(tipo) {
+    async function gerarRelatorio(tipo, queryExtra) {
         const errorEl = document.getElementById('gerarError');
         errorEl.classList.add('hidden');
 
@@ -774,7 +875,8 @@
         }
 
         try {
-            const dados = await apiRequest(`/relatorios/${tipo}/${selectedTalhaoId}`, 'GET');
+            const qs = queryExtra ? `?${queryExtra}` : '';
+            const dados = await apiRequest(`/relatorios/${tipo}/${selectedTalhaoId}${qs}`, 'GET');
             RENDERERS[tipo](dados);
 
             const talhao = talhoes.find((t) => t.id === selectedTalhaoId);
@@ -922,6 +1024,23 @@
         document.getElementById('filtroTipo').addEventListener('change', renderRelatoriosSalvos);
         document.getElementById('filtroTalhao').addEventListener('change', renderRelatoriosSalvos);
         document.getElementById('gerarLaudoBtn').addEventListener('click', gerarLaudo);
+
+        const adubacaoCulturaSelect = document.getElementById('adubacaoCultura');
+        adubacaoCulturaSelect.addEventListener('change', (e) => {
+            document.getElementById('adubacaoRendimentoUnidade').textContent = e.target.value === 'Fumo' ? 'ton/ha' : 'sc/ha';
+        });
+        document.getElementById('adubacaoGerarBtn').addEventListener('click', () => {
+            const cultura = adubacaoCulturaSelect.value;
+            const rendimento = document.getElementById('adubacaoRendimento').value;
+            const errorEl = document.getElementById('gerarError');
+            if (!rendimento || Number(rendimento) <= 0) {
+                errorEl.textContent = 'Informe a expectativa de rendimento para gerar a Calculadora de Adubação e Calagem.';
+                errorEl.classList.remove('hidden');
+                return;
+            }
+            errorEl.classList.add('hidden');
+            gerarRelatorio('adubacao', `cultura=${encodeURIComponent(cultura)}&rendimento=${encodeURIComponent(rendimento)}`);
+        });
 
         loadTalhoes();
         loadRelatoriosSalvos();

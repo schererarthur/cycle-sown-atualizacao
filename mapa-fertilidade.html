@@ -292,7 +292,16 @@
                         <div><label class="block text-xs text-slate-500 mb-1">Mg</label><input type="number" step="0.1" name="solo_mg" class="w-full border border-slate-300 rounded-lg px-2 py-2 text-sm"></div>
                         <div><label class="block text-xs text-slate-500 mb-1">V %</label><input type="number" step="0.1" name="solo_v" class="w-full border border-slate-300 rounded-lg px-2 py-2 text-sm"></div>
                         <div><label class="block text-xs text-slate-500 mb-1">SMP</label><input type="number" step="0.1" name="solo_smp" class="w-full border border-slate-300 rounded-lg px-2 py-2 text-sm"></div>
+                        <div><label class="block text-xs text-slate-500 mb-1">CTC a pH 7,0</label><input type="number" step="0.01" name="solo_ctc" class="w-full border border-slate-300 rounded-lg px-2 py-2 text-sm"></div>
+                        <div><label class="block text-xs text-slate-500 mb-1">Argila (%)</label><input type="number" step="0.1" min="0" max="100" name="solo_argila" class="w-full border border-slate-300 rounded-lg px-2 py-2 text-sm"></div>
                     </div>
+
+                    <p class="text-xs text-slate-500 mt-2">CTC e Argila alimentam a Calculadora de Adubação e Calagem (Central de Relatórios) — sem eles, aquele relatório não pode classificar P/K nem ser gerado para este talhão.</p>
+
+                    <div class="grid grid-cols-3 gap-3">
+                        <div><label class="block text-xs text-slate-500 mb-1">PRNT do calcário (%)</label><input type="number" step="0.1" min="1" max="100" name="calcario_prnt" placeholder="100" class="w-full border border-slate-300 rounded-lg px-2 py-2 text-sm"></div>
+                    </div>
+                    <p class="text-xs text-slate-500 -mt-2">Poder de neutralização do calcário que você compra (rótulo da embalagem). Deixe em branco para assumir 100% (calcário de referência).</p>
 
                     <p id="modalError" class="text-sm text-red-600 hidden"></p>
 
@@ -830,6 +839,9 @@
                 form.solo_mg.value = solo.Mg ?? '';
                 form.solo_v.value = solo.V ?? '';
                 form.solo_smp.value = solo.SMP ?? '';
+                form.solo_ctc.value = solo.CTC ?? '';
+                form.solo_argila.value = solo.argila ?? '';
+                form.calcario_prnt.value = talhao.calcario_prnt ?? '';
             } else {
                 title.textContent = 'Novo talhão';
             }
@@ -847,7 +859,7 @@
             const form = document.getElementById('talhaoForm');
             const fd = new FormData(form);
             const out = { nome: fd.get('nome').trim() };
-            ['area_ha', 'solo_ph', 'solo_mo', 'solo_p', 'solo_k', 'solo_ca', 'solo_mg', 'solo_v', 'solo_smp'].forEach((key) => {
+            ['area_ha', 'solo_ph', 'solo_mo', 'solo_p', 'solo_k', 'solo_ca', 'solo_mg', 'solo_v', 'solo_smp', 'solo_ctc', 'solo_argila', 'calcario_prnt'].forEach((key) => {
                 const raw = fd.get(key);
                 out[key] = raw !== '' ? Number(raw) : null;
             });

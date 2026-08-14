@@ -23,26 +23,14 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:wght@400;600;700&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/theme.css">
     <style>
-        :root {
-            --forest-green: #066a04;
-            --terracotta: #B85450;
-            --golden-wheat: #E6B17A;
-            --sage-green: #5dc135;
-            --cream-white: #FAF8F5;
-            --charcoal-gray: #3A3A3A;
-            --light-border: #E5E7EB;
-        }
-
         body {
             font-family: 'Inter', sans-serif;
             background-color: var(--cream-white);
             color: var(--charcoal-gray);
         }
-
-        .font-display { font-family: 'Crimson Pro', serif; }
-        .font-mono { font-family: 'JetBrains Mono', monospace; }
 
         .stat-card {
             background: white;
@@ -73,7 +61,7 @@
             text-transform: uppercase;
             letter-spacing: .04em;
             color: var(--forest-green);
-            background: #EAF1E4;
+            background: var(--tint-bg);
             padding: 2px 7px;
             border-radius: 999px;
             white-space: nowrap;
@@ -180,11 +168,11 @@
 
     <div>
 
-    <header class="py-12 bg-white border-b border-gray-100">
+    <header class="py-12 page-header-band">
         <div class="max-w-7xl mx-auto px-4 text-center">
-            <h2 class="font-display text-4xl font-bold mb-4" style="color: var(--forest-green);">Cotações Agrícolas</h2>
-            <p class="text-gray-500 max-w-2xl mx-auto italic">Acompanhe os preços das principais commodities e simule a receita da sua safra.</p>
-            <p class="text-xs text-gray-400 mt-3 font-mono" id="lastUpdatedLabel">Carregando cotações...</p>
+            <h2 class="font-display text-4xl font-bold mb-4">Cotações Agrícolas</h2>
+            <p class="max-w-2xl mx-auto italic">Acompanhe os preços das principais commodities e simule a receita da sua safra.</p>
+            <p class="text-xs text-white/70 mt-3 font-mono" id="lastUpdatedLabel">Carregando cotações...</p>
         </div>
     </header>
 

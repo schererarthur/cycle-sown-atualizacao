@@ -398,6 +398,8 @@ CREATE TABLE talhoes (
   solo_al           DECIMAL(5,2) DEFAULT NULL,
   solo_m            DECIMAL(5,2) DEFAULT NULL,
   solo_smp          DECIMAL(3,1) DEFAULT NULL,
+  solo_argila       DECIMAL(5,2) DEFAULT NULL,
+  calcario_prnt     DECIMAL(5,2) DEFAULT NULL,
   fertilidade_score INT DEFAULT NULL,
   created_at        TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at        TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
@@ -468,7 +470,7 @@ ON DUPLICATE KEY UPDATE preco_saca = VALUES(preco_saca);
 
 -- =================================================================
 -- 11. RELATÓRIOS  (relatorios.html)
---     Snapshot dos 4 relatórios gerados a partir dos dados já existentes
+--     Snapshot dos 5 relatórios gerados a partir dos dados já existentes
 --     de `talhoes` / `historico_culturas` / `precos_culturas`. `dados`
 --     guarda o JSON completo usado para renderizar o relatório no momento
 --     em que foi gerado — mesmo que os dados de origem mudem depois
@@ -480,7 +482,7 @@ CREATE TABLE relatorios (
   id            INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   user_id       INT UNSIGNED NOT NULL,
   talhao_id     INT UNSIGNED NOT NULL,
-  tipo          ENUM('nutricional', 'recomendacao', 'rotacao', 'produtividade') NOT NULL,
+  tipo          ENUM('nutricional', 'recomendacao', 'rotacao', 'produtividade', 'adubacao') NOT NULL,
   titulo        VARCHAR(200) NOT NULL,
   dados         JSON NOT NULL,
   resumo        VARCHAR(500) DEFAULT NULL,
