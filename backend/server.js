@@ -23,6 +23,15 @@ const laudoParserRoutes = require('./laudo-parser-route');
 
 const app = express();
 
+const fs = require('fs');
+const FRONTEND_DIR = path.join(__dirname, 'public');
+console.log('__dirname:', __dirname);
+console.log('FRONTEND_DIR:', FRONTEND_DIR);
+console.log('public/ existe?', fs.existsSync(FRONTEND_DIR));
+if (fs.existsSync(FRONTEND_DIR)) {
+  console.log('Conteúdo de public/:', fs.readdirSync(FRONTEND_DIR));
+}
+
 // Helmet adiciona vários cabeçalhos HTTP de segurança recomendados
 // (ex: impede que o site seja carregado dentro de um <iframe> de outro
 // domínio, evita que o navegador "adivinhe" tipos de arquivo, etc).
@@ -59,10 +68,8 @@ app.use(express.json());
 
 // Serve os arquivos estáticos do frontend (index.html, login.html, css/, js/, img/...)
 // que ficam em backend/public/ (cópia usada em produção, porque o Railway só
-// faz deploy da pasta backend/).
-const FRONTEND_DIR = path.join(__dirname, 'public');
-console.log('FRONTEND_DIR:', FRONTEND_DIR);
-console.log('Arquivos no FRONTEND_DIR:', require('fs').readdirSync(FRONTEND_DIR));
+// faz deploy da pasta backend/). FRONTEND_DIR é declarado logo acima, junto
+// com o log de debug.
 app.use(express.static(FRONTEND_DIR));
 
 // Todas as rotas de autenticação ficam sob /api/auth/...
