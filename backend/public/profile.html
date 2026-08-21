@@ -1,0 +1,428 @@
+<!-- ============================================================================
+     profile.html — dados da conta, estatísticas de uso e configurações.
+     Nome/e-mail/telefone/bio e os 3 toggles de "Configurações" ficam em
+     userStorage (userProfile/userSettings) — ainda não são enviados ao
+     backend (users/user_settings em schema.sql já têm colunas para isso).
+     Estatísticas (total de análises, saúde média, últimas análises) são
+     calculadas em cima de userStorage.soilAnalysisReports. "Limpar Todos os
+     Dados" apaga só as chaves da conta logada; "Sair da Conta" só limpa a
+     sessão (token), sem apagar os dados salvos.
+     ============================================================================ -->
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Meu Perfil - Cycle Sown</title>
+    <script src="userStorage.js"></script>
+    <script>
+        if (!userStorage.getCurrentUserId()) {
+            window.location.href = 'login.html';
+        }
+    </script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=JetBrains+Mono&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/theme.css">
+    <style>
+        body { font-family: 'Inter', sans-serif; background: var(--cream-white); }
+        .glass-effect { backdrop-filter: blur(10px); background: rgba(244, 247, 242, 0.95); }
+        .gradient-header { background: linear-gradient(135deg, #043f03 0%, #066a04 100%); }
+
+        .avatar {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #066a04 0%, #5dc135 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 3rem;
+        }
+    </style>
+</head>
+<body class="pt-20">
+
+    <!-- Navigation -->
+    <nav class="fixed top-0 w-full z-50 backdrop-blur-xl bg-white/80 border-b border-slate-200 shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center gap-3">
+                    <a href="index.html" class="flex items-center shrink-0">
+                        <img src="img/logo.png" alt="Cycle Sown" class="h-14 w-auto">
+                    </a>
+                    <button type="button" aria-label="Abrir menu" onclick="toggleMenu(true)" class="p-2 rounded-full text-slate-700 hover:bg-slate-100 transition-colors">
+                        <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" xmlns="http://www.w3.org/2000/svg">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+                        </svg>
+                    </button>
+                </div>
+                <div class="hidden md:block">
+                    <div class="ml-10 flex items-baseline space-x-8">
+                        <a href="index.html#analysis" class="text-slate-800 hover:text-[#066a04] px-3 py-2 text-sm font-medium transition-colors">Análise</a>
+                        <a href="recommendations.html" class="text-slate-600 hover:text-[#066a04] px-3 py-2 text-sm font-medium transition-colors">Recomendações</a>
+                        <a href="relatorios.html" class="text-slate-600 hover:text-[#066a04] px-3 py-2 text-sm font-medium transition-colors">Relatórios</a>
+                        <a href="profile.html" class="text-slate-600 hover:text-[#066a04] px-3 py-2 text-sm font-medium transition-colors">Perfil</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div id="slideMenu" class="fixed inset-0 z-[9998] hidden">
+        <div class="absolute inset-0 bg-black/40 z-[9998]" onclick="toggleMenu(false)"></div>
+        <div class="absolute left-0 top-0 h-full w-72 bg-white border-r shadow-xl overflow-y-auto z-[9999]">
+            <div class="flex items-center justify-between p-5 border-b border-gray-200">
+                <span class="flex items-center gap-2">
+                    <img src="img/logo.png" alt="Cycle Sown" class="h-12 w-auto">
+                    <span class="text-lg font-semibold text-gray-900">Menu</span>
+                </span>
+                <button type="button" aria-label="Fechar menu" onclick="toggleMenu(false)" class="text-gray-600 hover:text-gray-900">
+                    <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" xmlns="http://www.w3.org/2000/svg">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+            <nav class="p-5 space-y-3">
+                <hr class="my-3">
+                <a href="calendar.html" onclick="toggleMenu(false)" class="block text-gray-900 px-4 py-3 rounded-lg hover:bg-[#eaf7e2] transition-colors">Calendário</a>
+                <a href="catalogo.html" onclick="toggleMenu(false)" class="block text-gray-900 px-4 py-3 rounded-lg hover:bg-[#eaf7e2] transition-colors">Catálogo</a>
+                <a href="produtividade.html" onclick="toggleMenu(false)" class="block text-gray-900 px-4 py-3 rounded-lg hover:bg-[#eaf7e2] transition-colors">Produtividade</a>
+                <a href="mapa-fertilidade.html" onclick="toggleMenu(false)" class="block text-gray-900 px-4 py-3 rounded-lg hover:bg-[#eaf7e2] transition-colors">Mapa de Fertilidade</a>
+                <a href="cotacoes.html" onclick="toggleMenu(false)" class="block text-gray-900 px-4 py-3 rounded-lg hover:bg-[#eaf7e2] transition-colors">Cotações</a>
+                <a href="rotacao.html" onclick="toggleMenu(false)" class="block text-gray-900 px-4 py-3 rounded-lg hover:bg-[#eaf7e2] transition-colors">Rotação</a>
+                <a href="relatorios.html" onclick="toggleMenu(false)" class="block text-gray-900 px-4 py-3 rounded-lg hover:bg-[#eaf7e2] transition-colors">Relatórios</a>
+                <a href="empresas/index.html" onclick="toggleMenu(false)" class="block text-gray-900 px-4 py-3 rounded-lg hover:bg-[#eaf7e2] transition-colors">Vender Produção</a>
+                <a href="profile.html" onclick="toggleMenu(false)" class="block text-[#066a04] font-semibold px-4 py-3 rounded-lg hover:bg-[#eaf7e2] transition-colors">Meu Perfil</a>
+            </nav>
+        </div>
+    </div>
+
+    <div class="pt-8">
+        <div class="max-w-4xl mx-auto px-4 pb-20">
+            
+            <!-- Header Profile Card -->
+            <div class="mb-8">
+                <div class="gradient-header p-8 text-white rounded-md">
+                    <div class="flex flex-col md:flex-row items-center gap-6">
+                        <div class="avatar"></div>
+                        <div class="text-center md:text-left">
+                            <h1 class="font-display text-4xl font-bold mb-2" id="userNameDisplay">Agricultor Cycle Sown</h1>
+                            <p class="text-[#d8f5c8] mb-4" id="userEmailDisplay">usuario@cyclesown.com</p>
+                            <div class="flex gap-3 flex-wrap justify-center md:justify-start">
+                                <span class="bg-white/20 px-4 py-1 rounded-full text-sm font-semibold">Membro desde 2024</span>
+                                <span class="bg-white/20 px-4 py-1 rounded-full text-sm font-semibold" id="reportsCountBadge">3 Análises</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Stats Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                <div class="p-6 text-center">
+                    <div class="text-4xl font-bold text-[#066a04] mb-2" id="totalAnalyses">0</div>
+                    <p class="text-gray-600 font-semibold">Análises Realizadas</p>
+                </div>
+                <div class="p-6 text-center">
+                    <div class="text-4xl font-bold text-blue-700 mb-2" id="avgHealthScore">0%</div>
+                    <p class="text-gray-600 font-semibold">Saúde Média do Solo</p>
+                </div>
+                <div class="p-6 text-center">
+                    <div class="text-4xl font-bold text-orange-700 mb-2" id="lastAnalysisDate">--</div>
+                    <p class="text-gray-600 font-semibold">Última Análise</p>
+                </div>
+            </div>
+
+            <!-- Profile Info Section -->
+            <div class="p-8 mb-8">
+                <h2 class="font-display text-2xl font-bold mb-6 text-gray-800">Informações do Perfil</h2>
+                
+                <div class="bg-white rounded-2xl shadow-lg p-8 mb-8">
+                    <div class="space-y-4 mb-8">
+                        <div class="grid grid-cols-4 gap-4">
+                            <div>
+                                <label class="text-sm font-semibold text-gray-600 mb-2 block">Nome Completo</label>
+                                <input type="text" id="profileName" placeholder="Seu nome" 
+                                       class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#066a04]" value="Agricultor Cycle Sown">
+                            </div>
+                            <div>
+                                <label class="text-sm font-semibold text-gray-600 mb-2 block">Email</label>
+                                <input type="email" id="profileEmail" placeholder="seu@email.com" 
+                                       class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#066a04]" value="usuario@cyclesown.com">
+                            </div>
+                            <div>
+                                <label class="text-sm font-semibold text-gray-600 mb-2 block">Localização</label>
+                                <input type="text" id="profileLocation" placeholder="Cidade/Estado" 
+                                       class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#066a04]" value="">
+                            </div>
+                            <div>
+                                <label class="text-sm font-semibold text-gray-600 mb-2 block">Telefone</label>
+                                <input type="tel" id="profilePhone" placeholder="(00) 9999-9999" 
+                                       class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#066a04]" value="">
+                            </div>
+                        </div>
+                        <div>
+                            <label class="text-sm font-semibold text-gray-600 mb-2 block">Bio/Descrição</label>
+                            <textarea id="profileBio" placeholder="Conte-nos sobre sua propriedade..." 
+                                      class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#066a04] h-24"></textarea>
+                        </div>
+                    </div>
+
+                    <div class="flex gap-3">
+                        <button onclick="saveProfile()" class="bg-[#066a04] text-white px-6 py-3 rounded-md font-semibold hover:bg-[#055503] transition-colors">
+                            ✓ Salvar Alterações
+                        </button>
+                        <button onclick="resetProfile()" class="bg-gray-200 text-gray-700 px-6 py-3 rounded-md font-semibold hover:bg-gray-300 transition-colors">
+                            ↺ Cancelar
+                        </button>
+                    </div>
+                </div>
+
+            <!-- Recent Analyses -->
+            <div class="p-8 mb-8">
+                <h2 class="font-display text-2xl font-bold mb-6 text-gray-800">Suas Análises Recentes</h2>
+                
+                <div id="recentAnalysesList" class="space-y-2">
+                    <div class="text-center text-gray-500 py-8">
+                        Nenhuma análise realizada ainda. <a href="index.html" class="text-[#066a04] font-semibold hover:underline">Comece uma análise agora!</a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Settings Section -->
+            <div class="p-8 mb-8">
+                <h2 class="font-display text-2xl font-bold mb-6 text-gray-800">Configurações</h2>
+                
+                <div class="space-y-2">
+                    <div class="flex items-center justify-between p-4 border-b border-gray-200">
+                        <div>
+                            <p class="font-semibold text-gray-800">Notificações por Email</p>
+                            <p class="text-sm text-gray-600">Receba alertas sobre condições do solo</p>
+                        </div>
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" id="emailNotifications" class="sr-only peer" checked>
+                            <div class="w-11 h-6 bg-gray-300 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-[#bfe8ac] rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#066a04]"></div>
+                        </label>
+                    </div>
+
+                    <div class="flex items-center justify-between p-4 border-b border-gray-200">
+                        <div>
+                            <p class="font-semibold text-gray-800">Relatórios Automáticos</p>
+                            <p class="text-sm text-gray-600">Gere relatórios automaticamente a cada análise</p>
+                        </div>
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" id="autoReports" class="sr-only peer" checked>
+                            <div class="w-11 h-6 bg-gray-300 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-[#bfe8ac] rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#066a04]"></div>
+                        </label>
+                    </div>
+
+                    <div class="flex items-center justify-between p-4">
+                        <div>
+                            <p class="font-semibold text-gray-800">Modo Escuro</p>
+                            <p class="text-sm text-gray-600">Alterar tema da interface</p>
+                        </div>
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" id="darkMode" class="sr-only peer">
+                            <div class="w-11 h-6 bg-gray-300 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-[#bfe8ac] rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#066a04]"></div>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Danger Zone -->
+            <div class="bg-red-50 border-2 border-red-200 rounded-2xl p-8">
+                <h2 class="font-display text-2xl font-bold mb-6 text-red-800">Zona de Risco</h2>
+                
+                <div class="space-y-4">
+                    <button onclick="userStorage.logout()" class="w-full bg-gray-700 text-white px-6 py-3 rounded-lg font-semibold hover:bg-gray-800 transition-colors text-left">
+                        Sair da Conta
+                    </button>
+                    <button onclick="clearAllData()" class="w-full bg-red-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-red-700 transition-colors text-left">
+                        Limpar Todos os Dados
+                    </button>
+                    <p class="text-sm text-red-700">Isso vai deletar todas as análises e configurações salvas. Esta ação não pode ser desfeita.</p>
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="mt-8 flex gap-4">
+                <a href="index.html" class="flex-1 bg-[#066a04] text-white px-6 py-3 rounded-lg font-semibold hover:bg-[#055503] transition-colors text-center">
+                    ← Voltar para Análise
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div id="site-footer"></div>
+
+    <script src="footer.js"></script>
+    <script>
+        // Load profile data on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            loadProfile();
+            loadAnalyticsData();
+        });
+
+        function toggleMenu(open) {
+            const menu = document.getElementById('slideMenu');
+            if (!menu) return;
+            menu.classList.toggle('hidden', !open);
+            document.body.style.overflow = open ? 'hidden' : '';
+        }
+
+        function loadProfile() {
+            const profile = JSON.parse(userStorage.getItem('userProfile') || '{}');
+            // Para um usuário recém-cadastrado ainda não existe userProfile
+            // salvo — nesse caso usamos o nome/e-mail que ele digitou no
+            // cadastro (salvos por auth.js em cycleSownUser) em vez do
+            // placeholder genérico.
+            const account = userStorage.getCurrentUser();
+
+            document.getElementById('profileName').value = profile.name || account?.name || '';
+            document.getElementById('profileEmail').value = profile.email || account?.email || '';
+            if (profile.location) document.getElementById('profileLocation').value = profile.location;
+            if (profile.phone) document.getElementById('profilePhone').value = profile.phone;
+            if (profile.bio) document.getElementById('profileBio').value = profile.bio;
+
+            const settings = JSON.parse(userStorage.getItem('userSettings') || '{}');
+            document.getElementById('emailNotifications').checked = settings.emailNotifications !== undefined ? settings.emailNotifications : true;
+            document.getElementById('autoReports').checked = settings.autoReports !== undefined ? settings.autoReports : true;
+            document.getElementById('darkMode').checked = settings.darkMode !== undefined ? settings.darkMode : false;
+
+            updateProfileDisplay();
+        }
+
+        function updateProfileDisplay() {
+            const name = document.getElementById('profileName').value || 'Agricultor Cycle Sown';
+            const email = document.getElementById('profileEmail').value || 'usuario@cyclesown.com';
+            
+            document.getElementById('userNameDisplay').textContent = name;
+            document.getElementById('userEmailDisplay').textContent = email;
+        }
+
+        function saveProfile() {
+            const profile = {
+                name: document.getElementById('profileName').value,
+                email: document.getElementById('profileEmail').value,
+                location: document.getElementById('profileLocation').value,
+                phone: document.getElementById('profilePhone').value,
+                bio: document.getElementById('profileBio').value,
+                updatedAt: new Date().toISOString()
+            };
+
+            const settings = {
+                emailNotifications: document.getElementById('emailNotifications').checked,
+                autoReports: document.getElementById('autoReports').checked,
+                darkMode: document.getElementById('darkMode').checked
+            };
+
+            userStorage.setItem('userProfile', JSON.stringify(profile));
+            userStorage.setItem('userSettings', JSON.stringify(settings));
+            updateProfileDisplay();
+            alert('✓ Perfil atualizado com sucesso!');
+        }
+
+        function resetProfile() {
+            loadProfile();
+            alert('Alterações canceladas.');
+        }
+
+        function loadAnalyticsData() {
+            const reports = JSON.parse(userStorage.getItem('soilAnalysisReports') || '[]');
+            
+            // Total analyses
+            document.getElementById('totalAnalyses').textContent = reports.length;
+            document.getElementById('reportsCountBadge').textContent = `${reports.length} Análise${reports.length !== 1 ? 's' : ''}`;
+            
+            // Calculate average health score
+            // Only nutrients the user actually filled in are counted — treating
+            // unfilled (null) nutrients as 0 was dragging the average down
+            // artificially for partially-filled reports.
+            let totalScore = 0;
+            let reportsWithData = 0;
+            if (reports.length > 0) {
+                reports.forEach(report => {
+                    const nutrients = report.soilData?.nutrients || {};
+                    const informedValues = Object.values(nutrients).filter(value => value !== null && value !== undefined && !Number.isNaN(Number(value)));
+                    if (informedValues.length > 0) {
+                        let score = 0;
+                        informedValues.forEach(value => {
+                            const percent = Math.min((Number(value) / 30) * 100, 100);
+                            score += percent;
+                        });
+                        totalScore += score / informedValues.length;
+                        reportsWithData++;
+                    }
+                });
+                const avgScore = reportsWithData > 0 ? Math.round(totalScore / reportsWithData) : 0;
+                document.getElementById('avgHealthScore').textContent = avgScore + '%';
+            }
+            
+            // Last analysis date
+            if (reports.length > 0) {
+                const lastReport = reports[reports.length - 1];
+                const date = new Date(lastReport.timestamp);
+                const days = Math.floor((Date.now() - date) / (1000 * 60 * 60 * 24));
+                if (days === 0) {
+                    document.getElementById('lastAnalysisDate').textContent = 'Hoje';
+                } else if (days === 1) {
+                    document.getElementById('lastAnalysisDate').textContent = 'Ontem';
+                } else {
+                    document.getElementById('lastAnalysisDate').textContent = `${days}d atrás`;
+                }
+            }
+            
+            // Load recent analyses list
+            loadRecentAnalyses(reports);
+        }
+
+        function loadRecentAnalyses(reports) {
+            const container = document.getElementById('recentAnalysesList');
+            
+            if (reports.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center text-gray-500 py-8">
+                        Nenhuma análise realizada ainda. <a href="index.html" class="text-[#066a04] font-semibold hover:underline">Comece uma análise agora!</a>
+                    </div>
+                `;
+                return;
+            }
+            
+            // Show last 5 analyses
+            const recent = reports.slice(-5).reverse();
+            container.innerHTML = recent.map((report, idx) => {
+                const date = new Date(report.timestamp).toLocaleDateString('pt-BR');
+                const time = new Date(report.timestamp).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+                const title = report.title || `Relatório ${idx + 1}`;
+                const pH = report.soilData?.ph || '--';
+                
+                return `
+                    <div class="flex items-center justify-between p-4 border-b border-gray-200 hover:bg-[#066a04]/5 transition-colors">
+                        <div>
+                            <p class="font-semibold text-gray-800">${title}</p>
+                            <p class="text-sm text-gray-600">${date} às ${time}</p>
+                            <p class="text-xs text-gray-500 mt-1">pH: ${pH}</p>
+                        </div>
+                        <a href="relatorios.html?laudo=last" class="bg-[#066a04] text-white px-4 py-2 rounded-md text-sm font-semibold hover:bg-[#055503] transition-colors">
+                            Ver Relatório
+                        </a>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function clearAllData() {
+            if (confirm('Você tem certeza? Isso vai deletar permanentemente:\n- Todas as análises salvas\n- Configurações\n- Dados do perfil\n\nEsta ação não pode ser desfeita!')) {
+                // Apaga só os dados da conta logada (user:<id>:...), não o
+                // localStorage inteiro — isso preservaria/destruiria contas
+                // de outros usuários guardadas no mesmo navegador.
+                userStorage.clearCurrentUserData();
+                alert('✓ Todos os dados foram deletados!');
+                location.href = 'index.html';
+            }
+        }
+    </script>
+
+</body>
+</html>

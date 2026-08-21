@@ -1,0 +1,1237 @@
+<!-- ============================================================================
+     recommendations.html — recomendação de culturas e correções de solo.
+     Carrega o último relatório salvo (userStorage.soilAnalysisData) via
+     main.js, calcula a compatibilidade do solo com cada uma das 4 culturas
+     (allowedCropKeys) e mostra: grid de culturas ordenável/filtrável,
+     calculadora de correção de pH/nutrientes e um gerador de "relatório de
+     correção" por cultura escolhida, salvo em
+     userStorage.cropCorrectionReports.
+     ============================================================================ -->
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Recomendações de Culturas - Cycle Sown</title>
+    <script src="userStorage.js"></script>
+    <script>
+        if (!userStorage.getCurrentUserId()) {
+            window.location.href = 'login.html';
+        }
+    </script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/theme.css">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--cream-white);
+            color: var(--charcoal-gray);
+            line-height: 1.6;
+        }
+
+        .glass-effect {
+            backdrop-filter: blur(10px);
+            background: rgba(244, 247, 242, 0.9);
+        }
+
+        .compatibility-excellent { background-color: var(--forest-green); }
+        .compatibility-good { background-color: var(--sage-green); }
+        .compatibility-fair { background-color: var(--golden-wheat); }
+        .compatibility-poor { background-color: var(--terracotta); }
+
+        .animate-fade-in {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+
+        .crop-image {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+            border-radius: 12px;
+        }
+
+        .filter-button.active {
+            background-color: var(--forest-green);
+            color: white;
+        }
+
+        .correction-high { background-color: var(--terracotta); }
+        .correction-medium { background-color: var(--golden-wheat); }
+        .correction-low { background-color: var(--sage-green); }
+        .correction-none { background-color: var(--forest-green); }
+
+        .calculator-input:focus {
+            border-color: var(--forest-green);
+            box-shadow: 0 0 0 3px rgba(6, 106, 4, 0.1);
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="fixed top-0 w-full z-50 backdrop-blur-xl bg-white/80 border-b border-slate-200 shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center gap-3">
+                    <a href="index.html" class="flex items-center shrink-0">
+                        <img src="img/logo.png" alt="Cycle Sown" class="h-14 w-auto">
+                    </a>
+                    <button type="button" aria-label="Abrir menu" onclick="toggleMenu(true)" class="p-2 rounded-full text-slate-700 hover:bg-slate-100 transition-colors">
+                        <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" xmlns="http://www.w3.org/2000/svg">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+                        </svg>
+                    </button>
+                </div>
+                <div class="hidden md:block">
+                    <div class="ml-10 flex items-baseline space-x-8">
+                        <a href="index.html#analysis" class="text-slate-800 hover:text-[#066a04] px-3 py-2 text-sm font-medium transition-colors">Análise</a>
+                        <a href="recommendations.html" class="text-slate-600 hover:text-[#066a04] px-3 py-2 text-sm font-medium transition-colors">Recomendações</a>
+                        <a href="relatorios.html" class="text-slate-600 hover:text-[#066a04] px-3 py-2 text-sm font-medium transition-colors">Relatórios</a>
+                        <a href="profile.html" class="text-slate-600 hover:text-[#066a04] px-3 py-2 text-sm font-medium transition-colors">Perfil</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div id="slideMenu" class="fixed inset-0 z-[9998] hidden">
+        <div class="absolute inset-0 bg-black/40 z-[9998]" onclick="toggleMenu(false)"></div>
+        <div class="absolute left-0 top-0 h-full w-72 bg-white border-r shadow-xl overflow-y-auto z-[9999]">
+            <div class="flex items-center justify-between p-5 border-b border-gray-200">
+                <span class="flex items-center gap-2">
+                    <img src="img/logo.png" alt="Cycle Sown" class="h-12 w-auto">
+                    <span class="text-lg font-semibold text-gray-900">Menu</span>
+                </span>
+                <button type="button" aria-label="Fechar menu" onclick="toggleMenu(false)" class="text-gray-600 hover:text-gray-900">
+                    <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" xmlns="http://www.w3.org/2000/svg">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+            <nav class="p-5 space-y-3">
+                <hr class="my-3">
+                <a href="calendar.html" onclick="toggleMenu(false)" class="block text-gray-900 px-4 py-3 rounded-lg hover:bg-[#eaf7e2] transition-colors">Calendário</a>
+                <a href="catalogo.html" onclick="toggleMenu(false)" class="block text-gray-900 px-4 py-3 rounded-lg hover:bg-[#eaf7e2] transition-colors">Catálogo</a>
+                <a href="produtividade.html" onclick="toggleMenu(false)" class="block text-gray-900 px-4 py-3 rounded-lg hover:bg-[#eaf7e2] transition-colors">Produtividade</a>
+                <a href="mapa-fertilidade.html" onclick="toggleMenu(false)" class="block text-gray-900 px-4 py-3 rounded-lg hover:bg-[#eaf7e2] transition-colors">Mapa de Fertilidade</a>
+                <a href="cotacoes.html" onclick="toggleMenu(false)" class="block text-gray-900 px-4 py-3 rounded-lg hover:bg-[#eaf7e2] transition-colors">Cotações</a>
+                <a href="rotacao.html" onclick="toggleMenu(false)" class="block text-gray-900 px-4 py-3 rounded-lg hover:bg-[#eaf7e2] transition-colors">Rotação</a>
+                <a href="relatorios.html" onclick="toggleMenu(false)" class="block text-gray-900 px-4 py-3 rounded-lg hover:bg-[#eaf7e2] transition-colors">Relatórios</a>
+                <a href="empresas/index.html" onclick="toggleMenu(false)" class="block text-gray-900 px-4 py-3 rounded-lg hover:bg-[#eaf7e2] transition-colors">Vender Produção</a>
+                <a href="profile.html" onclick="toggleMenu(false)" class="block text-[#066a04] font-semibold px-4 py-3 rounded-lg hover:bg-[#eaf7e2] transition-colors">Meu Perfil</a>
+            </nav>
+        </div>
+    </div>
+
+        <div>
+
+    <style>
+        /* Compact layout tweaks for recommendations page */
+        .compact-card { padding: 12px; border-radius: 14px; }
+        .nutrient-compact .card-nutrient { padding: 10px; border-radius: 12px; }
+        .small-text { font-size: 13px; }
+        .collapse-button { background: transparent; border: 1px solid #e5e7eb; padding: 6px 10px; border-radius: 999px; cursor: pointer; }
+        .hidden-by-default { display: none; }
+        /* Crop grid compact panel */
+        .crop-grid-wrapper { max-height: 520px; overflow-y: auto; padding-right: 8px; }
+        .compact-crop-card { padding: 8px; }
+        .compact-crop-card .crop-image { height: 90px; }
+        .compact-crop-card h3 { font-size: 16px; }
+        .compact-crop-card .text-6xl { font-size: 32px; }
+        /* nicer scrollbar */
+        .crop-grid-wrapper::-webkit-scrollbar { width: 10px; }
+        .crop-grid-wrapper::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.08); border-radius: 8px; }
+    </style>
+
+    <!-- Header Section -->
+    <section class="pt-24 pb-12 px-4 page-header-band">
+        <div class="max-w-6xl mx-auto text-center text-white">
+            <h1 class="font-display text-5xl font-bold mb-6 animate-fade-in">Culturas Recomendadas</h1>
+            <p class="text-xl mb-8 max-w-3xl mx-auto animate-fade-in">
+                Baseado na análise do seu solo, estas são as culturas mais adequadas para maximizar sua produção agrícola.
+            </p>
+        </div>
+    </section>
+
+    <!-- Analysis Summary -->
+    <section class="py-12 px-4">
+        <div class="max-w-6xl mx-auto">
+            <div class="bg-white rounded-2xl shadow-lg p-8 mb-12 card-hover">
+                <h2 class="font-display text-2xl font-bold mb-6" style="color: var(--forest-green);">Resumo da Análise</h2>
+                <div class="grid md:grid-cols-4 gap-6">
+                    <div class="text-center">
+                        <div class="text-3xl font-bold font-mono mb-2" id="summaryHealthScore">--</div>
+                        <div class="text-sm text-gray-600">Saúde do Solo</div>
+                    </div>
+                    <div class="text-center">
+                        <div class="text-3xl font-bold font-mono mb-2" id="summaryPH">--</div>
+                        <div class="text-sm text-gray-600">pH do Solo</div>
+                    </div>
+                    <div class="text-center">
+                        <div class="text-3xl font-bold font-mono mb-2" id="summaryOrganicMatter">--</div>
+                        <div class="text-sm text-gray-600">Matéria Orgânica (%)</div>
+                    </div>
+                    <div class="text-center">
+                        <div class="text-3xl font-bold font-mono mb-2" id="summaryBestCrop">--</div>
+                        <div class="text-sm text-gray-600">Melhor Cultura</div>
+                    </div>
+                </div>
+                <div class="mt-6 flex flex-wrap gap-4 items-end">
+                    <div class="flex items-center gap-3">
+                        <label class="text-sm font-medium text-gray-700">Aplicar laudo salvo:</label>
+                        <select id="reportSelectorRec" onchange="onReportSelectChange(event)" class="px-3 py-2 border border-gray-300 rounded-lg">
+                            <option value="">Carregando...</option>
+                        </select>
+                        
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Filter and Sort Controls -->
+    <section class="px-4 mb-8">
+        <div class="max-w-6xl mx-auto">
+            <div class="bg-white rounded-2xl shadow-lg p-6 card-hover">
+                <div class="flex flex-wrap gap-4 items-center justify-between">
+                    <div class="flex flex-wrap gap-2">
+                        <button onclick="filterCrops('all', event)" class="filter-button active px-4 py-2 rounded-lg border border-gray-300 text-sm font-medium transition-colors">Todas</button>
+                        <button onclick="filterCrops('excellent', event)" class="filter-button px-4 py-2 rounded-lg border border-gray-300 text-sm font-medium transition-colors">Excelente (80%+)</button>
+                        <button onclick="filterCrops('good', event)" class="filter-button px-4 py-2 rounded-lg border border-gray-300 text-sm font-medium transition-colors">Boa (60-79%)</button>
+                        <button onclick="filterCrops('fair', event)" class="filter-button px-4 py-2 rounded-lg border border-gray-300 text-sm font-medium transition-colors">Regular (40-59%)</button>
+                    </div>
+                    <div class="flex items-center space-x-4">
+                        <label class="text-sm font-medium text-gray-700">Ordenar por:</label>
+                        <select id="sortSelect" onchange="sortCrops()" class="border border-gray-300 rounded-lg px-3 py-2 text-sm">
+                            <option value="compatibility">Compatibilidade</option>
+                            <option value="name">Nome</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Crop Grid -->
+    <section class="px-4 pb-10">
+        <div class="max-w-6xl mx-auto">
+            <div class="crop-grid-wrapper">
+                <div id="cropGrid" class="grid md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+            </div>
+            <div id="noResults" class="text-center py-12 hidden">
+                <div class="text-6xl mb-4"></div>
+                <h3 class="text-2xl font-semibold mb-2 text-gray-600">Nenhuma cultura encontrada</h3>
+                <p class="text-gray-500">Tente ajustar os filtros ou realizar uma nova análise de solo.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Soil Corrections Section -->
+    <section class="px-4 mb-12">
+        <div class="max-w-6xl mx-auto">
+            <h2 class="font-display text-2xl font-bold mb-8" style="color: var(--forest-green);">Correções Recomendadas</h2>
+            <div class="grid lg:grid-cols-2 gap-8 mb-8">
+                <!-- pH Correction -->
+                <div class="bg-white rounded-2xl shadow-lg p-8 card-hover">
+                    <h3 class="font-display text-xl font-semibold mb-6" style="color: var(--forest-green);">Correção de pH</h3>
+                    <div class="mb-6">
+                        <div class="flex justify-between items-center mb-2">
+                            <span class="text-sm text-gray-600">pH Atual</span>
+                            <span class="font-mono font-semibold" id="phCurrent">6.5</span>
+                        </div>
+                        <div class="flex justify-between items-center mb-4">
+                            <span class="text-sm text-gray-600">pH Alvo</span>
+                            <input type="number" id="phTarget" value="6.0" min="5.0" max="8.0" step="0.1"
+                                   class="w-20 px-2 py-1 border border-gray-300 rounded calculator-input font-mono text-sm">
+                        </div>
+                        <div class="mb-4">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Tipo de Solo</label>
+                            <select id="soilType" class="w-full px-3 py-2 border border-gray-300 rounded-lg calculator-input">
+                                <option value="clay">Argila (Barroso)</option>
+                                <option value="loam">Solo Franco (Misto)</option>
+                                <option value="sandy">Solo Arenoso</option>
+                                <option value="peaty">Solo Orgânico (Turfa)</option>
+                            </select>
+                        </div>
+                        <div class="bg-gray-50 rounded-lg p-4 mb-4">
+                            <div class="flex justify-between items-center mb-2">
+                                <span class="text-sm text-gray-600">Requerimento de Calcário</span>
+                                <span class="font-mono font-semibold" id="limeRequirement">2.5 t/ha</span>
+                            </div>
+                            <div class="flex justify-between items-center mb-2">
+                                <span class="text-sm text-gray-600">Custo Estimado</span>
+                                <span class="font-mono font-semibold text-[#066a04]" id="limeCost">R$ 1.250</span>
+                            </div>
+                            <div class="text-xs text-gray-500">* Baseado em calcário com 85% de poder neutralizante</div>
+                        </div>
+                        <button onclick="renderCropBasedCorrections(selectedDesiredCrop)" class="w-full bg-[#066a04] text-white py-3 rounded-lg font-semibold hover:bg-[#055503] transition-colors">
+                            Recalcular Correção de pH
+                        </button>
+                    </div>
+                </div>
+                <!-- Nutrient Correction -->
+                <div class="bg-white rounded-2xl shadow-lg p-8 card-hover">
+                    <h3 class="font-display text-xl font-semibold mb-6" style="color: var(--forest-green);">Correção de Nutrientes</h3>
+                    <div class="space-y-4 mb-6" id="nutrientCorrections">
+                        <div class="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                            <div class="flex items-center space-x-3">
+                                <div class="w-3 h-3 rounded-full correction-medium"></div>
+                                <span class="font-medium">Fósforo</span>
+                            </div>
+                            <span class="font-mono font-semibold">80 kg/ha</span>
+                        </div>
+                        <div class="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                            <div class="flex items-center space-x-3">
+                                <div class="w-3 h-3 rounded-full correction-medium"></div>
+                                <span class="font-medium">Potássio</span>
+                            </div>
+                            <span class="font-mono font-semibold">100 kg/ha</span>
+                        </div>
+                    </div>
+                    <div class="bg-gray-50 rounded-lg p-4 mb-4">
+                        <div class="flex justify-between items-center mb-2">
+                            <span class="text-sm text-gray-600">Total de Fertilizantes</span>
+                            <span class="font-mono font-semibold" id="totalFertilizer">300 kg/ha</span>
+                        </div>
+                        <div class="flex justify-between items-center mb-2">
+                            <span class="text-sm text-gray-600">Custo Total</span>
+                            <span class="font-mono font-semibold text-[#066a04]" id="totalFertilizerCost">R$ 900</span>
+                        </div>
+                        <div class="text-xs text-gray-500">* Inclui NPK e micronutrientes</div>
+                    </div>
+                    <button onclick="renderCropBasedCorrections(selectedDesiredCrop)" class="w-full bg-[#066a04] text-white py-3 rounded-lg font-semibold hover:bg-[#055503] transition-colors">
+                        Recalcular Correção de Nutrientes
+                    </button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Chosen Crop Correction Section -->
+    <section class="px-4 pb-20">
+        <div class="max-w-6xl mx-auto">
+            <div class="bg-white rounded-2xl shadow-lg p-8 mb-12 card-hover">
+                <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                    <div>
+                        <h2 class="font-display text-2xl font-bold mb-2" style="color: var(--forest-green);">Correção para a Cultura Escolhida</h2>
+                        <p class="text-sm text-gray-600 max-w-2xl">Escolha uma cultura e o sistema exibirá a correção de solo necessária para plantio ideal.</p>
+                    </div>
+                    <div class="flex flex-col sm:flex-row sm:items-center gap-3">
+                        <label class="text-sm font-medium text-gray-700">Cultura desejada:</label>
+                        <select id="desiredCropSelect" onchange="onDesiredCropChange()" class="px-3 py-2 border border-gray-300 rounded-lg">
+                            <option value="">Selecione uma cultura</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="mt-6">
+                    <span class="inline-flex items-center px-4 py-2 rounded-full bg-[#eaf7e2] text-[#066a04] text-sm font-semibold" id="chosenCropLabel">Nenhuma cultura selecionada</span>
+                </div>
+                <div class="mt-8 grid lg:grid-cols-2 gap-6">
+                    <div class="bg-gray-50 rounded-2xl p-6">
+                        <h3 class="font-semibold text-lg mb-4">Ajuste de pH</h3>
+                        <div class="space-y-3 text-sm text-gray-700" id="chosenCropPHAdvice">
+                            <div>Selecione uma cultura e um laudo para ver o ajuste de pH recomendado.</div>
+                        </div>
+                    </div>
+                    <div class="bg-gray-50 rounded-2xl p-6">
+                        <h3 class="font-semibold text-lg mb-4">Correções de Nutrientes</h3>
+                        <div id="chosenCropNutrientCorrections" class="space-y-3 text-sm text-gray-700">
+                            <div>Selecione uma cultura e um laudo para ver a lista de correções nutricionais.</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="mt-8 bg-white rounded-2xl p-6 border border-gray-200">
+                    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                        <div>
+                            <p class="text-sm text-gray-500">Total estimado de fertilizantes</p>
+                            <p class="text-2xl font-bold" id="chosenCropTotalFertilizer">0 kg/ha</p>
+                        </div>
+                        <div>
+                            <p class="text-sm text-gray-500">Custo estimado</p>
+                            <p class="text-2xl font-bold text-[#066a04]" id="chosenCropTotalCost">R$ 0</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="mt-8 bg-white rounded-2xl p-6 border border-gray-200">
+                    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                        <div>
+                            <h3 class="font-semibold text-lg">Relatório de Correção</h3>
+                            <p class="text-sm text-gray-600">Gere um resumo detalhado com as porcentagens de cada nutriente baseado na cultura escolhida.</p>
+                        </div>
+                        <button onclick="generateCropCorrectionReport()" class="bg-stone-900 text-white px-6 py-3 rounded-2xl font-semibold hover:bg-black transition-all text-sm">
+                            Gerar relatório de correção
+                        </button>
+                    </div>
+                    <div class="mt-6 space-y-4 text-sm text-gray-700" id="cropReportStatus">
+                        <div>Selecione uma cultura desejada e aplique um laudo para gerar o relatório.</div>
+                    </div>
+                    <div class="mt-6 bg-gray-50 rounded-2xl p-6" id="cropReportPreview">
+                        <div class="text-sm text-gray-500">Aqui aparecerá o resumo do relatório depois de gerá-lo.</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Crop Detail Modal -->
+    <div id="cropModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden" onclick="closeModal(event)">
+        <div class="flex items-center justify-center min-h-screen p-4">
+            <div class="bg-white rounded-2xl max-w-4xl w-full max-h-screen overflow-y-auto" onclick="event.stopPropagation()">
+                <div class="p-8">
+                    <div class="flex justify-between items-start mb-6">
+                        <h2 id="modalCropName" class="font-display text-3xl font-bold" style="color: var(--forest-green);"></h2>
+                        <button onclick="closeModal()" class="text-gray-400 hover:text-gray-600 text-2xl">×</button>
+                    </div>
+                    <div class="grid lg:grid-cols-2 gap-8">
+                        <div>
+                            <div class="w-full h-64 rounded-lg mb-6 flex items-center justify-center" style="background: linear-gradient(135deg, var(--sage-green) 0%, var(--forest-green) 100%);">
+                                <span class="text-8xl"></span>
+                            </div>
+                            <div class="mb-6">
+                                <h3 class="font-semibold text-lg mb-3">Requisitos de pH</h3>
+                                <div class="flex items-center space-x-4">
+                                    <div class="text-sm text-gray-600">Ideal:</div>
+                                    <div id="modalPHRange" class="font-mono text-lg"></div>
+                                </div>
+                            </div>
+                            <div class="mb-6">
+                                <h3 class="font-semibold text-lg mb-3">Compatibilidade</h3>
+                                <div class="flex items-center space-x-4">
+                                    <div class="w-32 h-4 bg-gray-200 rounded-full">
+                                        <div id="modalCompatibilityBar" class="h-4 rounded-full transition-all duration-500"></div>
+                                    </div>
+                                    <div id="modalCompatibilityText" class="font-semibold"></div>
+                                </div>
+                                <div id="modalBreakdown" class="mt-4"></div>
+                            </div>
+                        </div>
+                        <div>
+                            <h3 class="font-semibold text-lg mb-4">Requisitos Nutricionais</h3>
+                            <div id="modalNutrientRequirements" class="space-y-3"></div>
+                            <div class="mt-8">
+                                <h3 class="font-semibold text-lg mb-4">Recomendações</h3>
+                                <div id="modalRecommendations" class="text-sm text-gray-600 space-y-2"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+   
+
+    </div>
+
+    <div id="site-footer"></div>
+
+    <script src="main.js"></script>
+    <script src="footer.js"></script>
+    <script>
+        let currentFilter = 'all';
+        let currentSort = 'compatibility';
+        let currentCropData = null;
+        let currentSoilData = null;
+        let selectedDesiredCrop = null;
+
+        document.addEventListener('DOMContentLoaded', function() {
+            loadAnalysisData();
+            populateReportSelectorRec();
+            populateDesiredCropSelector();
+            renderCrops();
+            initializeAnimations();
+        });
+
+        // As 4 culturas do site (mesmas chaves de cropDatabase em main.js).
+        const allowedCropKeys = ['milho', 'soja', 'tabaco', 'trigo'];
+
+        function getVisibleCropKeys() {
+            return Object.keys(cropDatabase).filter(key => allowedCropKeys.includes(key));
+        }
+
+        function initializeAnimations() {
+            anime({
+                targets: '.animate-fade-in',
+                opacity: [0, 1],
+                translateY: [20, 0],
+                delay: anime.stagger(200),
+                duration: 800,
+                easing: 'easeOutQuart'
+            });
+        }
+
+        function loadAnalysisData() {
+            const storedData = userStorage.getItem('soilAnalysisData');
+            if (storedData) {
+                const analysisData = JSON.parse(storedData);
+                currentSoilData = analysisData.soilData || null;
+                updateSummary(analysisData);
+
+                if (analysisData.cropCompatibility) {
+                    getVisibleCropKeys().forEach(key => {
+                        if (analysisData.cropCompatibility[key]) {
+                            cropDatabase[key].compatibility = analysisData.cropCompatibility[key].compatibility || 0;
+                        }
+                    });
+                }
+            } else {
+                currentSoilData = null;
+                document.getElementById('summaryHealthScore').textContent = '75';
+                document.getElementById('summaryPH').textContent = '6.5';
+                document.getElementById('summaryOrganicMatter').textContent = '3.2';
+                document.getElementById('summaryBestCrop').textContent = 'Milho';
+            }
+            populateDesiredCropSelector();
+        }
+
+        function getSavedReports() {
+            return JSON.parse(userStorage.getItem('soilAnalysisReports') || '[]');
+        }
+
+        function populateReportSelectorRec() {
+            const selector = document.getElementById('reportSelectorRec');
+            if (!selector) return;
+            const reports = getSavedReports();
+            if (!reports || reports.length === 0) {
+                selector.innerHTML = '<option value="">Nenhum relatório salvo</option>';
+                selector.disabled = true;
+                return;
+            }
+            selector.disabled = false;
+            selector.innerHTML = reports.map((r, i) => {
+                const label = r.title || `Relatório ${i+1}`;
+                const date = new Date(r.timestamp).toLocaleString('pt-BR');
+                return `<option value="${i}">${label} — ${date}</option>`;
+            }).join('');
+            // default to the most recent report and apply its compatibility
+            selector.value = String(reports.length - 1);
+            onReportSelectChange({ target: selector });
+        }
+
+        function applyCompatibilityFromSelector() {
+            const selector = document.getElementById('reportSelectorRec');
+            if (!selector) return alert('Nenhum relatório disponível');
+            const idx = selector.value === '' ? null : parseInt(selector.value, 10);
+            const reports = getSavedReports();
+            const report = (idx !== null && reports[idx]) ? reports[idx] : null;
+            if (!report) return alert('Selecione um relatório salvo para aplicar.');
+            applyReportCompatibility(report);
+        }
+
+        function onReportSelectChange(e) {
+            const selector = e && e.target ? e.target : document.getElementById('reportSelectorRec');
+            if (!selector) return;
+            const idx = selector.value === '' ? null : parseInt(selector.value, 10);
+            const reports = getSavedReports();
+            const report = (idx !== null && reports[idx]) ? reports[idx] : null;
+            if (!report) return; // no-op when no valid report selected
+
+            // Apply compatibility silently (no alert)
+            const soil = report.soilData || report;
+            if (!soil) return;
+            currentSoilData = soil;
+
+            getVisibleCropKeys().forEach(cropKey => {
+                const breakdown = computeCropCompatibility(soil, cropKey);
+                cropDatabase[cropKey].compatibility = breakdown.overall;
+                cropDatabase[cropKey].compatibilityBreakdown = breakdown;
+            });
+
+            renderCrops();
+            populateDesiredCropSelector();
+            renderCropBasedCorrections(selectedDesiredCrop);
+            updateSummary({ soilData: soil });
+        }
+
+        function applyReportCompatibility(report) {
+            const soil = report.soilData || report;
+            if (!soil) return alert('Relatório inválido.');
+
+            currentSoilData = soil;
+
+            getVisibleCropKeys().forEach(cropKey => {
+                const breakdown = computeCropCompatibility(soil, cropKey);
+                cropDatabase[cropKey].compatibility = breakdown.overall;
+                cropDatabase[cropKey].compatibilityBreakdown = breakdown;
+            });
+
+            renderCrops();
+            populateDesiredCropSelector();
+            renderCropBasedCorrections(selectedDesiredCrop);
+            // update summary to reflect the applied report
+            updateSummary({ soilData: soil });
+            alert('Compatibilidade das culturas atualizada a partir do laudo selecionado.');
+        }
+
+        function updateSummary(analysisData) {
+            if (analysisData && analysisData.soilData) {
+                const soilData = analysisData.soilData;
+                document.getElementById('summaryHealthScore').textContent = calculateHealthScore(soilData);
+                document.getElementById('summaryPH').textContent = soilData.ph || '--';
+                document.getElementById('summaryOrganicMatter').textContent = soilData.organicMatter || '--';
+                const bestCrop = findBestCrop();
+                document.getElementById('summaryBestCrop').textContent = bestCrop ? bestCrop.name.split(' ')[0] : '--';
+            }
+        }
+
+        function populateDesiredCropSelector() {
+            const selector = document.getElementById('desiredCropSelect');
+            if (!selector) return;
+            const options = ['<option value="">Selecione uma cultura</option>'];
+            getVisibleCropKeys().forEach(key => {
+                options.push(`<option value="${key}">${cropDatabase[key].name}</option>`);
+            });
+            selector.innerHTML = options.join('');
+            if (selectedDesiredCrop) {
+                selector.value = selectedDesiredCrop;
+            }
+        }
+
+        function onDesiredCropChange() {
+            const selector = document.getElementById('desiredCropSelect');
+            selectedDesiredCrop = selector ? selector.value : null;
+            renderCropBasedCorrections(selectedDesiredCrop);
+        }
+
+        function getSoilNutrientValue(nutrientKey) {
+            if (!currentSoilData || !currentSoilData.nutrients) return null;
+            const nutrients = currentSoilData.nutrients;
+            if (nutrients[nutrientKey] !== undefined && nutrients[nutrientKey] !== null) {
+                return parseFloat(nutrients[nutrientKey]);
+            }
+            const labelMap = {
+                phosphorus: 'Fósforo (P)',
+                potassium: 'Potássio (K)',
+                calcium: 'Cálcio (Ca)',
+                magnesium: 'Magnésio (Mg)',
+                sulfur: 'Enxofre (S)',
+                iron: 'Ferro (Fe)',
+                manganese: 'Manganês (Mn)',
+                zinc: 'Zinco (Zn)',
+                copper: 'Cobre (Cu)',
+                boron: 'Boro (B)'
+            };
+            const label = labelMap[nutrientKey];
+            if (label && nutrients[label] !== undefined && nutrients[label] !== null) {
+                const val = nutrients[label];
+                if (typeof val === 'object' && val.val !== undefined) return parseFloat(val.val);
+                return parseFloat(val);
+            }
+            return null;
+        }
+
+        function renderCropBasedCorrections(cropKey) {
+            const crop = cropKey ? cropDatabase[cropKey] : null;
+            const phCurrentEl = document.getElementById('phCurrent');
+            const limeRequirementEl = document.getElementById('limeRequirement');
+            const limeCostEl = document.getElementById('limeCost');
+            const nutrientCorrectionsEl = document.getElementById('nutrientCorrections');
+            const totalFertilizerEl = document.getElementById('totalFertilizer');
+            const totalFertilizerCostEl = document.getElementById('totalFertilizerCost');
+
+            const chosenCropLabel = document.getElementById('chosenCropLabel');
+            const chosenCropPHAdvice = document.getElementById('chosenCropPHAdvice');
+            const chosenCropNutrientCorrections = document.getElementById('chosenCropNutrientCorrections');
+            const chosenCropTotalFertilizer = document.getElementById('chosenCropTotalFertilizer');
+            const chosenCropTotalCost = document.getElementById('chosenCropTotalCost');
+
+            if (!crop || !currentSoilData) {
+                if (phCurrentEl) phCurrentEl.textContent = currentSoilData && currentSoilData.ph ? currentSoilData.ph : '6.5';
+                if (limeRequirementEl) limeRequirementEl.textContent = '0.0 t/ha';
+                if (limeCostEl) limeCostEl.textContent = 'R$ 0';
+                if (nutrientCorrectionsEl) nutrientCorrectionsEl.innerHTML = '<div class="text-sm text-gray-500">Selecione um relatório e uma cultura para ver correções específicas.</div>';
+                if (totalFertilizerEl) totalFertilizerEl.textContent = '0 kg/ha';
+                if (totalFertilizerCostEl) totalFertilizerCostEl.textContent = 'R$ 0';
+                if (chosenCropLabel) chosenCropLabel.textContent = 'Nenhuma cultura selecionada';
+                if (chosenCropPHAdvice) chosenCropPHAdvice.innerHTML = '<div>Selecione uma cultura e um laudo para ver o ajuste de pH recomendado.</div>';
+                if (chosenCropNutrientCorrections) chosenCropNutrientCorrections.innerHTML = '<div>Selecione uma cultura e um laudo para ver a lista de correções nutricionais.</div>';
+                if (chosenCropTotalFertilizer) chosenCropTotalFertilizer.textContent = '0 kg/ha';
+                if (chosenCropTotalCost) chosenCropTotalCost.textContent = 'R$ 0';
+                return;
+            }
+
+            if (chosenCropLabel) chosenCropLabel.textContent = crop.name;
+            if (chosenCropNutrientCorrections) chosenCropNutrientCorrections.innerHTML = '';
+
+            const soilPH = currentSoilData.ph !== undefined && currentSoilData.ph !== null ? parseFloat(currentSoilData.ph) : null;
+            // isNaN(null) is false, so this must check for null explicitly —
+            // otherwise soilPH.toFixed(1) throws when pH wasn't informed.
+            if (phCurrentEl) phCurrentEl.textContent = (soilPH !== null && !isNaN(soilPH)) ? soilPH.toFixed(1) : '--';
+
+            let limeRequirement = 0;
+            let limeCost = 0;
+            let phAdvice = '';
+            if (soilPH !== null && !isNaN(soilPH)) {
+                if (soilPH < crop.phRange[0]) {
+                    const diff = crop.phRange[0] - soilPH;
+                    limeRequirement = Math.max(0, diff * 2.5);
+                    limeCost = Math.round(limeRequirement * 500);
+                    phAdvice = `Solo ácido; aplicar calcário para elevar o pH até ${crop.phRange[0]}.`;
+                } else if (soilPH > crop.phRange[1]) {
+                    const diff = soilPH - crop.phRange[1];
+                    limeRequirement = Math.max(0, diff * 1.5);
+                    limeCost = Math.round(limeRequirement * 800);
+                    phAdvice = `Solo alcalino; aplicar enxofre para reduzir o pH até ${crop.phRange[1]}.`;
+                } else {
+                    phAdvice = `pH está dentro da faixa ideal de ${crop.phRange[0]}-${crop.phRange[1]}.`;
+                }
+            }
+
+            if (limeRequirementEl) limeRequirementEl.textContent = `${limeRequirement.toFixed(1)} t/ha`;
+            if (limeCostEl) limeCostEl.textContent = `R$ ${limeCost.toLocaleString()}`;
+            if (chosenCropPHAdvice) chosenCropPHAdvice.innerHTML = `<div class="text-sm text-gray-700">${phAdvice}</div>`;
+
+            const corrections = [];
+            let totalAmount = 0;
+
+            Object.keys(crop.nutrients).forEach(nutrient => {
+                const requiredOpt = crop.nutrients[nutrient].optimal;
+                const currentValue = getSoilNutrientValue(nutrient);
+                if (currentValue === null || isNaN(currentValue)) {
+                    corrections.push({ nutrient, amount: 'Não informado', priority: 'medium', label: `Valor de solo não informado para ${nutrient}` });
+                    return;
+                }
+                const deficit = requiredOpt - currentValue;
+                if (deficit > requiredOpt * 0.1) {
+                    const amount = Math.round(deficit * 2.5);
+                    corrections.push({ nutrient, amount, priority: deficit > requiredOpt * 0.4 ? 'high' : 'medium', label: `Aumentar ${nutrient} para ${requiredOpt} ppm` });
+                    totalAmount += amount;
+                }
+            });
+
+            if (corrections.length === 0) {
+                const message = '<div class="text-sm text-gray-600">Nenhuma correção nutricional necessária para esta cultura com base nos dados disponíveis.</div>';
+                if (nutrientCorrectionsEl) nutrientCorrectionsEl.innerHTML = message;
+                if (chosenCropNutrientCorrections) chosenCropNutrientCorrections.innerHTML = message;
+            } else {
+                // show top 3 corrections compact, allow expand to view all
+                const top = corrections.slice(0,3);
+                const compactHtml = top.map(correction => `
+                    <div class="flex justify-between items-center p-3 bg-gray-50 rounded-lg small-text">
+                        <div class="flex items-center space-x-3">
+                            <div class="w-3 h-3 rounded-full ${correction.priority === 'high' ? 'correction-high' : 'correction-medium'}"></div>
+                            <span class="font-medium">${correction.nutrient}</span>
+                        </div>
+                        <span class="font-mono font-semibold">${correction.amount === 'Não informado' ? correction.amount : correction.amount + ' kg/ha'}</span>
+                    </div>
+                `).join('');
+                const moreButton = corrections.length > 3 ? `<div class="mt-2 text-right"><button class="collapse-button" onclick="toggleAllCorrections(this)">Ver todas (${corrections.length})</button></div>` : '';
+                const fullList = corrections.map(correction => `
+                    <div class="flex justify-between items-center p-3 bg-white rounded-lg mt-2 small-text all-correction-item">
+                        <div class="flex items-center space-x-3">
+                            <div class="w-3 h-3 rounded-full ${correction.priority === 'high' ? 'correction-high' : 'correction-medium'}"></div>
+                            <span class="font-medium">${correction.nutrient}</span>
+                        </div>
+                        <span class="font-mono font-semibold">${correction.amount === 'Não informado' ? correction.amount : correction.amount + ' kg/ha'}</span>
+                    </div>
+                `).join('');
+                const containerHtml = `<div class="nutrient-compact">${compactHtml}<div class="hidden-by-default all-corrections">${fullList}</div>${moreButton}</div>`;
+                if (nutrientCorrectionsEl) nutrientCorrectionsEl.innerHTML = containerHtml;
+                if (chosenCropNutrientCorrections) chosenCropNutrientCorrections.innerHTML = containerHtml;
+            }
+
+            if (totalFertilizerEl) totalFertilizerEl.textContent = `${totalAmount} kg/ha`;
+            if (totalFertilizerCostEl) totalFertilizerCostEl.textContent = `R$ ${Math.round(totalAmount * 2.5).toLocaleString()}`;
+            if (chosenCropTotalFertilizer) chosenCropTotalFertilizer.textContent = `${totalAmount} kg/ha`;
+            if (chosenCropTotalCost) chosenCropTotalCost.textContent = `R$ ${Math.round(totalAmount * 2.5).toLocaleString()}`;
+        }
+
+        function buildCropCorrectionReport(cropKey) {
+            const crop = cropKey ? cropDatabase[cropKey] : null;
+            if (!crop || !currentSoilData) return null;
+
+            const soilPH = currentSoilData.ph !== undefined && currentSoilData.ph !== null ? parseFloat(currentSoilData.ph) : null;
+            let phAdvice = 'Dados de pH insuficientes para gerar relatório.';
+            let limeRequirement = 0;
+            let limeCost = 0;
+
+            if (soilPH !== null && !isNaN(soilPH)) {
+                if (soilPH < crop.phRange[0]) {
+                    const diff = crop.phRange[0] - soilPH;
+                    limeRequirement = Math.max(0, diff * 2.5);
+                    limeCost = Math.round(limeRequirement * 500);
+                    phAdvice = `Solo ácido; aplicar calcário para elevar o pH para ${crop.phRange[0]}.`;
+                } else if (soilPH > crop.phRange[1]) {
+                    const diff = soilPH - crop.phRange[1];
+                    limeRequirement = Math.max(0, diff * 1.5);
+                    limeCost = Math.round(limeRequirement * 800);
+                    phAdvice = `Solo alcalino; aplicar enxofre para reduzir o pH para ${crop.phRange[1]}.`;
+                } else {
+                    phAdvice = `pH dentro da faixa ideal (${crop.phRange[0]}-${crop.phRange[1]}).`;
+                }
+            }
+
+            const corrections = [];
+            let totalAmount = 0;
+            // cost assumptions (can be adjusted later or externalized)
+            const pricePerKg = {
+                phosphorus: 3.0,
+                potassium: 2.0,
+                calcium: 0.8,
+                magnesium: 1.2,
+                sulfur: 1.5,
+                iron: 2.0,
+                manganese: 2.0,
+                zinc: 5.0,
+                copper: 6.0,
+                boron: 12.0
+            };
+
+            Object.keys(crop.nutrients).forEach(nutrient => {
+                const requiredOpt = crop.nutrients[nutrient].optimal;
+                const currentValue = getSoilNutrientValue(nutrient);
+                if (currentValue === null || isNaN(currentValue)) {
+                    corrections.push({ nutrient, amount: 'Não informado', priority: 'medium', note: `Valor de solo não informado para ${nutrient}.`, cost: 0 });
+                    return;
+                }
+                const deficit = requiredOpt - currentValue;
+                if (deficit > requiredOpt * 0.1) {
+                    const amount = Math.round(deficit * 2.5);
+                    // estimate cost: try map by nutrient key, fallback to generic price 2.5
+                    const keyLower = nutrient.toLowerCase().split(' ')[0];
+                    const unitPrice = pricePerKg[keyLower] !== undefined ? pricePerKg[keyLower] : 2.5;
+                    const estCost = Math.round(amount * unitPrice);
+                    corrections.push({ nutrient, amount, priority: deficit > requiredOpt * 0.4 ? 'high' : 'medium', note: `Aumentar ${nutrient} para ${requiredOpt} ppm.`, cost: estCost, unitPrice });
+                    totalAmount += amount;
+                }
+            });
+
+            const nutrientCostSum = corrections.reduce((s, c) => s + (typeof c.cost === 'number' ? c.cost : 0), 0);
+            const totalCostComputed = Math.round(nutrientCostSum + limeCost);
+
+            return {
+                cropKey,
+                cropName: crop.name,
+                soilPH: !isNaN(soilPH) ? soilPH : null,
+                phAdvice,
+                limeRequirement,
+                limeCost,
+                corrections,
+                totalAmount,
+                totalCost: totalCostComputed,
+                generatedAt: new Date().toISOString()
+            };
+        }
+
+        function updateCropReportPreview(reportData) {
+            const statusEl = document.getElementById('cropReportStatus');
+            const previewEl = document.getElementById('cropReportPreview');
+            if (!statusEl || !previewEl || !reportData) return;
+
+            const crop = cropDatabase[reportData.cropKey];
+            // build nutrient rows combining soil values and correction estimates
+            const correctionsMap = {};
+            (reportData.corrections || []).forEach(c => { correctionsMap[c.nutrient] = c; });
+            const nutrientRows = Object.keys(crop.nutrients).map(nutrient => {
+                const currentValue = getSoilNutrientValue(nutrient);
+                const optimal = crop.nutrients[nutrient].optimal;
+                const percent = currentValue !== null && !isNaN(currentValue) ? Math.min(100, Math.round((currentValue / optimal) * 100)) : 0;
+                const correction = correctionsMap[nutrient] || null;
+                return {
+                    nutrient,
+                    currentValue,
+                    optimal,
+                    percent,
+                    correction
+                };
+            });
+
+            statusEl.innerHTML = `
+                <div class="font-semibold text-gray-800">Relatório preparado para: ${reportData.cropName}</div>
+                <div>pH atual do solo: ${reportData.soilPH !== null ? reportData.soilPH.toFixed(1) : 'Não disponível'}</div>
+                <div>Total de fertilizante: ${reportData.totalAmount} kg/ha | Custo estimado: R$ ${reportData.totalCost.toLocaleString()}</div>
+            `;
+
+            const rowsHtml = nutrientRows.map(item => {
+                const corr = item.correction;
+                const amtText = corr && corr.amount !== undefined ? (corr.amount === 'Não informado' ? 'N/A' : corr.amount + ' kg/ha') : '-';
+                const costText = corr && corr.cost ? `R$ ${corr.cost.toLocaleString()}` : 'R$ 0';
+                return `
+                <div class="mb-4 p-4 bg-white rounded-2xl border border-gray-200">
+                    <div class="flex justify-between items-center mb-2">
+                        <span class="font-medium">${item.nutrient}</span>
+                        <span class="font-semibold">${item.currentValue !== null && !isNaN(item.currentValue) ? item.currentValue : 'N/A'} / ${item.optimal}</span>
+                    </div>
+                    <div class="h-2 w-full rounded-full bg-gray-200 overflow-hidden">
+                        <div class="h-full rounded-full bg-[#5dc135]" style="width: ${item.percent}%"></div>
+                    </div>
+                    <div class="text-xs text-gray-500 mt-2">${item.percent}% da necessidade ideal</div>
+                    <div class="mt-2 text-sm text-gray-700">Correção estimada: <strong>${amtText}</strong> • Custo estimado: <strong>${costText}</strong></div>
+                </div>
+            `}).join('');
+
+            // compact summary (show top 4) and allow details toggle
+            const compactRows = nutrientRows.slice(0,4).map(i=>`<div class="mb-2 small-text"><strong>${i.nutrient}</strong> — ${i.percent}% • ${i.correction && i.correction.amount ? i.correction.amount + ' kg/ha' : '-'}</div>`).join('');
+            const detailsButton = `<div class="mt-4"><button class="collapse-button" onclick="toggleReportDetails(this)">Ver detalhes do relatório</button></div>`;
+
+            previewEl.innerHTML = `
+                <div class="grid lg:grid-cols-2 gap-6">
+                    <div>
+                        <h3 class="font-semibold text-lg mb-3">Recomendações de pH</h3>
+                        <p class="text-sm text-gray-700 mb-4">${reportData.phAdvice}</p>
+                        <p class="text-sm text-gray-600 mb-2">Calcário / Enxofre estimado: ${reportData.limeRequirement.toFixed(1)} t/ha</p>
+                        <p class="text-sm text-gray-600">Custo estimado de correção de pH: R$ ${reportData.limeCost.toLocaleString()}</p>
+                        <p class="text-sm text-gray-600">Preço por tonelada de calcário (assumido): R$ 500</p>
+                    </div>
+                    <div>
+                        <h3 class="font-semibold text-lg mb-3">Percentual de Nutrientes</h3>
+                        <div class="small-text">${compactRows}</div>
+                        ${detailsButton}
+                        <div id="reportPreviewDetails" class="hidden-by-default mt-4">${rowsHtml}</div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function toggleReportDetails(btn) {
+            const details = document.getElementById('reportPreviewDetails');
+            if (!details) return;
+            if (details.style.display === 'none' || details.classList.contains('hidden-by-default')) {
+                details.style.display = 'block';
+                details.classList.remove('hidden-by-default');
+                btn.innerText = 'Ocultar detalhes';
+            } else {
+                details.style.display = 'none';
+                details.classList.add('hidden-by-default');
+                btn.innerText = 'Ver detalhes do relatório';
+            }
+        }
+
+        function toggleAllCorrections(btn) {
+            const parent = btn.closest('.nutrient-compact');
+            if (!parent) return;
+            const list = parent.querySelector('.all-corrections');
+            if (!list) return;
+            if (list.style.display === 'none' || list.classList.contains('hidden-by-default')) {
+                list.style.display = 'block';
+                list.classList.remove('hidden-by-default');
+                btn.innerText = 'Ocultar lista completa';
+            } else {
+                list.style.display = 'none';
+                list.classList.add('hidden-by-default');
+                btn.innerText = `Ver todas (${parent.querySelectorAll('.all-correction-item').length})`;
+            }
+        }
+
+        function generateCropCorrectionReport() {
+            if (!selectedDesiredCrop) return alert('Selecione uma cultura desejada antes de gerar o relatório.');
+            if (!currentSoilData) return alert('Aplique um laudo salvo antes de gerar o relatório.');
+
+            const reportData = buildCropCorrectionReport(selectedDesiredCrop);
+            if (!reportData) return alert('Não foi possível gerar o relatório. Verifique os dados e tente novamente.');
+
+            const report = {
+                id: reportData.generatedAt,
+                title: `Relatório de Correção - ${reportData.cropName}`,
+                timestamp: reportData.generatedAt,
+                type: 'crop-correction',
+                crop: reportData.cropName,
+                cropKey: reportData.cropKey,
+                soilData: currentSoilData,
+                correction: reportData
+            };
+
+            const reports = JSON.parse(userStorage.getItem('cropCorrectionReports') || '[]');
+            reports.push(report);
+            userStorage.setItem('cropCorrectionReports', JSON.stringify(reports));
+
+            updateCropReportPreview(reportData);
+            alert('Relatório de correção da cultura gerado e salvo com sucesso!');
+        }
+
+        // Delega para a mesma fórmula usada em index.html (Saúde Geral do
+        // Solo) e relatorios.html (Saúde Geral), definida em main.js, para
+        // que a nota de saúde do solo seja idêntica em todas as páginas.
+        function calculateHealthScore(soilData) {
+            return calculateHealthScoreFromData(soilData);
+        }
+
+        function findBestCrop() {
+            let bestCrop = null, highestCompatibility = 0;
+            getVisibleCropKeys().forEach(cropKey => {
+                const crop = cropDatabase[cropKey];
+                if (crop.compatibility > highestCompatibility) {
+                    highestCompatibility = crop.compatibility;
+                    bestCrop = crop;
+                }
+            });
+            return bestCrop;
+        }
+
+        function renderCrops() {
+            const cropGrid = document.getElementById('cropGrid');
+            const noResults = document.getElementById('noResults');
+
+            let crops = getVisibleCropKeys().map(key => ({ key: key, ...cropDatabase[key] }));
+
+            if (currentFilter !== 'all') {
+                crops = crops.filter(crop => {
+                    if (currentFilter === 'excellent') return crop.compatibility >= 80;
+                    if (currentFilter === 'good') return crop.compatibility >= 60 && crop.compatibility < 80;
+                    if (currentFilter === 'fair') return crop.compatibility >= 40 && crop.compatibility < 60;
+                    return true;
+                });
+            }
+
+            crops.sort((a, b) => {
+                if (currentSort === 'compatibility') return b.compatibility - a.compatibility;
+                if (currentSort === 'name') return a.name.localeCompare(b.name);
+                return 0;
+            });
+
+            if (crops.length === 0) {
+                cropGrid.innerHTML = '';
+                noResults.classList.remove('hidden');
+                return;
+            }
+
+            noResults.classList.add('hidden');
+
+            cropGrid.innerHTML = crops.map(crop => {
+                const report = (typeof buildCropCorrectionReport === 'function' && currentSoilData) ? buildCropCorrectionReport(crop.key) : null;
+                const topCorrections = (report && report.corrections) ? report.corrections.slice(0,2) : [];
+                const totalAmt = report ? `${report.totalAmount} kg/ha` : '—';
+                const totalCost = report ? `R$ ${report.totalCost.toLocaleString()}` : '—';
+
+                return `
+                <div class="bg-white rounded-2xl shadow-lg overflow-hidden card-hover compact-crop-card" onclick="openCropModal('${crop.key}')">
+                    <div class="p-3">
+                        <div class="crop-image mb-3 flex items-center justify-center" style="background: linear-gradient(135deg, var(--sage-green) 0%, var(--forest-green) 100%); border-radius: 12px;">
+                            <span class="text-4xl"></span>
+                        </div>
+                        <h3 class="font-display text-lg font-semibold mb-1" style="color: var(--forest-green);">${crop.name}</h3>
+                        <div class="mb-3">
+                            <div class="flex justify-between items-center mb-2">
+                                <span class="text-sm text-gray-600">Compatibilidade</span>
+                                <span class="font-mono font-semibold">${crop.compatibility}%</span>
+                            </div>
+                            <div class="w-full bg-gray-200 rounded-full h-2">
+                                <div class="h-2 rounded-full transition-all duration-500 ${getCompatibilityClass(crop.compatibility)}" style="width: ${crop.compatibility}%"></div>
+                            </div>
+                        </div>
+                        <div class="mb-2 text-sm text-gray-600">
+                            <div>pH ideal: <span class="font-mono">${crop.phRange[0]}-${crop.phRange[1]}</span></div>
+                            <div>Requisitos: <span class="font-medium">${getRequirementLevel(crop)}</span></div>
+                        </div>
+
+                        <div class="mt-3 p-2 bg-gray-50 rounded-lg text-sm text-gray-700">
+                            <div class="flex justify-between"><div>Total estimado</div><div class="font-mono font-semibold">${totalAmt}</div></div>
+                            <div class="flex justify-between mt-1"><div>Custo estimado</div><div class="font-semibold text-[#066a04]">${totalCost}</div></div>
+                            ${topCorrections.length > 0 ? `<div class="mt-2 text-xs text-gray-600">Principais correções: ${topCorrections.map(c=>`${c.nutrient} ${c.amount === 'Não informado' ? '' : c.amount+' kg/ha'}`).join(', ')}</div>` : ''}
+                        </div>
+
+                        <div class="flex justify-between items-center mt-3">
+                            <div class="text-sm text-gray-600">Estação: <span class="font-medium">${getSeason(crop)}</span></div>
+                            <span class="text-[#066a04] hover:text-[#066a04] font-medium text-sm">Ver Detalhes →</span>
+                        </div>
+                    </div>
+                </div>
+            `;
+            }).join('');
+        }
+
+        function getCompatibilityClass(compatibility) {
+            if (compatibility >= 80) return 'compatibility-excellent';
+            if (compatibility >= 60) return 'compatibility-good';
+            if (compatibility >= 40) return 'compatibility-fair';
+            return 'compatibility-poor';
+        }
+
+        function getCompatibilityText(compatibility) {
+            if (compatibility >= 80) return 'Excelente';
+            if (compatibility >= 60) return 'Boa';
+            if (compatibility >= 40) return 'Regular';
+            return 'Baixa';
+        }
+
+        function getRequirementLevel(crop) {
+            const nutrientCount = Object.keys(crop.nutrients).length;
+            if (nutrientCount > 10) return 'Alto';
+            if (nutrientCount > 6) return 'Médio';
+            return 'Baixo';
+        }
+
+        function getSeason(crop) {
+            const seasons = ['Primavera', 'Verão', 'Outono', 'Inverno'];
+            return seasons[Math.floor(Math.random() * seasons.length)];
+        }
+
+        function filterCrops(filter, evt) {
+            currentFilter = filter;
+            document.querySelectorAll('.filter-button').forEach(btn => btn.classList.remove('active'));
+            (evt || window.event)?.target.classList.add('active');
+            renderCrops();
+        }
+
+        function sortCrops() {
+            currentSort = document.getElementById('sortSelect').value;
+            renderCrops();
+        }
+
+        function openCropModal(cropKey) {
+            const crop = cropDatabase[cropKey];
+            if (!crop) return;
+            currentCropData = { key: cropKey, ...crop };
+
+            document.getElementById('modalCropName').textContent = crop.name;
+            document.getElementById('modalPHRange').textContent = `${crop.phRange[0]} - ${crop.phRange[1]}`;
+
+            const compatibilityBar = document.getElementById('modalCompatibilityBar');
+            const compatibilityText = document.getElementById('modalCompatibilityText');
+            compatibilityBar.style.width = `${crop.compatibility}%`;
+            compatibilityBar.className = `h-4 rounded-full transition-all duration-500 ${getCompatibilityClass(crop.compatibility)}`;
+            compatibilityText.textContent = `${crop.compatibility}% - ${getCompatibilityText(crop.compatibility)}`;
+
+            // Show breakdown if available
+            const breakdown = crop.compatibilityBreakdown || {};
+            const breakdownBlock = document.getElementById('modalBreakdown');
+            if (breakdownBlock) {
+                const ph = breakdown.ph !== undefined ? breakdown.ph : '--';
+                const nutrientScores = breakdown.nutrientScores || {};
+                let html = `<div class="mb-3"><strong>pH score:</strong> ${ph}%</div>`;
+                html += '<div class="space-y-2">';
+                Object.keys(nutrientScores).forEach(n => {
+                    const s = nutrientScores[n];
+                    const short = n.split('_').join(' ');
+                    const val = s.value === null || s.value === undefined ? '--' : s.value;
+                    const score = s.score || 0;
+                    html += `<div class="flex items-center justify-between"><div class="text-sm text-gray-600">${n}</div><div class="w-48 ml-4"><div class="w-full bg-gray-200 h-2 rounded"><div class="h-2 rounded-full ${getCompatibilityClass(score)}" style="width:${score}%"></div></div></div><div class="ml-3 font-mono text-sm">${score}%</div></div>`;
+                });
+                html += '</div>';
+                breakdownBlock.innerHTML = html;
+            }
+
+            const nutrientRequirements = document.getElementById('modalNutrientRequirements');
+            const nutrientNames = {
+                phosphorus: 'Fósforo (P)', potassium: 'Potássio (K)',
+                calcium: 'Cálcio (Ca)', magnesium: 'Magnésio (Mg)', sulfur: 'Enxofre (S)',
+                iron: 'Ferro (Fe)', manganese: 'Manganês (Mn)', zinc: 'Zinco (Zn)',
+                copper: 'Cobre (Cu)', boron: 'Boro (B)'
+            };
+
+            nutrientRequirements.innerHTML = Object.keys(crop.nutrients).map(nutrient => {
+                const req = crop.nutrients[nutrient];
+                return `<div class="flex justify-between items-center"><span class="text-sm">${nutrientNames[nutrient]}</span><span class="font-mono text-sm">${req.optimal} ppm</span></div>`;
+            }).join('');
+
+            const recommendations = document.getElementById('modalRecommendations');
+            const recs = generateCropRecommendations(crop);
+            recommendations.innerHTML = recs.map(rec => `<div>• ${rec}</div>`).join('');
+
+            document.getElementById('cropModal').classList.remove('hidden');
+        }
+
+        function closeModal(e) {
+            if (!e || e.target.id === 'cropModal' || e.target.tagName === 'BUTTON') {
+                document.getElementById('cropModal').classList.add('hidden');
+            }
+        }
+
+        function generateCropRecommendations(crop) {
+            const recommendations = [];
+            if (crop.compatibility >= 80) {
+                recommendations.push('Condições ideais para plantio imediato');
+                recommendations.push('Monitorar crescimento para manter qualidade');
+            } else if (crop.compatibility >= 60) {
+                recommendations.push('Boa adequação com pequenos ajustes recomendados');
+                recommendations.push('Considerar correções de solo antes do plantio');
+            } else {
+                recommendations.push('Requer preparação significativa do solo');
+                recommendations.push('Avaliar custo-benefício das correções necessárias');
+            }
+            recommendations.push(`Manter pH entre ${crop.phRange[0]} e ${crop.phRange[1]}`);
+            recommendations.push('Realizar análises periódicas de solo');
+            return recommendations;
+        }
+
+        function calculatePHCorrection() {
+            const currentPH = parseFloat(document.getElementById('phCurrent').textContent);
+            const targetPH = parseFloat(document.getElementById('phTarget').value);
+            const soilType = document.getElementById('soilType').value;
+
+            // Sem cultura/relatório aplicado, phCurrent ainda mostra "--",
+            // o que virava "NaN t/ha" / "R$ NaN" na tela.
+            if (Number.isNaN(currentPH) || Number.isNaN(targetPH)) {
+                document.getElementById('limeRequirement').textContent = '-- t/ha';
+                document.getElementById('limeCost').textContent = 'R$ --';
+                return;
+            }
+
+            let limeFactor = { 'clay': 8, 'loam': 6, 'sandy': 4, 'peaty': 10 }[soilType];
+            const phDifference = Math.abs(targetPH - currentPH);
+            let limeRequirement = phDifference * limeFactor;
+
+            if (targetPH > currentPH) {
+                limeRequirement = Math.max(0, limeRequirement);
+                document.getElementById('limeRequirement').textContent = limeRequirement.toFixed(1) + ' t/ha';
+                document.getElementById('limeCost').textContent = 'R$ ' + Math.round(limeRequirement * 500).toLocaleString();
+            } else {
+                const sulfurRequirement = limeRequirement * 0.3;
+                document.getElementById('limeRequirement').textContent = sulfurRequirement.toFixed(1) + ' t/ha';
+                document.getElementById('limeCost').textContent = 'R$ ' + Math.round(sulfurRequirement * 800).toLocaleString();
+            }
+        }
+
+        function calculateNutrientCorrection() {
+            const storedData = userStorage.getItem('soilAnalysisData');
+            if (storedData) {
+                const analysisData = JSON.parse(storedData);
+                const soilData = analysisData.soilData;
+                const nutrients = ['phosphorus', 'potassium', 'calcium', 'magnesium', 'sulfur'];
+                const nutrientNames = {
+                    phosphorus: 'Fósforo', potassium: 'Potássio',
+                    calcium: 'Cálcio', magnesium: 'Magnésio', sulfur: 'Enxofre'
+                };
+                let corrections = [];
+                nutrients.forEach(nutrient => {
+                    if (soilData.nutrients && soilData.nutrients[nutrient]) {
+                        const currentLevel = soilData.nutrients[nutrient];
+                        const optimalLevel = cropDatabase.milho.nutrients[nutrient].optimal;
+                        if (currentLevel < optimalLevel * 0.8) {
+                            const deficiency = optimalLevel - currentLevel;
+                            const correctionAmount = deficiency * 2.5;
+                            corrections.push({
+                                nutrient: nutrientNames[nutrient],
+                                amount: correctionAmount.toFixed(0),
+                                unit: 'kg/ha',
+                                priority: deficiency > optimalLevel * 0.5 ? 'high' : 'medium'
+                            });
+                        }
+                    }
+                });
+
+                if (corrections.length > 0) {
+                    const nutrientCorrections = document.getElementById('nutrientCorrections');
+                    nutrientCorrections.innerHTML = corrections.map(correction => `
+                        <div class="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                            <div class="flex items-center space-x-3">
+                                <div class="w-3 h-3 rounded-full ${correction.priority === 'high' ? 'correction-high' : 'correction-medium'}"></div>
+                                <span class="font-medium">${correction.nutrient}</span>
+                            </div>
+                            <span class="font-mono font-semibold">${correction.amount} ${correction.unit}</span>
+                        </div>
+                    `).join('');
+                    const totalAmount = corrections.reduce((sum, corr) => sum + parseFloat(corr.amount), 0);
+                    const totalCost = totalAmount * 2.5;
+                    document.getElementById('totalFertilizer').textContent = totalAmount + ' kg/ha';
+                    document.getElementById('totalFertilizerCost').textContent = 'R$ ' + totalCost.toLocaleString();
+                }
+            }
+        }
+
+        document.getElementById('phTarget').addEventListener('input', calculatePHCorrection);
+        document.getElementById('soilType').addEventListener('change', calculatePHCorrection);
+    </script>
+    <script>
+        function toggleMenu(open) {
+            const menu = document.getElementById('slideMenu');
+            if (!menu) return;
+            menu.classList.toggle('hidden', !open);
+            document.body.style.overflow = open ? 'hidden' : '';
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,706 @@
+<!-- ============================================================================
+     cotacoes.html — Cotações Agrícolas. O agricultor acompanha os preços do
+     dia de soja/milho/trigo/dólar/euro, a evolução do câmbio nos últimos 30
+     dias e simula a receita bruta da safra a partir do preço atual. Câmbio
+     (dólar/euro, atual + histórico) vem ao vivo da AwesomeAPI direto do
+     browser (sem backend); soja/milho/trigo não têm fonte gratuita com CORS
+     liberado, então usam dados de referência fixos (ver REFERENCE_DATA),
+     sinalizados como "ilustrativo" na UI — ver PROMPT-CLAUDE-CODE-cotacoes.md
+     na raiz do projeto para o brief original desta página.
+     ============================================================================ -->
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cotações Agrícolas - Cycle Sown</title>
+    <script src="userStorage.js"></script>
+    <script>
+        if (!userStorage.getCurrentUserId()) {
+            window.location.href = 'login.html';
+        }
+    </script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/theme.css">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--cream-white);
+            color: var(--charcoal-gray);
+        }
+
+        .stat-card {
+            background: white;
+            border: 1px solid var(--light-border);
+        }
+
+        .quote-card { border-top: 4px solid var(--forest-green); }
+        .quote-card[data-commodity="milho"] { border-top-color: var(--golden-wheat); }
+        .quote-card[data-commodity="trigo"] { border-top-color: var(--terracotta); }
+        .quote-card[data-commodity="dolar"] { border-top-color: var(--sage-green); }
+
+        .delta-up { color: var(--forest-green); }
+        .delta-down { color: var(--terracotta); }
+
+        .illustrative-badge {
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: .04em;
+            color: #9CA3AF;
+            background: #F3F4F6;
+            padding: 2px 7px;
+            border-radius: 999px;
+            white-space: nowrap;
+        }
+
+        .live-badge {
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: .04em;
+            color: var(--forest-green);
+            background: var(--tint-bg);
+            padding: 2px 7px;
+            border-radius: 999px;
+            white-space: nowrap;
+        }
+
+        .chart-btn {
+            color: var(--charcoal-gray);
+            background: white;
+        }
+        .chart-btn.active {
+            background: var(--forest-green);
+            color: white;
+        }
+
+        #dollarChartWrap {
+            position: relative;
+            overflow-x: auto;
+        }
+        #dollarChart {
+            display: block;
+            width: 100%;
+            min-width: 560px;
+            height: auto;
+        }
+
+        .chart-tooltip {
+            position: absolute;
+            background: var(--charcoal-gray);
+            color: white;
+            font-size: 11px;
+            padding: 4px 8px;
+            border-radius: 6px;
+            white-space: nowrap;
+            transform: translateY(-100%);
+            z-index: 10;
+        }
+
+        .sim-card {
+            border: 1px solid var(--golden-wheat);
+            background: linear-gradient(180deg, #FFFCF6 0%, #FFFFFF 100%);
+        }
+
+        .sim-result { color: var(--forest-green); }
+
+        @media (max-width: 640px) {
+            #dollarChart { min-width: 640px; }
+        }
+    </style>
+</head>
+<body class="pt-20">
+    <nav class="fixed top-0 w-full z-50 backdrop-blur-xl bg-white/80 border-b border-slate-200 shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center gap-3">
+                    <a href="index.html" class="flex items-center shrink-0">
+                        <img src="img/logo.png" alt="Cycle Sown" class="h-14 w-auto">
+                    </a>
+                    <button type="button" aria-label="Abrir menu" onclick="toggleMenu(true)" class="p-2 rounded-full text-slate-700 hover:bg-slate-100 transition-colors">
+                        <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" xmlns="http://www.w3.org/2000/svg">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+                        </svg>
+                    </button>
+                </div>
+                <div class="hidden md:block">
+                    <div class="ml-10 flex items-baseline space-x-8">
+                        <a href="index.html#analysis" class="text-slate-600 hover:text-[#066a04] px-3 py-2 text-sm font-medium transition-colors">Análise</a>
+                        <a href="recommendations.html" class="text-slate-600 hover:text-[#066a04] px-3 py-2 text-sm font-medium transition-colors">Recomendações</a>
+                        <a href="relatorios.html" class="text-slate-600 hover:text-[#066a04] px-3 py-2 text-sm font-medium transition-colors">Relatórios</a>
+                        <a href="profile.html" class="text-slate-600 hover:text-[#066a04] px-3 py-2 text-sm font-medium transition-colors">Perfil</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div id="slideMenu" class="fixed inset-0 z-[9998] hidden">
+        <div class="absolute inset-0 bg-black/40 z-[9998]" onclick="toggleMenu(false)"></div>
+        <div class="absolute left-0 top-0 h-full w-72 bg-white border-r shadow-xl overflow-y-auto z-[9999]">
+            <div class="flex items-center justify-between p-5 border-b border-gray-200">
+                <span class="flex items-center gap-2">
+                    <img src="img/logo.png" alt="Cycle Sown" class="h-12 w-auto">
+                    <span class="text-lg font-semibold text-gray-900">Menu</span>
+                </span>
+                <button type="button" aria-label="Fechar menu" onclick="toggleMenu(false)" class="text-gray-600 hover:text-gray-900">
+                    <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" xmlns="http://www.w3.org/2000/svg">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+            <nav class="p-5 space-y-3">
+                <hr class="my-3">
+                <a href="calendar.html" onclick="toggleMenu(false)" class="block text-gray-900 px-4 py-3 rounded-lg hover:bg-[#eaf7e2] transition-colors">Calendário</a>
+                <a href="catalogo.html" onclick="toggleMenu(false)" class="block text-gray-900 px-4 py-3 rounded-lg hover:bg-[#eaf7e2] transition-colors">Catálogo</a>
+                <a href="produtividade.html" onclick="toggleMenu(false)" class="block text-gray-900 px-4 py-3 rounded-lg hover:bg-[#eaf7e2] transition-colors">Produtividade</a>
+                <a href="mapa-fertilidade.html" onclick="toggleMenu(false)" class="block text-gray-900 px-4 py-3 rounded-lg hover:bg-[#eaf7e2] transition-colors">Mapa de Fertilidade</a>
+                <a href="cotacoes.html" onclick="toggleMenu(false)" class="block text-gray-900 px-4 py-3 rounded-lg hover:bg-[#eaf7e2] transition-colors">Cotações</a>
+                <a href="rotacao.html" onclick="toggleMenu(false)" class="block text-gray-900 px-4 py-3 rounded-lg hover:bg-[#eaf7e2] transition-colors">Rotação</a>
+                <a href="relatorios.html" onclick="toggleMenu(false)" class="block text-gray-900 px-4 py-3 rounded-lg hover:bg-[#eaf7e2] transition-colors">Relatórios</a>
+                <a href="empresas/index.html" onclick="toggleMenu(false)" class="block text-gray-900 px-4 py-3 rounded-lg hover:bg-[#eaf7e2] transition-colors">Vender Produção</a>
+                <a href="profile.html" onclick="toggleMenu(false)" class="block text-[#066a04] font-semibold px-4 py-3 rounded-lg hover:bg-[#eaf7e2] transition-colors">Meu Perfil</a>
+            </nav>
+        </div>
+    </div>
+
+    <div>
+
+    <header class="py-12 page-header-band">
+        <div class="max-w-7xl mx-auto px-4 text-center">
+            <h2 class="font-display text-4xl font-bold mb-4">Cotações Agrícolas</h2>
+            <p class="max-w-2xl mx-auto italic">Acompanhe os preços das principais commodities e simule a receita da sua safra.</p>
+            <p class="text-xs text-white/70 mt-3 font-mono" id="lastUpdatedLabel">Carregando cotações...</p>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-4 py-16 space-y-10">
+
+        <!-- Cards de destaque -->
+        <section>
+            <div class="grid grid-cols-2 lg:grid-cols-4 gap-5" id="quoteCardsGrid">
+                <div class="quote-card stat-card rounded-xl p-5" data-commodity="soja">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-2xl"></span>
+                        <span class="illustrative-badge">Ilustrativo</span>
+                    </div>
+                    <div class="text-sm text-gray-500 font-medium">Soja</div>
+                    <div class="text-2xl sm:text-3xl font-mono font-bold text-gray-800 mt-1">R$ 136,73</div>
+                    <div class="text-xs text-gray-400">R$/sc 60kg</div>
+                    <div class="mt-2 delta-up font-mono font-semibold text-sm">▲ +0,80%</div>
+                    <div class="text-[10px] text-gray-400 mt-2">CEPEA/ESALQ · Paranaguá/PR</div>
+                </div>
+
+                <div class="quote-card stat-card rounded-xl p-5" data-commodity="milho">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-2xl"></span>
+                        <span class="illustrative-badge">Ilustrativo</span>
+                    </div>
+                    <div class="text-sm text-gray-500 font-medium">Milho</div>
+                    <div class="text-2xl sm:text-3xl font-mono font-bold text-gray-800 mt-1">R$ 64,86</div>
+                    <div class="text-xs text-gray-400">R$/sc 60kg</div>
+                    <div class="mt-2 delta-down font-mono font-semibold text-sm">▼ -0,30%</div>
+                    <div class="text-[10px] text-gray-400 mt-2">CEPEA/B3 · Campinas/SP</div>
+                </div>
+
+                <div class="quote-card stat-card rounded-xl p-5" data-commodity="trigo">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-2xl"></span>
+                        <span class="illustrative-badge">Ilustrativo</span>
+                    </div>
+                    <div class="text-sm text-gray-500 font-medium">Trigo</div>
+                    <div class="text-2xl sm:text-3xl font-mono font-bold text-gray-800 mt-1">R$ 78,50</div>
+                    <div class="text-xs text-gray-400">R$/sc 60kg</div>
+                    <div class="mt-2 delta-up font-mono font-semibold text-sm">▲ +0,20%</div>
+                    <div class="text-[10px] text-gray-400 mt-2">CEPEA/ESALQ · RS</div>
+                </div>
+
+                <div class="quote-card stat-card rounded-xl p-5" data-commodity="dolar">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-2xl"></span>
+                        <span class="illustrative-badge" id="liveBadgeDolar">Ilustrativo</span>
+                    </div>
+                    <div class="text-sm text-gray-500 font-medium">Dólar</div>
+                    <div class="text-2xl sm:text-3xl font-mono font-bold text-gray-800 mt-1" id="priceDolar">R$ 5,62</div>
+                    <div class="text-xs text-gray-400">R$ (comercial)</div>
+                    <div class="mt-2 font-mono font-semibold text-sm" id="deltaDolar">▼ -0,50%</div>
+                    <div class="text-[10px] text-gray-400 mt-2" id="updatedDolar">BCB · dados de referência</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Gráfico de evolução do câmbio -->
+        <section class="stat-card rounded-xl p-6">
+            <div class="flex items-center justify-between flex-wrap gap-3 mb-4">
+                <h3 class="font-display text-2xl font-bold" style="color: var(--forest-green);">Evolução do Câmbio (30 dias)</h3>
+                <div class="flex rounded-lg border border-gray-200 overflow-hidden text-sm font-medium" id="chartCurrencyButtons">
+                    <button type="button" data-currency="USD" class="chart-btn active px-4 py-2 transition-colors">Dólar</button>
+                    <button type="button" data-currency="EUR" class="chart-btn px-4 py-2 border-l border-gray-200 transition-colors">Euro</button>
+                </div>
+            </div>
+            <div id="dollarChartWrap">
+                <svg id="dollarChart" viewBox="0 0 800 260" xmlns="http://www.w3.org/2000/svg"></svg>
+                <div class="chart-tooltip hidden" id="chartTooltip"></div>
+            </div>
+            <p class="text-xs text-gray-400 mt-3" id="chartStatus">Carregando histórico...</p>
+        </section>
+
+        <!-- Tabela completa -->
+        <section>
+            <h3 class="font-display text-2xl font-bold mb-4" style="color: var(--forest-green);">Tabela completa de cotações</h3>
+            <div class="stat-card rounded-xl overflow-x-auto">
+                <table class="w-full text-sm text-left">
+                    <thead>
+                        <tr class="border-b border-gray-100 text-xs text-gray-400 uppercase font-bold">
+                            <th class="px-5 py-3">Commodity</th>
+                            <th class="px-5 py-3">Preço</th>
+                            <th class="px-5 py-3">Variação</th>
+                            <th class="px-5 py-3">Praça</th>
+                            <th class="px-5 py-3">Fonte</th>
+                        </tr>
+                    </thead>
+                    <tbody id="quotesTableBody"></tbody>
+                </table>
+            </div>
+            <p class="text-xs text-gray-400 mt-2">Soja, milho e trigo são dados de referência (ilustrativos); dólar e euro são atualizados ao vivo quando a AwesomeAPI responde.</p>
+        </section>
+
+        <!-- Simulador de Receita -->
+        <section class="sim-card rounded-xl p-6 sm:p-8">
+            <div class="flex items-center gap-2 mb-1 flex-wrap">
+                <h3 class="font-display text-2xl font-bold" style="color: var(--forest-green);">Simulador de Receita</h3>
+                <span class="text-[10px] font-bold uppercase tracking-wide px-2 py-1 rounded-full text-white" style="background: var(--golden-wheat);">Diferencial Cycle Sown</span>
+            </div>
+            <p class="text-sm text-gray-500 mb-6">Veja quanto sua safra pode valer com base no preço atual da saca.</p>
+
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-5">
+                <div>
+                    <label for="simCultura" class="block text-xs text-gray-400 uppercase font-bold mb-1">Cultura</label>
+                    <select id="simCultura" class="w-full rounded-lg border border-gray-200 bg-white px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#066a04]">
+                        <option value="soja">Soja</option>
+                        <option value="milho">Milho</option>
+                        <option value="trigo">Trigo</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="simArea" class="block text-xs text-gray-400 uppercase font-bold mb-1">Área plantada (ha)</label>
+                    <input type="number" id="simArea" min="0" step="0.1" value="15" class="w-full rounded-lg border border-gray-200 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#066a04]">
+                </div>
+                <div>
+                    <label for="simProdutividade" class="block text-xs text-gray-400 uppercase font-bold mb-1">Produtividade (sc/ha)</label>
+                    <input type="number" id="simProdutividade" min="0" step="0.1" value="55" class="w-full rounded-lg border border-gray-200 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#066a04]">
+                </div>
+            </div>
+
+            <div class="mt-6 pt-6 border-t border-gray-100" id="simResultWrap">
+                <p id="simResultText" class="text-sm text-gray-600 mb-3">—</p>
+                <div class="grid grid-cols-2 gap-6">
+                    <div>
+                        <span class="text-xs text-gray-400 uppercase font-bold">Produção estimada</span>
+                        <div id="simProducao" class="text-xl sm:text-2xl font-mono font-bold text-gray-800 mt-1">—</div>
+                    </div>
+                    <div>
+                        <span class="text-xs text-gray-400 uppercase font-bold">Receita bruta estimada</span>
+                        <div id="simReceita" class="text-2xl sm:text-3xl font-mono font-bold sim-result mt-1">—</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <p class="text-xs text-gray-400 text-center max-w-2xl mx-auto">
+            Fontes: CEPEA/ESALQ (CC BY-NC 4.0), AwesomeAPI. Dados para referência, não constituem recomendação de investimento ou comercialização.
+        </p>
+    </main>
+    </div>
+
+    <div id="site-footer"></div>
+
+    <script src="footer.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            anime({
+                targets: '.quote-card',
+                opacity: [0, 1],
+                translateY: [20, 0],
+                delay: anime.stagger(60),
+                duration: 600,
+                easing: 'easeOutQuart'
+            });
+        });
+
+        function toggleMenu(open) {
+            const menu = document.getElementById('slideMenu');
+            if (!menu) return;
+            menu.classList.toggle('hidden', !open);
+            document.body.style.overflow = open ? 'hidden' : '';
+        }
+    </script>
+    <script>
+    (function () {
+        // Dados de referência (ago/2026) usados como preço-base de soja/milho/trigo
+        // (sem fonte gratuita com CORS liberado para essas commodities) e como
+        // fallback de dólar/euro caso a AwesomeAPI não responda.
+        const REFERENCE_DATA = {
+            soja:  { nome: 'Soja',  preco: 136.73, variacao: 0.8,  praca: 'Paranaguá/PR', fonte: 'CEPEA/ESALQ' },
+            milho: { nome: 'Milho', preco: 64.86,  variacao: -0.3, praca: 'Campinas/SP',  fonte: 'CEPEA/B3' },
+            trigo: { nome: 'Trigo', preco: 78.50,  variacao: 0.2,  praca: 'RS',           fonte: 'CEPEA/ESALQ' },
+            dolar: { nome: 'Dólar', preco: 5.62,   variacao: -0.5, praca: 'Comercial',    fonte: 'BCB' },
+            euro:  { nome: 'Euro',  preco: 6.15,   variacao: -0.3, praca: 'Comercial',    fonte: 'BCB' }
+        };
+
+        const TABLE_ROWS_REFERENCE = [
+            { label: 'Soja',            preco: 136.73, variacao: 0.8,  praca: 'Paranaguá/PR', fonte: 'CEPEA' },
+            { label: 'Soja (físico)',   preco: 132.50, variacao: 0.5,  praca: 'RS',           fonte: 'CEPEA' },
+            { label: 'Milho',           preco: 64.86,  variacao: -0.3, praca: 'Campinas/SP',  fonte: 'CEPEA/B3' },
+            { label: 'Milho (físico)',  preco: 58.20,  variacao: 0.2,  praca: 'RS',           fonte: 'CEPEA' },
+            { label: 'Trigo',           preco: 78.50,  variacao: 0.2,  praca: 'RS',           fonte: 'CEPEA' },
+            { label: 'Trigo',           preco: 82.30,  variacao: -0.1, praca: 'PR',           fonte: 'CEPEA' }
+        ];
+
+        const CROP_DEFAULTS = {
+            soja:  { label: 'Soja',  produtividade: 55 },
+            milho: { label: 'Milho', produtividade: 140 },
+            trigo: { label: 'Trigo', produtividade: 45 }
+        };
+
+        const AWESOME_LAST_URL = 'https://economia.awesomeapi.com.br/json/last/USD-BRL,EUR-BRL';
+        const AWESOME_DAILY_URL = (par) => `https://economia.awesomeapi.com.br/json/daily/${par}/30`;
+        const CURRENCY_PAIR = { USD: 'USD-BRL', EUR: 'EUR-BRL' };
+
+        const state = {
+            dolar: null,
+            euro: null,
+            historicoCache: {},
+            activeCurrency: 'USD'
+        };
+
+        function money(value, opts) {
+            return value.toLocaleString('pt-BR', Object.assign({ minimumFractionDigits: 2, maximumFractionDigits: 2 }, opts || {}));
+        }
+
+        function deltaHtml(variacao) {
+            if (variacao == null || isNaN(variacao)) return '<span class="text-gray-400">—</span>';
+            const isUp = variacao >= 0;
+            const cls = isUp ? 'delta-up' : 'delta-down';
+            const arrow = isUp ? '▲' : '▼';
+            const sign = isUp ? '+' : '';
+            return `<span class="${cls} font-mono font-semibold">${arrow} ${sign}${money(variacao)}%</span>`;
+        }
+
+        // --- Câmbio ao vivo (dólar + euro) ---
+        async function fetchCambio() {
+            const res = await fetch(AWESOME_LAST_URL);
+            if (!res.ok) throw new Error('Falha ao buscar câmbio');
+            const data = await res.json();
+            return {
+                dolar: {
+                    preco: parseFloat(data.USDBRL.bid),
+                    variacao: parseFloat(data.USDBRL.pctChange),
+                    atualizado: data.USDBRL.create_date
+                },
+                euro: {
+                    preco: parseFloat(data.EURBRL.bid),
+                    variacao: parseFloat(data.EURBRL.pctChange),
+                    atualizado: data.EURBRL.create_date
+                }
+            };
+        }
+
+        async function loadCambio() {
+            try {
+                const cambio = await fetchCambio();
+                state.dolar = Object.assign({}, REFERENCE_DATA.dolar, cambio.dolar, { isLive: true });
+                state.euro = Object.assign({}, REFERENCE_DATA.euro, cambio.euro, { isLive: true });
+            } catch (err) {
+                console.warn('Não foi possível buscar câmbio, usando dados de referência:', err.message);
+                state.dolar = Object.assign({}, REFERENCE_DATA.dolar, { isLive: false });
+                state.euro = Object.assign({}, REFERENCE_DATA.euro, { isLive: false });
+            }
+            renderCards();
+            renderTable();
+            updateSimulator();
+            updateLastUpdatedLabel();
+        }
+
+        function updateLastUpdatedLabel() {
+            const label = document.getElementById('lastUpdatedLabel');
+            const now = new Date();
+            const time = now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+            const anyLive = (state.dolar && state.dolar.isLive) || (state.euro && state.euro.isLive);
+            label.textContent = anyLive
+                ? `Câmbio atualizado às ${time} · Soja/Milho/Trigo: dados de referência`
+                : `Sem conexão com o câmbio ao vivo · exibindo dados de referência (${time})`;
+        }
+
+        function renderCards() {
+            const dolar = state.dolar || Object.assign({}, REFERENCE_DATA.dolar, { isLive: false });
+            document.getElementById('priceDolar').textContent = `R$ ${money(dolar.preco)}`;
+            document.getElementById('deltaDolar').innerHTML = deltaHtml(dolar.variacao);
+
+            const badge = document.getElementById('liveBadgeDolar');
+            badge.textContent = dolar.isLive ? 'Ao vivo' : 'Ilustrativo';
+            badge.className = dolar.isLive ? 'live-badge' : 'illustrative-badge';
+
+            const updated = document.getElementById('updatedDolar');
+            updated.textContent = dolar.isLive
+                ? `AwesomeAPI · ${new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`
+                : 'BCB · dados de referência';
+        }
+
+        function renderTable() {
+            const tbody = document.getElementById('quotesTableBody');
+            const dolar = state.dolar || Object.assign({}, REFERENCE_DATA.dolar, { isLive: false });
+            const euro = state.euro || Object.assign({}, REFERENCE_DATA.euro, { isLive: false });
+
+            const rows = TABLE_ROWS_REFERENCE.concat([
+                { label: 'Dólar', preco: dolar.preco, variacao: dolar.variacao, praca: 'Comercial', fonte: dolar.isLive ? 'AwesomeAPI' : 'BCB (referência)' },
+                { label: 'Euro',  preco: euro.preco,  variacao: euro.variacao,  praca: 'Comercial', fonte: euro.isLive ? 'AwesomeAPI' : 'BCB (referência)' }
+            ]);
+
+            tbody.innerHTML = rows.map((r, i) => `
+                <tr class="${i % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'} border-b border-gray-100 hover:bg-gray-50 transition-colors">
+                    <td class="px-5 py-3 font-medium text-gray-800">${r.label}</td>
+                    <td class="px-5 py-3 font-mono text-gray-800">R$ ${money(r.preco, { maximumFractionDigits: 4 })}</td>
+                    <td class="px-5 py-3">${deltaHtml(r.variacao)}</td>
+                    <td class="px-5 py-3 text-gray-500">${r.praca}</td>
+                    <td class="px-5 py-3 text-gray-400 text-xs">${r.fonte}</td>
+                </tr>
+            `).join('');
+        }
+
+        // --- Histórico (para o gráfico) ---
+        async function fetchHistorico(currencyCode) {
+            const par = CURRENCY_PAIR[currencyCode];
+            const res = await fetch(AWESOME_DAILY_URL(par));
+            if (!res.ok) throw new Error('Falha ao buscar histórico');
+            const data = await res.json();
+            return data.slice().reverse().map((d) => ({
+                data: new Date(d.timestamp * 1000),
+                valor: parseFloat(d.bid)
+            }));
+        }
+
+        async function loadHistorico(currencyCode) {
+            const statusEl = document.getElementById('chartStatus');
+            if (state.historicoCache[currencyCode]) {
+                renderChart(state.historicoCache[currencyCode]);
+                statusEl.textContent = `Fonte: AwesomeAPI · ${currencyCode === 'USD' ? 'Dólar' : 'Euro'}/Real, últimos 30 dias`;
+                return;
+            }
+            statusEl.textContent = 'Carregando histórico...';
+            try {
+                const points = await fetchHistorico(currencyCode);
+                state.historicoCache[currencyCode] = points;
+                renderChart(points);
+                statusEl.textContent = `Fonte: AwesomeAPI · ${currencyCode === 'USD' ? 'Dólar' : 'Euro'}/Real, últimos 30 dias`;
+            } catch (err) {
+                console.warn('Não foi possível carregar histórico:', err.message);
+                renderChartEmpty();
+                statusEl.textContent = 'Não foi possível carregar o histórico agora. Tente novamente mais tarde.';
+            }
+        }
+
+        // --- Gráfico SVG puro (sem bibliotecas) ---
+        const CHART_W = 800, CHART_H = 260;
+        const PAD = { top: 16, right: 16, bottom: 28, left: 52 };
+        const SVG_NS = 'http://www.w3.org/2000/svg';
+
+        function renderChartEmpty() {
+            const svg = document.getElementById('dollarChart');
+            svg.innerHTML = '';
+            const text = document.createElementNS(SVG_NS, 'text');
+            text.setAttribute('x', CHART_W / 2);
+            text.setAttribute('y', CHART_H / 2);
+            text.setAttribute('text-anchor', 'middle');
+            text.setAttribute('font-size', '13');
+            text.setAttribute('fill', '#9CA3AF');
+            text.textContent = 'Histórico indisponível no momento';
+            svg.appendChild(text);
+        }
+
+        function renderChart(points) {
+            const svg = document.getElementById('dollarChart');
+            const wrap = document.getElementById('dollarChartWrap');
+            const tooltip = document.getElementById('chartTooltip');
+            svg.innerHTML = '';
+            if (!points || points.length === 0) {
+                renderChartEmpty();
+                return;
+            }
+
+            const values = points.map((p) => p.valor);
+            const min = Math.min.apply(null, values);
+            const max = Math.max.apply(null, values);
+            const range = (max - min) || 1;
+            const yMin = min - range * 0.15;
+            const yMax = max + range * 0.15;
+
+            const innerW = CHART_W - PAD.left - PAD.right;
+            const innerH = CHART_H - PAD.top - PAD.bottom;
+
+            const xFor = (i) => PAD.left + (points.length === 1 ? innerW / 2 : (i / (points.length - 1)) * innerW);
+            const yFor = (v) => PAD.top + innerH - ((v - yMin) / (yMax - yMin)) * innerH;
+
+            const defs = document.createElementNS(SVG_NS, 'defs');
+            defs.innerHTML = `<linearGradient id="chartGradient" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="#066a04" stop-opacity="0.22"/>
+                <stop offset="100%" stop-color="#066a04" stop-opacity="0"/>
+            </linearGradient>`;
+            svg.appendChild(defs);
+
+            // Linhas de grade horizontais + rótulos do eixo Y
+            for (let i = 0; i <= 3; i++) {
+                const y = PAD.top + (innerH / 3) * i;
+                const line = document.createElementNS(SVG_NS, 'line');
+                line.setAttribute('x1', PAD.left);
+                line.setAttribute('x2', CHART_W - PAD.right);
+                line.setAttribute('y1', y);
+                line.setAttribute('y2', y);
+                line.setAttribute('stroke', '#E5E7EB');
+                line.setAttribute('stroke-width', '1');
+                svg.appendChild(line);
+
+                const val = yMax - ((yMax - yMin) / 3) * i;
+                const text = document.createElementNS(SVG_NS, 'text');
+                text.setAttribute('x', PAD.left - 8);
+                text.setAttribute('y', y + 4);
+                text.setAttribute('text-anchor', 'end');
+                text.setAttribute('font-size', '10');
+                text.setAttribute('fill', '#9CA3AF');
+                text.textContent = val.toFixed(2);
+                svg.appendChild(text);
+            }
+
+            const linePointsStr = points.map((p, i) => `${xFor(i)},${yFor(p.valor)}`).join(' ');
+            const areaPointsStr = `${xFor(0)},${PAD.top + innerH} ${linePointsStr} ${xFor(points.length - 1)},${PAD.top + innerH}`;
+
+            const area = document.createElementNS(SVG_NS, 'polygon');
+            area.setAttribute('points', areaPointsStr);
+            area.setAttribute('fill', 'url(#chartGradient)');
+            svg.appendChild(area);
+
+            const line = document.createElementNS(SVG_NS, 'polyline');
+            line.setAttribute('points', linePointsStr);
+            line.setAttribute('fill', 'none');
+            line.setAttribute('stroke', '#066a04');
+            line.setAttribute('stroke-width', '2.5');
+            line.setAttribute('stroke-linejoin', 'round');
+            line.setAttribute('stroke-linecap', 'round');
+            svg.appendChild(line);
+
+            // Rótulos do eixo X a cada ~5 dias
+            const step = Math.max(1, Math.round(points.length / 6));
+            points.forEach((p, i) => {
+                if (i % step !== 0 && i !== points.length - 1) return;
+                const text = document.createElementNS(SVG_NS, 'text');
+                text.setAttribute('x', xFor(i));
+                text.setAttribute('y', CHART_H - 8);
+                text.setAttribute('text-anchor', 'middle');
+                text.setAttribute('font-size', '10');
+                text.setAttribute('fill', '#9CA3AF');
+                text.textContent = p.data.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+                svg.appendChild(text);
+            });
+
+            const hoverDot = document.createElementNS(SVG_NS, 'circle');
+            hoverDot.setAttribute('r', 4);
+            hoverDot.setAttribute('fill', '#066a04');
+            hoverDot.setAttribute('stroke', 'white');
+            hoverDot.setAttribute('stroke-width', '1.5');
+            hoverDot.style.display = 'none';
+            svg.appendChild(hoverDot);
+
+            const overlay = document.createElementNS(SVG_NS, 'rect');
+            overlay.setAttribute('x', PAD.left);
+            overlay.setAttribute('y', 0);
+            overlay.setAttribute('width', innerW);
+            overlay.setAttribute('height', CHART_H);
+            overlay.setAttribute('fill', 'transparent');
+            overlay.style.cursor = 'crosshair';
+            svg.appendChild(overlay);
+
+            overlay.addEventListener('mousemove', (e) => {
+                const rect = svg.getBoundingClientRect();
+                const scaleX = CHART_W / rect.width;
+                const mouseX = (e.clientX - rect.left) * scaleX;
+                let idx = Math.round(((mouseX - PAD.left) / innerW) * (points.length - 1));
+                idx = Math.max(0, Math.min(points.length - 1, idx));
+                const p = points[idx];
+
+                hoverDot.setAttribute('cx', xFor(idx));
+                hoverDot.setAttribute('cy', yFor(p.valor));
+                hoverDot.style.display = '';
+
+                const wrapRect = wrap.getBoundingClientRect();
+                tooltip.textContent = `${p.data.toLocaleDateString('pt-BR')}: R$ ${p.valor.toFixed(4)}`;
+                tooltip.style.left = `${e.clientX - wrapRect.left + 12}px`;
+                tooltip.style.top = `${e.clientY - wrapRect.top - 8}px`;
+                tooltip.classList.remove('hidden');
+            });
+            overlay.addEventListener('mouseleave', () => {
+                tooltip.classList.add('hidden');
+                hoverDot.style.display = 'none';
+            });
+        }
+
+        document.getElementById('chartCurrencyButtons').addEventListener('click', (e) => {
+            const btn = e.target.closest('.chart-btn');
+            if (!btn) return;
+            document.querySelectorAll('.chart-btn').forEach((b) => b.classList.toggle('active', b === btn));
+            state.activeCurrency = btn.dataset.currency;
+            document.getElementById('chartTooltip').classList.add('hidden');
+            loadHistorico(state.activeCurrency);
+        });
+
+        // --- Simulador de Receita ---
+        function currentPrice(cultura) {
+            return REFERENCE_DATA[cultura].preco;
+        }
+
+        function updateSimulator() {
+            const cultura = document.getElementById('simCultura').value;
+            const area = parseFloat(document.getElementById('simArea').value) || 0;
+            const produtividade = parseFloat(document.getElementById('simProdutividade').value) || 0;
+            const preco = currentPrice(cultura);
+
+            const resultText = document.getElementById('simResultText');
+            const producaoEl = document.getElementById('simProducao');
+            const receitaEl = document.getElementById('simReceita');
+
+            if (area <= 0 || produtividade <= 0) {
+                resultText.textContent = 'Informe a área plantada e a produtividade estimada para calcular.';
+                producaoEl.textContent = '—';
+                receitaEl.textContent = '—';
+                return;
+            }
+
+            const producaoTotal = area * produtividade;
+            const receita = producaoTotal * preco;
+
+            resultText.textContent = `Com ${area.toLocaleString('pt-BR')} ha de ${CROP_DEFAULTS[cultura].label} a ${produtividade.toLocaleString('pt-BR')} sc/ha, com a saca a R$ ${money(preco)}:`;
+            producaoEl.textContent = `${producaoTotal.toLocaleString('pt-BR', { maximumFractionDigits: 0 })} sacas`;
+            receitaEl.textContent = `R$ ${money(receita)}`;
+        }
+
+        document.getElementById('simCultura').addEventListener('change', (e) => {
+            const defaults = CROP_DEFAULTS[e.target.value];
+            if (defaults) document.getElementById('simProdutividade').value = defaults.produtividade;
+            updateSimulator();
+        });
+        document.getElementById('simArea').addEventListener('input', updateSimulator);
+        document.getElementById('simProdutividade').addEventListener('input', updateSimulator);
+
+        // --- Inicialização ---
+        document.addEventListener('DOMContentLoaded', () => {
+            renderTable();
+            updateSimulator();
+            loadCambio();
+            loadHistorico(state.activeCurrency);
+            setInterval(loadCambio, 5 * 60 * 1000);
+        });
+    })();
+    </script>
+</body>
+</html>

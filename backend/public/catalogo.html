@@ -1,0 +1,1212 @@
+<!-- ============================================================================
+     catalogo.html — vitrine estática de insumos agrícolas (calcário,
+     fertilizantes, defensivos, substratos) com preço médio de referência.
+     Os produtos abaixo são fixos no HTML, não vêm de banco de dados nem de
+     userStorage — schema.sql já prevê tabelas `products` e `product_reviews`
+     para o dia em que isso virar dado dinâmico via API (region/rating/
+     review_count ficam em `products`, cada avaliação em `product_reviews`).
+     "Empresa vendedora" (sempre "Empresa Fictícia" no front) é fixa no
+     JS, por isso não tem tabela própria.
+     ============================================================================ -->
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Catálogo de Insumos - Cycle Sown</title>
+    <script src="userStorage.js"></script>
+    <script>
+        if (!userStorage.getCurrentUserId()) {
+            window.location.href = 'login.html';
+        }
+    </script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/theme.css">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--cream-white);
+            color: var(--charcoal-gray);
+        }
+
+        .glass-effect {
+            backdrop-filter: blur(10px);
+            background: rgba(244, 247, 242, 0.9);
+        }
+
+        .product-card {
+            transition: all 0.3s ease;
+            border: 1px solid var(--light-border);
+            background: white;
+        }
+
+        .product-card:hover {
+            border-color: var(--sage-green);
+            box-shadow: 0 10px 20px rgba(6, 106, 4, 0.05);
+        }
+
+        .category-tag {
+            font-size: 0.65rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-weight: 700;
+        }
+
+        /* Faixa de preço — dois <input type=range> sobrepostos formando um
+           slider de intervalo (min/max) sem depender de nenhuma lib externa. */
+        .price-range {
+            position: relative;
+            height: 1.5rem;
+        }
+
+        .price-range-track {
+            position: absolute;
+            left: 0;
+            right: 0;
+            top: 50%;
+            height: 4px;
+            transform: translateY(-50%);
+            background: var(--light-border);
+            border-radius: 999px;
+        }
+
+        .price-range-fill {
+            position: absolute;
+            top: 50%;
+            height: 4px;
+            transform: translateY(-50%);
+            background: var(--sage-green);
+            border-radius: 999px;
+        }
+
+        .price-range input[type="range"] {
+            position: absolute;
+            left: 0;
+            right: 0;
+            top: 0;
+            width: 100%;
+            margin: 0;
+            background: transparent;
+            pointer-events: none;
+            -webkit-appearance: none;
+            appearance: none;
+        }
+
+        .price-range input[type="range"]::-webkit-slider-runnable-track {
+            background: transparent;
+        }
+
+        .price-range input[type="range"]::-moz-range-track {
+            background: transparent;
+        }
+
+        .price-range input[type="range"]::-webkit-slider-thumb {
+            pointer-events: auto;
+            -webkit-appearance: none;
+            appearance: none;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: var(--forest-green);
+            border: 2px solid white;
+            box-shadow: 0 0 0 1px var(--forest-green);
+            cursor: pointer;
+            margin-top: 6px;
+        }
+
+        .price-range input[type="range"]::-moz-range-thumb {
+            pointer-events: auto;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: var(--forest-green);
+            border: 2px solid white;
+            box-shadow: 0 0 0 1px var(--forest-green);
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body class="pt-20">
+    <nav class="fixed top-0 w-full z-50 backdrop-blur-xl bg-white/80 border-b border-slate-200 shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center gap-3">
+                    <a href="index.html" class="flex items-center shrink-0">
+                        <img src="img/logo.png" alt="Cycle Sown" class="h-14 w-auto">
+                    </a>
+                    <button type="button" aria-label="Abrir menu" onclick="toggleMenu(true)" class="p-2 rounded-full text-slate-700 hover:bg-slate-100 transition-colors">
+                        <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" xmlns="http://www.w3.org/2000/svg">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+                        </svg>
+                    </button>
+                </div>
+                <div class="hidden md:block">
+                    <div class="ml-10 flex items-baseline space-x-8">
+                        <a href="index.html#analysis" class="text-slate-800 hover:text-[#066a04] px-3 py-2 text-sm font-medium transition-colors">Análise</a>
+                        <a href="recommendations.html" class="text-slate-600 hover:text-[#066a04] px-3 py-2 text-sm font-medium transition-colors">Recomendações</a>
+                        <a href="relatorios.html" class="text-slate-600 hover:text-[#066a04] px-3 py-2 text-sm font-medium transition-colors">Relatórios</a>
+                        <a href="profile.html" class="text-slate-600 hover:text-[#066a04] px-3 py-2 text-sm font-medium transition-colors">Perfil</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div id="slideMenu" class="fixed inset-0 z-[9998] hidden">
+        <div class="absolute inset-0 bg-black/40 z-[9998]" onclick="toggleMenu(false)"></div>
+        <div class="absolute left-0 top-0 h-full w-72 bg-white border-r shadow-xl overflow-y-auto z-[9999]">
+            <div class="flex items-center justify-between p-5 border-b border-gray-200">
+                <span class="flex items-center gap-2">
+                    <img src="img/logo.png" alt="Cycle Sown" class="h-12 w-auto">
+                    <span class="text-lg font-semibold text-gray-900">Menu</span>
+                </span>
+                <button type="button" aria-label="Fechar menu" onclick="toggleMenu(false)" class="text-gray-600 hover:text-gray-900">
+                    <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" xmlns="http://www.w3.org/2000/svg">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+            <nav class="p-5 space-y-3">
+                <hr class="my-3">
+                <a href="calendar.html" onclick="toggleMenu(false)" class="block text-gray-900 px-4 py-3 rounded-lg hover:bg-[#eaf7e2] transition-colors">Calendário</a>
+                <a href="catalogo.html" onclick="toggleMenu(false)" class="block text-gray-900 px-4 py-3 rounded-lg hover:bg-[#eaf7e2] transition-colors">Catálogo</a>
+                <a href="produtividade.html" onclick="toggleMenu(false)" class="block text-gray-900 px-4 py-3 rounded-lg hover:bg-[#eaf7e2] transition-colors">Produtividade</a>
+                <a href="mapa-fertilidade.html" onclick="toggleMenu(false)" class="block text-gray-900 px-4 py-3 rounded-lg hover:bg-[#eaf7e2] transition-colors">Mapa de Fertilidade</a>
+                <a href="cotacoes.html" onclick="toggleMenu(false)" class="block text-gray-900 px-4 py-3 rounded-lg hover:bg-[#eaf7e2] transition-colors">Cotações</a>
+                <a href="rotacao.html" onclick="toggleMenu(false)" class="block text-gray-900 px-4 py-3 rounded-lg hover:bg-[#eaf7e2] transition-colors">Rotação</a>
+                <a href="relatorios.html" onclick="toggleMenu(false)" class="block text-gray-900 px-4 py-3 rounded-lg hover:bg-[#eaf7e2] transition-colors">Relatórios</a>
+                <a href="empresas/index.html" onclick="toggleMenu(false)" class="block text-gray-900 px-4 py-3 rounded-lg hover:bg-[#eaf7e2] transition-colors">Vender Produção</a>
+                <a href="profile.html" onclick="toggleMenu(false)" class="block text-[#066a04] font-semibold px-4 py-3 rounded-lg hover:bg-[#eaf7e2] transition-colors">Meu Perfil</a>
+            </nav>
+        </div>
+    </div>
+
+    <div>
+
+    <header class="py-12 page-header-band">
+        <div class="max-w-7xl mx-auto px-4 text-center">
+            <h2 class="font-display text-4xl font-bold mb-4">Referência de Insumos</h2>
+            <p class="max-w-2xl mx-auto italic">Preços médios de mercado e especificações técnicas para planejamento agrícola.</p>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-4 py-16">
+
+        <div class="mb-10 space-y-4">
+            <div class="relative">
+                <svg class="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" xmlns="http://www.w3.org/2000/svg">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-4.35-4.35m0 0A7.5 7.5 0 104.5 4.5a7.5 7.5 0 0012.15 12.15z" />
+                </svg>
+                <input type="text" id="searchInput" placeholder="Pesquisar insumo, fertilizante..." class="w-full pl-10 pr-4 py-3 rounded-lg border border-gray-200 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-[#066a04]">
+            </div>
+
+            <div class="flex flex-col sm:flex-row gap-6 sm:items-end bg-white border border-gray-200 rounded-lg p-4">
+                <div class="sm:w-56">
+                    <label for="categoryFilter" class="block text-xs text-gray-400 uppercase font-bold mb-1">Categoria</label>
+                    <select id="categoryFilter" class="w-full rounded-lg border border-gray-200 bg-white px-4 py-2.5 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#066a04]">
+                        <option value="">Todos os produtos</option>
+                        <option value="corretivos">Corretivos</option>
+                        <option value="fertilizantes">Fertilizantes</option>
+                        <option value="adubos">Adubos</option>
+                        <option value="substratos">Substratos</option>
+                        <option value="defensivos">Defensivos</option>
+                    </select>
+                </div>
+
+                <div class="sm:w-56">
+                    <label for="regionFilter" class="block text-xs text-gray-400 uppercase font-bold mb-1">Região</label>
+                    <select id="regionFilter" class="w-full rounded-lg border border-gray-200 bg-white px-4 py-2.5 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#066a04]">
+                        <option value="">Todas as regiões</option>
+                        <option value="norte">Norte</option>
+                        <option value="nordeste">Nordeste</option>
+                        <option value="centro-oeste">Centro-Oeste</option>
+                        <option value="sudeste">Sudeste</option>
+                        <option value="sul">Sul</option>
+                    </select>
+                </div>
+
+                <div class="flex-1">
+                    <div class="flex justify-between items-center mb-2">
+                        <label class="block text-xs text-gray-400 uppercase font-bold">Faixa de Preço</label>
+                        <span class="text-sm font-mono text-gray-600"><span id="priceMinLabel">R$ 0</span> — <span id="priceMaxLabel">R$ 250</span></span>
+                    </div>
+                    <div class="price-range">
+                        <div class="price-range-track"></div>
+                        <div id="priceRangeFill" class="price-range-fill"></div>
+                        <input type="range" id="priceMin" min="0" max="250" step="5" value="0" aria-label="Preço mínimo">
+                        <input type="range" id="priceMax" min="0" max="250" step="5" value="250" aria-label="Preço máximo">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="productsGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+
+            <div class="product-card rounded-xl p-6 animate-card cursor-pointer" data-price="42.00" data-region="sudeste" data-group="corretivos" data-product="calcario-dolomitico" role="button" tabindex="0">
+                <span class="category-tag bg-[#eaf7e2] text-[#066a04]">Corretivo</span>
+                <h3 class="font-display text-xl font-bold mt-3 mb-2">Calcário Dolomítico</h3>
+                <p class="text-sm text-gray-600 mb-6">Utilizado para elevar o pH do solo e fornecer Cálcio e Magnésio. Essencial para a correção de acidez.</p>
+                <div class="flex flex-col border-t pt-4">
+                    <span class="text-xs text-gray-400 uppercase font-bold">Preço Médio</span>
+                    <span class="text-2xl font-mono font-bold text-gray-800">R$ 42,00 <small class="text-sm font-normal">/ 50kg</small></span>
+                </div>
+                <span class="mt-4 inline-block text-sm font-semibold" style="color: var(--forest-green);">Ver detalhes e avaliações &rarr;</span>
+            </div>
+
+            <div class="product-card rounded-xl p-6 animate-card cursor-pointer" data-price="39.00" data-region="sul" data-group="corretivos" data-product="calcario-calcitico" role="button" tabindex="0">
+                <span class="category-tag bg-[#eaf7e2] text-[#066a04]">Corretivo</span>
+                <h3 class="font-display text-xl font-bold mt-3 mb-2">Calcário Calcítico</h3>
+                <p class="text-sm text-gray-600 mb-6">Corretivo de acidez com maior teor de Cálcio e menor de Magnésio, indicado para solos já bem supridos em Mg.</p>
+                <div class="flex flex-col border-t pt-4">
+                    <span class="text-xs text-gray-400 uppercase font-bold">Preço Médio</span>
+                    <span class="text-2xl font-mono font-bold text-gray-800">R$ 39,00 <small class="text-sm font-normal">/ 50kg</small></span>
+                </div>
+                <span class="mt-4 inline-block text-sm font-semibold" style="color: var(--forest-green);">Ver detalhes e avaliações &rarr;</span>
+            </div>
+
+            <div class="product-card rounded-xl p-6 animate-card cursor-pointer" data-price="48.00" data-region="centro-oeste" data-group="corretivos" data-product="gesso-agricola" role="button" tabindex="0">
+                <span class="category-tag bg-[#eaf7e2] text-[#066a04]">Corretivo</span>
+                <h3 class="font-display text-xl font-bold mt-3 mb-2">Gesso Agrícola</h3>
+                <p class="text-sm text-gray-600 mb-6">Fonte de Cálcio e Enxofre que melhora o ambiente radicular em profundidade, sem alterar o pH do solo.</p>
+                <div class="flex flex-col border-t pt-4">
+                    <span class="text-xs text-gray-400 uppercase font-bold">Preço Médio</span>
+                    <span class="text-2xl font-mono font-bold text-gray-800">R$ 48,00 <small class="text-sm font-normal">/ 50kg</small></span>
+                </div>
+                <span class="mt-4 inline-block text-sm font-semibold" style="color: var(--forest-green);">Ver detalhes e avaliações &rarr;</span>
+            </div>
+
+            <div class="product-card rounded-xl p-6 animate-card cursor-pointer" data-price="45.00" data-region="nordeste" data-group="corretivos" data-product="calcario-filler" role="button" tabindex="0">
+                <span class="category-tag bg-[#eaf7e2] text-[#066a04]">Corretivo</span>
+                <h3 class="font-display text-xl font-bold mt-3 mb-2">Calcário Filler</h3>
+                <p class="text-sm text-gray-600 mb-6">Calcário moído fino, de reação rápida, indicado para correções pontuais e canteiros.</p>
+                <div class="flex flex-col border-t pt-4">
+                    <span class="text-xs text-gray-400 uppercase font-bold">Preço Médio</span>
+                    <span class="text-2xl font-mono font-bold text-gray-800">R$ 45,00 <small class="text-sm font-normal">/ 50kg</small></span>
+                </div>
+                <span class="mt-4 inline-block text-sm font-semibold" style="color: var(--forest-green);">Ver detalhes e avaliações &rarr;</span>
+            </div>
+
+            <div class="product-card rounded-xl p-6 animate-card cursor-pointer" data-price="65.00" data-region="sul" data-group="corretivos" data-product="silicato-calcio-magnesio" role="button" tabindex="0">
+                <span class="category-tag bg-[#eaf7e2] text-[#066a04]">Corretivo</span>
+                <h3 class="font-display text-xl font-bold mt-3 mb-2">Silicato de Cálcio e Magnésio</h3>
+                <p class="text-sm text-gray-600 mb-6">Corretivo alternativo à base de silicato, fornece Ca, Mg e Silício disponível às plantas.</p>
+                <div class="flex flex-col border-t pt-4">
+                    <span class="text-xs text-gray-400 uppercase font-bold">Preço Médio</span>
+                    <span class="text-2xl font-mono font-bold text-gray-800">R$ 65,00 <small class="text-sm font-normal">/ 25kg</small></span>
+                </div>
+                <span class="mt-4 inline-block text-sm font-semibold" style="color: var(--forest-green);">Ver detalhes e avaliações &rarr;</span>
+            </div>
+
+            <div class="product-card rounded-xl p-6 animate-card cursor-pointer" data-price="185.00" data-region="centro-oeste" data-group="fertilizantes" data-product="cloreto-potassio" role="button" tabindex="0">
+                <span class="category-tag bg-[#eaf7e2] text-[#066a04]">Mineral</span>
+                <h3 class="font-display text-xl font-bold mt-3 mb-2">Cloreto de Potássio (KCl)</h3>
+                <p class="text-sm text-gray-600 mb-6">Principal fonte de Potássio para as culturas, essencial para o transporte de açúcares e resistência à seca.</p>
+                <div class="flex flex-col border-t pt-4">
+                    <span class="text-xs text-gray-400 uppercase font-bold">Preço Médio</span>
+                    <span class="text-2xl font-mono font-bold text-gray-800">R$ 185,00 <small class="text-sm font-normal">/ 50kg</small></span>
+                </div>
+                <span class="mt-4 inline-block text-sm font-semibold" style="color: var(--forest-green);">Ver detalhes e avaliações &rarr;</span>
+            </div>
+
+            <div class="product-card rounded-xl p-6 animate-card cursor-pointer" data-price="140.00" data-region="sudeste" data-group="fertilizantes" data-product="superfosfato-simples" role="button" tabindex="0">
+                <span class="category-tag bg-blue-100 text-blue-800">Fertilizante</span>
+                <h3 class="font-display text-xl font-bold mt-3 mb-2">Superfosfato Simples</h3>
+                <p class="text-sm text-gray-600 mb-6">Fonte de Fósforo, Enxofre e Cálcio. Recomendado para a fundação e desenvolvimento radicular.</p>
+                <div class="flex flex-col border-t pt-4">
+                    <span class="text-xs text-gray-400 uppercase font-bold">Preço Médio</span>
+                    <span class="text-2xl font-mono font-bold text-gray-800">R$ 140,00 <small class="text-sm font-normal">/ 50kg</small></span>
+                </div>
+                <span class="mt-4 inline-block text-sm font-semibold" style="color: var(--forest-green);">Ver detalhes e avaliações &rarr;</span>
+            </div>
+
+            <div class="product-card rounded-xl p-6 animate-card cursor-pointer" data-price="125.00" data-region="centro-oeste" data-group="fertilizantes" data-product="npk-10-10-10" role="button" tabindex="0">
+                <span class="category-tag bg-blue-100 text-blue-800">Fertilizante NPK</span>
+                <h3 class="font-display text-xl font-bold mt-3 mb-2">Formulação NPK 10-10-10</h3>
+                <p class="text-sm text-gray-600 mb-6">Fertilizante balanceado de manutenção para diversas culturas e plantas ornamentais.</p>
+                <div class="flex flex-col border-t pt-4">
+                    <span class="text-xs text-gray-400 uppercase font-bold">Preço Médio</span>
+                    <span class="text-2xl font-mono font-bold text-gray-800">R$ 125,00 <small class="text-sm font-normal">/ 50kg</small></span>
+                </div>
+                <span class="mt-4 inline-block text-sm font-semibold" style="color: var(--forest-green);">Ver detalhes e avaliações &rarr;</span>
+            </div>
+
+            <div class="product-card rounded-xl p-6 animate-card cursor-pointer" data-price="210.00" data-region="norte" data-group="fertilizantes" data-product="ureia" role="button" tabindex="0">
+                <span class="category-tag bg-blue-100 text-blue-800">Fertilizante Nitrogenado</span>
+                <h3 class="font-display text-xl font-bold mt-3 mb-2">Ureia</h3>
+                <p class="text-sm text-gray-600 mb-6">Fertilizante nitrogenado de alta concentração (45% N), essencial para crescimento vegetativo e produção de proteína.</p>
+                <div class="flex flex-col border-t pt-4">
+                    <span class="text-xs text-gray-400 uppercase font-bold">Preço Médio</span>
+                    <span class="text-2xl font-mono font-bold text-gray-800">R$ 210,00 <small class="text-sm font-normal">/ 50kg</small></span>
+                </div>
+                <span class="mt-4 inline-block text-sm font-semibold" style="color: var(--forest-green);">Ver detalhes e avaliações &rarr;</span>
+            </div>
+
+            <div class="product-card rounded-xl p-6 animate-card cursor-pointer" data-price="15.00" data-region="sudeste" data-group="adubos" data-product="esterco-galinha" role="button" tabindex="0">
+                <span class="category-tag bg-[#eaf7e2] text-[#066a04]">Fertilizante Orgânico</span>
+                <h3 class="font-display text-xl font-bold mt-3 mb-2">Esterco de Galinha Curtido</h3>
+                <p class="text-sm text-gray-600 mb-6">Fonte rica de Nitrogênio e matéria orgânica para rápida mineralização e nutrição vegetal.</p>
+                <div class="flex flex-col border-t pt-4">
+                    <span class="text-xs text-gray-400 uppercase font-bold">Preço Médio</span>
+                    <span class="text-2xl font-mono font-bold text-gray-800">R$ 15,00 <small class="text-sm font-normal">/ 20kg</small></span>
+                </div>
+                <span class="mt-4 inline-block text-sm font-semibold" style="color: var(--forest-green);">Ver detalhes e avaliações &rarr;</span>
+            </div>
+
+            <div class="product-card rounded-xl p-6 animate-card cursor-pointer" data-price="95.00" data-region="sul" data-group="substratos" data-product="turfa-sphagnum" role="button" tabindex="0">
+                <span class="category-tag bg-amber-100 text-amber-800">Substrato</span>
+                <h3 class="font-display text-xl font-bold mt-3 mb-2">Turfa de Sphagnum fibra fina</h3>
+                <p class="text-sm text-gray-600 mb-6">Material orgânico com excelente capacidade de retenção hídrica e aeração para bandejas de mudas.</p>
+                <div class="flex flex-col border-t pt-4">
+                    <span class="text-xs text-gray-400 uppercase font-bold">Preço Médio</span>
+                    <span class="text-2xl font-mono font-bold text-gray-800">R$ 95,00 <small class="text-sm font-normal">/ 40kg</small></span>
+                </div>
+                <span class="mt-4 inline-block text-sm font-semibold" style="color: var(--forest-green);">Ver detalhes e avaliações &rarr;</span>
+            </div>
+
+            <div class="product-card rounded-xl p-6 animate-card cursor-pointer" data-price="38.00" data-region="sul" data-group="substratos" data-product="casca-arroz-carbonizada" role="button" tabindex="0">
+                <span class="category-tag bg-amber-100 text-amber-800">Substrato</span>
+                <h3 class="font-display text-xl font-bold mt-3 mb-2">Casca de Arroz Carbonizada</h3>
+                <p class="text-sm text-gray-600 mb-6">Condicionador de solo que melhora a drenagem. Livre de sementes de plantas daninhas e patógenos.</p>
+                <div class="flex flex-col border-t pt-4">
+                    <span class="text-xs text-gray-400 uppercase font-bold">Preço Médio</span>
+                    <span class="text-2xl font-mono font-bold text-gray-800">R$ 38,00 <small class="text-sm font-normal">/ 100L</small></span>
+                </div>
+                <span class="mt-4 inline-block text-sm font-semibold" style="color: var(--forest-green);">Ver detalhes e avaliações &rarr;</span>
+            </div>
+
+            <div class="product-card rounded-xl p-6 animate-card cursor-pointer" data-price="55.00" data-region="nordeste" data-group="substratos" data-product="fibra-coco" role="button" tabindex="0">
+                <span class="category-tag bg-amber-100 text-amber-800">Substrato</span>
+                <h3 class="font-display text-xl font-bold mt-3 mb-2">Fibra de Coco</h3>
+                <p class="text-sm text-gray-600 mb-6">Substrato renovável com ótima retenção de água e aeração, indicado para mudas e cultivo em vasos.</p>
+                <div class="flex flex-col border-t pt-4">
+                    <span class="text-xs text-gray-400 uppercase font-bold">Preço Médio</span>
+                    <span class="text-2xl font-mono font-bold text-gray-800">R$ 55,00 <small class="text-sm font-normal">/ 45kg</small></span>
+                </div>
+                <span class="mt-4 inline-block text-sm font-semibold" style="color: var(--forest-green);">Ver detalhes e avaliações &rarr;</span>
+            </div>
+
+            <div class="product-card rounded-xl p-6 animate-card cursor-pointer" data-price="60.00" data-region="sudeste" data-group="substratos" data-product="vermiculita-expandida" role="button" tabindex="0">
+                <span class="category-tag bg-amber-100 text-amber-800">Substrato</span>
+                <h3 class="font-display text-xl font-bold mt-3 mb-2">Vermiculita Expandida</h3>
+                <p class="text-sm text-gray-600 mb-6">Mineral expandido por calor, leve e poroso, melhora aeração e retenção de água em misturas de substrato.</p>
+                <div class="flex flex-col border-t pt-4">
+                    <span class="text-xs text-gray-400 uppercase font-bold">Preço Médio</span>
+                    <span class="text-2xl font-mono font-bold text-gray-800">R$ 60,00 <small class="text-sm font-normal">/ 100L</small></span>
+                </div>
+                <span class="mt-4 inline-block text-sm font-semibold" style="color: var(--forest-green);">Ver detalhes e avaliações &rarr;</span>
+            </div>
+
+            <div class="product-card rounded-xl p-6 animate-card cursor-pointer" data-price="32.00" data-region="norte" data-group="substratos" data-product="substrato-hortalicas" role="button" tabindex="0">
+                <span class="category-tag bg-amber-100 text-amber-800">Substrato</span>
+                <h3 class="font-display text-xl font-bold mt-3 mb-2">Substrato para Hortaliças</h3>
+                <p class="text-sm text-gray-600 mb-6">Mistura pronta balanceada para o cultivo de hortaliças em vasos, floreiras e canteiros.</p>
+                <div class="flex flex-col border-t pt-4">
+                    <span class="text-xs text-gray-400 uppercase font-bold">Preço Médio</span>
+                    <span class="text-2xl font-mono font-bold text-gray-800">R$ 32,00 <small class="text-sm font-normal">/ 20L</small></span>
+                </div>
+                <span class="mt-4 inline-block text-sm font-semibold" style="color: var(--forest-green);">Ver detalhes e avaliações &rarr;</span>
+            </div>
+
+            <div class="product-card rounded-xl p-6 animate-card cursor-pointer" data-price="55.00" data-region="sudeste" data-group="defensivos" data-product="fungicida-cuprico" role="button" tabindex="0">
+                <span class="category-tag bg-red-100 text-red-800">Defensivo</span>
+                <h3 class="font-display text-xl font-bold mt-3 mb-2">Fungicida Cúprico</h3>
+                <p class="text-sm text-gray-600 mb-6">Utilizado no controle preventivo de doenças fúngicas e bacterianas. Baixa toxicidade residual.</p>
+                <div class="flex flex-col border-t pt-4">
+                    <span class="text-xs text-gray-400 uppercase font-bold">Preço Médio</span>
+                    <span class="text-2xl font-mono font-bold text-gray-800">R$ 55,00 <small class="text-sm font-normal">/ kg</small></span>
+                </div>
+                <span class="mt-4 inline-block text-sm font-semibold" style="color: var(--forest-green);">Ver detalhes e avaliações &rarr;</span>
+            </div>
+
+            <div class="product-card rounded-xl p-6 animate-card cursor-pointer" data-price="110.00" data-region="sudeste" data-group="defensivos" data-product="bacillus-thuringiensis" role="button" tabindex="0">
+                <span class="category-tag bg-red-100 text-red-800">Defensivo Biológico</span>
+                <h3 class="font-display text-xl font-bold mt-3 mb-2">Bacillus thuringiensis</h3>
+                <p class="text-sm text-gray-600 mb-6">Inseticida biológico altamente eficaz contra lagartas. Não afeta inimigos naturais.</p>
+                <div class="flex flex-col border-t pt-4">
+                    <span class="text-xs text-gray-400 uppercase font-bold">Preço Médio</span>
+                    <span class="text-2xl font-mono font-bold text-gray-800">R$ 110,00 <small class="text-sm font-normal">/ Litro</small></span>
+                </div>
+                <span class="mt-4 inline-block text-sm font-semibold" style="color: var(--forest-green);">Ver detalhes e avaliações &rarr;</span>
+            </div>
+
+            <div class="product-card rounded-xl p-6 animate-card cursor-pointer" data-price="78.00" data-region="centro-oeste" data-group="defensivos" data-product="herbicida-pos-emergente" role="button" tabindex="0">
+                <span class="category-tag bg-red-100 text-red-800">Defensivo</span>
+                <h3 class="font-display text-xl font-bold mt-3 mb-2">Herbicida Pós-emergente</h3>
+                <p class="text-sm text-gray-600 mb-6">Controle de plantas daninhas de folha larga e estreita já emergidas, com ação sistêmica.</p>
+                <div class="flex flex-col border-t pt-4">
+                    <span class="text-xs text-gray-400 uppercase font-bold">Preço Médio</span>
+                    <span class="text-2xl font-mono font-bold text-gray-800">R$ 78,00 <small class="text-sm font-normal">/ Litro</small></span>
+                </div>
+                <span class="mt-4 inline-block text-sm font-semibold" style="color: var(--forest-green);">Ver detalhes e avaliações &rarr;</span>
+            </div>
+
+            <div class="product-card rounded-xl p-6 animate-card cursor-pointer" data-price="92.00" data-region="nordeste" data-group="defensivos" data-product="inseticida-piretroide" role="button" tabindex="0">
+                <span class="category-tag bg-red-100 text-red-800">Defensivo</span>
+                <h3 class="font-display text-xl font-bold mt-3 mb-2">Inseticida Piretroide</h3>
+                <p class="text-sm text-gray-600 mb-6">Inseticida de contato e ingestão, amplo espectro contra pragas sugadoras e mastigadoras.</p>
+                <div class="flex flex-col border-t pt-4">
+                    <span class="text-xs text-gray-400 uppercase font-bold">Preço Médio</span>
+                    <span class="text-2xl font-mono font-bold text-gray-800">R$ 92,00 <small class="text-sm font-normal">/ Litro</small></span>
+                </div>
+                <span class="mt-4 inline-block text-sm font-semibold" style="color: var(--forest-green);">Ver detalhes e avaliações &rarr;</span>
+            </div>
+
+            <div class="product-card rounded-xl p-6 animate-card cursor-pointer" data-price="35.00" data-region="sul" data-group="defensivos" data-product="oleo-mineral-adjuvante" role="button" tabindex="0">
+                <span class="category-tag bg-red-100 text-red-800">Defensivo</span>
+                <h3 class="font-display text-xl font-bold mt-3 mb-2">Óleo Mineral Adjuvante</h3>
+                <p class="text-sm text-gray-600 mb-6">Adjuvante à base de óleo mineral que melhora a espalhabilidade e adesão de defensivos foliares.</p>
+                <div class="flex flex-col border-t pt-4">
+                    <span class="text-xs text-gray-400 uppercase font-bold">Preço Médio</span>
+                    <span class="text-2xl font-mono font-bold text-gray-800">R$ 35,00 <small class="text-sm font-normal">/ Litro</small></span>
+                </div>
+                <span class="mt-4 inline-block text-sm font-semibold" style="color: var(--forest-green);">Ver detalhes e avaliações &rarr;</span>
+            </div>
+
+            <div class="product-card rounded-xl p-6 animate-card cursor-pointer" data-price="35.00" data-region="nordeste" data-group="corretivos" data-product="cal-hidratada" role="button" tabindex="0">
+                <span class="category-tag bg-[#eaf7e2] text-[#066a04]">Corretivo</span>
+                <h3 class="font-display text-xl font-bold mt-3 mb-2">Cal Hidratada Agrícola</h3>
+                <p class="text-sm text-gray-600 mb-6">Corretivo de ação rápida à base de hidróxido de cálcio, eleva o pH do solo em pouco tempo.</p>
+                <div class="flex flex-col border-t pt-4">
+                    <span class="text-xs text-gray-400 uppercase font-bold">Preço Médio</span>
+                    <span class="text-2xl font-mono font-bold text-gray-800">R$ 35,00 <small class="text-sm font-normal">/ 40kg</small></span>
+                </div>
+                <span class="mt-4 inline-block text-sm font-semibold" style="color: var(--forest-green);">Ver detalhes e avaliações &rarr;</span>
+            </div>
+
+            <div class="product-card rounded-xl p-6 animate-card cursor-pointer" data-price="165.00" data-region="sul" data-group="fertilizantes" data-product="sulfato-amonio" role="button" tabindex="0">
+                <span class="category-tag bg-blue-100 text-blue-800">Fertilizante</span>
+                <h3 class="font-display text-xl font-bold mt-3 mb-2">Sulfato de Amônio</h3>
+                <p class="text-sm text-gray-600 mb-6">Fertilizante nitrogenado com Enxofre, ideal para culturas exigentes em S como soja e cana.</p>
+                <div class="flex flex-col border-t pt-4">
+                    <span class="text-xs text-gray-400 uppercase font-bold">Preço Médio</span>
+                    <span class="text-2xl font-mono font-bold text-gray-800">R$ 165,00 <small class="text-sm font-normal">/ 50kg</small></span>
+                </div>
+                <span class="mt-4 inline-block text-sm font-semibold" style="color: var(--forest-green);">Ver detalhes e avaliações &rarr;</span>
+            </div>
+
+            <div class="product-card rounded-xl p-6 animate-card cursor-pointer" data-price="245.00" data-region="centro-oeste" data-group="fertilizantes" data-product="map-fosfato-monoamonico" role="button" tabindex="0">
+                <span class="category-tag bg-blue-100 text-blue-800">Fertilizante</span>
+                <h3 class="font-display text-xl font-bold mt-3 mb-2">MAP - Fosfato Monoamônico</h3>
+                <p class="text-sm text-gray-600 mb-6">Fertilizante altamente concentrado em Fósforo e Nitrogênio, ideal para adubação de plantio.</p>
+                <div class="flex flex-col border-t pt-4">
+                    <span class="text-xs text-gray-400 uppercase font-bold">Preço Médio</span>
+                    <span class="text-2xl font-mono font-bold text-gray-800">R$ 245,00 <small class="text-sm font-normal">/ 50kg</small></span>
+                </div>
+                <span class="mt-4 inline-block text-sm font-semibold" style="color: var(--forest-green);">Ver detalhes e avaliações &rarr;</span>
+            </div>
+
+            <div class="product-card rounded-xl p-6 animate-card cursor-pointer" data-price="18.00" data-region="sul" data-group="adubos" data-product="esterco-bovino" role="button" tabindex="0">
+                <span class="category-tag bg-[#eaf7e2] text-[#066a04]">Adubo Orgânico</span>
+                <h3 class="font-display text-xl font-bold mt-3 mb-2">Esterco Bovino Curtido</h3>
+                <p class="text-sm text-gray-600 mb-6">Adubo orgânico tradicional, melhora a estrutura do solo e fornece matéria orgânica de liberação lenta.</p>
+                <div class="flex flex-col border-t pt-4">
+                    <span class="text-xs text-gray-400 uppercase font-bold">Preço Médio</span>
+                    <span class="text-2xl font-mono font-bold text-gray-800">R$ 18,00 <small class="text-sm font-normal">/ 20kg</small></span>
+                </div>
+                <span class="mt-4 inline-block text-sm font-semibold" style="color: var(--forest-green);">Ver detalhes e avaliações &rarr;</span>
+            </div>
+
+            <div class="product-card rounded-xl p-6 animate-card cursor-pointer" data-price="25.00" data-region="sudeste" data-group="adubos" data-product="composto-organico" role="button" tabindex="0">
+                <span class="category-tag bg-[#eaf7e2] text-[#066a04]">Adubo Orgânico</span>
+                <h3 class="font-display text-xl font-bold mt-3 mb-2">Composto Orgânico Compostado</h3>
+                <p class="text-sm text-gray-600 mb-6">Composto maturado a partir de resíduos vegetais, rico em matéria orgânica estável para o solo.</p>
+                <div class="flex flex-col border-t pt-4">
+                    <span class="text-xs text-gray-400 uppercase font-bold">Preço Médio</span>
+                    <span class="text-2xl font-mono font-bold text-gray-800">R$ 25,00 <small class="text-sm font-normal">/ 25kg</small></span>
+                </div>
+                <span class="mt-4 inline-block text-sm font-semibold" style="color: var(--forest-green);">Ver detalhes e avaliações &rarr;</span>
+            </div>
+
+            <div class="product-card rounded-xl p-6 animate-card cursor-pointer" data-price="22.00" data-region="sudeste" data-group="adubos" data-product="humus-minhoca" role="button" tabindex="0">
+                <span class="category-tag bg-[#eaf7e2] text-[#066a04]">Adubo Orgânico</span>
+                <h3 class="font-display text-xl font-bold mt-3 mb-2">Húmus de Minhoca</h3>
+                <p class="text-sm text-gray-600 mb-6">Adubo orgânico premium rico em microrganismos benéficos e nutrientes prontamente disponíveis.</p>
+                <div class="flex flex-col border-t pt-4">
+                    <span class="text-xs text-gray-400 uppercase font-bold">Preço Médio</span>
+                    <span class="text-2xl font-mono font-bold text-gray-800">R$ 22,00 <small class="text-sm font-normal">/ 5kg</small></span>
+                </div>
+                <span class="mt-4 inline-block text-sm font-semibold" style="color: var(--forest-green);">Ver detalhes e avaliações &rarr;</span>
+            </div>
+
+            <div class="product-card rounded-xl p-6 animate-card cursor-pointer" data-price="58.00" data-region="nordeste" data-group="adubos" data-product="farinha-osso" role="button" tabindex="0">
+                <span class="category-tag bg-[#eaf7e2] text-[#066a04]">Adubo Orgânico</span>
+                <h3 class="font-display text-xl font-bold mt-3 mb-2">Farinha de Osso</h3>
+                <p class="text-sm text-gray-600 mb-6">Adubo orgânico rico em Fósforo e Cálcio de liberação lenta, ideal para plantio de árvores frutíferas.</p>
+                <div class="flex flex-col border-t pt-4">
+                    <span class="text-xs text-gray-400 uppercase font-bold">Preço Médio</span>
+                    <span class="text-2xl font-mono font-bold text-gray-800">R$ 58,00 <small class="text-sm font-normal">/ 25kg</small></span>
+                </div>
+                <span class="mt-4 inline-block text-sm font-semibold" style="color: var(--forest-green);">Ver detalhes e avaliações &rarr;</span>
+            </div>
+
+            <div class="product-card rounded-xl p-6 animate-card cursor-pointer" data-price="40.00" data-region="centro-oeste" data-group="adubos" data-product="torta-mamona" role="button" tabindex="0">
+                <span class="category-tag bg-[#eaf7e2] text-[#066a04]">Adubo Orgânico</span>
+                <h3 class="font-display text-xl font-bold mt-3 mb-2">Torta de Mamona</h3>
+                <p class="text-sm text-gray-600 mb-6">Adubo orgânico e biofumigante natural, rico em Nitrogênio e com ação repelente de nematoides.</p>
+                <div class="flex flex-col border-t pt-4">
+                    <span class="text-xs text-gray-400 uppercase font-bold">Preço Médio</span>
+                    <span class="text-2xl font-mono font-bold text-gray-800">R$ 40,00 <small class="text-sm font-normal">/ 20kg</small></span>
+                </div>
+                <span class="mt-4 inline-block text-sm font-semibold" style="color: var(--forest-green);">Ver detalhes e avaliações &rarr;</span>
+            </div>
+
+            <div class="product-card rounded-xl p-6 animate-card cursor-pointer" data-price="52.00" data-region="norte" data-group="substratos" data-product="perlita-expandida" role="button" tabindex="0">
+                <span class="category-tag bg-amber-100 text-amber-800">Substrato</span>
+                <h3 class="font-display text-xl font-bold mt-3 mb-2">Perlita Expandida</h3>
+                <p class="text-sm text-gray-600 mb-6">Mineral vulcânico expandido, extremamente leve, melhora a drenagem e aeração de substratos.</p>
+                <div class="flex flex-col border-t pt-4">
+                    <span class="text-xs text-gray-400 uppercase font-bold">Preço Médio</span>
+                    <span class="text-2xl font-mono font-bold text-gray-800">R$ 52,00 <small class="text-sm font-normal">/ 100L</small></span>
+                </div>
+                <span class="mt-4 inline-block text-sm font-semibold" style="color: var(--forest-green);">Ver detalhes e avaliações &rarr;</span>
+            </div>
+
+            <div class="product-card rounded-xl p-6 animate-card cursor-pointer" data-price="48.00" data-region="norte" data-group="defensivos" data-product="formicida-granulado" role="button" tabindex="0">
+                <span class="category-tag bg-red-100 text-red-800">Defensivo</span>
+                <h3 class="font-display text-xl font-bold mt-3 mb-2">Formicida Granulado</h3>
+                <p class="text-sm text-gray-600 mb-6">Isca granulada para controle de formigas cortadeiras, com ação lenta e transporte para o formigueiro.</p>
+                <div class="flex flex-col border-t pt-4">
+                    <span class="text-xs text-gray-400 uppercase font-bold">Preço Médio</span>
+                    <span class="text-2xl font-mono font-bold text-gray-800">R$ 48,00 <small class="text-sm font-normal">/ kg</small></span>
+                </div>
+                <span class="mt-4 inline-block text-sm font-semibold" style="color: var(--forest-green);">Ver detalhes e avaliações &rarr;</span>
+            </div>
+
+        </div>
+
+        <p id="noResults" class="hidden text-center text-gray-500 italic py-16">Nenhum insumo encontrado para a sua busca.</p>
+    </main>
+
+    <div id="productModal" class="fixed inset-0 z-[9999] hidden">
+        <div class="absolute inset-0 bg-black/50" onclick="closeProductModal()"></div>
+        <div class="absolute inset-0 flex items-center justify-center p-4 pointer-events-none">
+            <div class="bg-white rounded-2xl max-w-2xl w-full max-h-[85vh] overflow-y-auto shadow-2xl pointer-events-auto">
+                <div class="p-6 sm:p-8">
+                    <div class="flex justify-between items-start mb-4 gap-4">
+                        <span id="modalCategory" class="category-tag"></span>
+                        <button type="button" aria-label="Fechar" onclick="closeProductModal()" class="text-gray-400 hover:text-gray-700 shrink-0">
+                            <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" xmlns="http://www.w3.org/2000/svg">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                        </button>
+                    </div>
+
+                    <h3 id="modalName" class="font-display text-2xl sm:text-3xl font-bold mb-2"></h3>
+
+                    <div class="flex items-center gap-2 mb-5">
+                        <span id="modalStars" class="text-amber-500 text-lg leading-none"></span>
+                        <span id="modalRatingText" class="text-sm text-gray-500"></span>
+                    </div>
+
+                    <p id="modalDescription" class="text-gray-600 mb-6"></p>
+
+                    <div class="grid sm:grid-cols-2 gap-4 mb-8">
+                        <div class="border rounded-lg p-4" style="border-color: var(--light-border);">
+                            <span class="text-xs text-gray-400 uppercase font-bold">Preço Médio</span>
+                            <div id="modalPrice" class="text-xl font-mono font-bold text-gray-800 mt-1"></div>
+                        </div>
+                        <div class="border rounded-lg p-4" style="border-color: var(--light-border);">
+                            <span class="text-xs text-gray-400 uppercase font-bold">Vendido por</span>
+                            <div id="modalCompany" class="font-semibold text-gray-800 mt-1"></div>
+                            <div id="modalLocation" class="text-sm text-gray-500"></div>
+                        </div>
+                    </div>
+
+                    <h4 class="font-display text-lg font-bold mb-4 border-t pt-5" style="color: var(--forest-green);">Avaliações de clientes</h4>
+                    <div id="modalReviews" class="space-y-4"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="site-footer"></div>
+
+    <script src="footer.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            anime({
+                targets: '.animate-card',
+                opacity: [0, 1],
+                translateY: [20, 0],
+                delay: anime.stagger(60),
+                duration: 600,
+                easing: 'easeOutQuart'
+            });
+        });
+
+        function toggleMenu(open) {
+            const menu = document.getElementById('slideMenu');
+            if (!menu) return;
+            menu.classList.toggle('hidden', !open);
+            document.body.style.overflow = open ? 'hidden' : '';
+        }
+
+        (function() {
+            const grid = document.getElementById('productsGrid');
+            const noResults = document.getElementById('noResults');
+            const searchInput = document.getElementById('searchInput');
+            const categoryFilter = document.getElementById('categoryFilter');
+            const regionFilter = document.getElementById('regionFilter');
+            const priceMin = document.getElementById('priceMin');
+            const priceMax = document.getElementById('priceMax');
+            const priceMinLabel = document.getElementById('priceMinLabel');
+            const priceMaxLabel = document.getElementById('priceMaxLabel');
+            const priceRangeFill = document.getElementById('priceRangeFill');
+            const cards = Array.from(grid.children);
+
+            const accentMap = { 'á':'a','à':'a','â':'a','ã':'a','é':'e','ê':'e','í':'i','ó':'o','ô':'o','õ':'o','ú':'u','ü':'u','ç':'c' };
+            function normalize(str) {
+                return str.toLowerCase().replace(/[áàâãéêíóôõúüç]/g, ch => accentMap[ch]);
+            }
+
+            function updatePriceRangeUI() {
+                let minV = parseInt(priceMin.value, 10);
+                let maxV = parseInt(priceMax.value, 10);
+                if (minV > maxV) {
+                    [priceMin.value, priceMax.value] = [maxV, minV];
+                    minV = parseInt(priceMin.value, 10);
+                    maxV = parseInt(priceMax.value, 10);
+                }
+                priceMinLabel.textContent = 'R$ ' + minV;
+                priceMaxLabel.textContent = 'R$ ' + maxV;
+
+                const rangeMin = parseInt(priceMin.min, 10);
+                const rangeMax = parseInt(priceMin.max, 10);
+                const leftPct = ((minV - rangeMin) / (rangeMax - rangeMin)) * 100;
+                const rightPct = ((maxV - rangeMin) / (rangeMax - rangeMin)) * 100;
+                priceRangeFill.style.left = leftPct + '%';
+                priceRangeFill.style.width = Math.max(0, rightPct - leftPct) + '%';
+            }
+
+            function applyFilters() {
+                const query = normalize(searchInput.value.trim());
+                const category = categoryFilter.value;
+                const region = regionFilter.value;
+                const minV = parseFloat(priceMin.value);
+                const maxV = parseFloat(priceMax.value);
+
+                const visibleCards = cards.filter(card => {
+                    const text = normalize(card.textContent);
+                    const price = parseFloat(card.dataset.price);
+                    const matchesQuery = !query || text.includes(query);
+                    const matchesCategory = !category || card.dataset.group === category;
+                    const matchesRegion = !region || card.dataset.region === region;
+                    const matchesPrice = price >= minV && price <= maxV;
+                    const matches = matchesQuery && matchesCategory && matchesRegion && matchesPrice;
+                    card.classList.toggle('hidden', !matches);
+                    return matches;
+                });
+
+                noResults.classList.toggle('hidden', visibleCards.length > 0);
+            }
+
+            searchInput.addEventListener('input', applyFilters);
+            categoryFilter.addEventListener('change', applyFilters);
+            regionFilter.addEventListener('change', applyFilters);
+            [priceMin, priceMax].forEach(input => {
+                input.addEventListener('input', function() {
+                    updatePriceRangeUI();
+                    applyFilters();
+                });
+            });
+
+            updatePriceRangeUI();
+
+            grid.addEventListener('click', function(e) {
+                const card = e.target.closest('.product-card');
+                if (card) openProductModal(card.dataset.product);
+            });
+            grid.addEventListener('keydown', function(e) {
+                if ((e.key === 'Enter' || e.key === ' ') && e.target.classList.contains('product-card')) {
+                    e.preventDefault();
+                    openProductModal(e.target.dataset.product);
+                }
+            });
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape') closeProductModal();
+            });
+        })();
+
+        const REGION_LABELS = {
+            norte: 'Região Norte',
+            nordeste: 'Região Nordeste',
+            'centro-oeste': 'Região Centro-Oeste',
+            sudeste: 'Região Sudeste',
+            sul: 'Região Sul'
+        };
+
+        const productDetails = {
+            'calcario-dolomitico': {
+                name: 'Calcário Dolomítico',
+                categoryLabel: 'Corretivo',
+                categoryClass: 'bg-[#eaf7e2] text-[#066a04]',
+                description: 'Corretivo de acidez do solo composto por carbonatos de cálcio e magnésio. Eleva o pH gradualmente, melhora a disponibilidade de nutrientes e fortalece a estrutura radicular. Recomenda-se aplicação 60 a 90 dias antes do plantio, incorporado aos 20cm superficiais do solo.',
+                priceLabel: 'R$ 42,00 / 50kg',
+                region: 'sudeste',
+                rating: 4.6,
+                reviewCount: 128,
+                reviews: [
+                    { name: 'Carlos E.', stars: 5, date: 'há 2 semanas', comment: 'Granulometria fina, dissolveu rápido e o pH subiu como esperado na análise seguinte.' },
+                    { name: 'Marina S.', stars: 4, date: 'há 1 mês', comment: 'Bom custo-benefício. Entrega demorou alguns dias além do prometido.' },
+                    { name: 'João P.', stars: 5, date: 'há 2 meses', comment: 'Uso todo ano na propriedade, produto consistente e bem embalado.' }
+                ]
+            },
+            'calcario-calcitico': {
+                name: 'Calcário Calcítico',
+                categoryLabel: 'Corretivo',
+                categoryClass: 'bg-[#eaf7e2] text-[#066a04]',
+                description: 'Corretivo de acidez do solo à base de carbonato de cálcio, com menor teor de magnésio que o dolomítico. Indicado para solos que já possuem bons níveis de Mg, evitando desequilíbrio na relação Ca:Mg. Reação mais rápida no solo.',
+                priceLabel: 'R$ 39,00 / 50kg',
+                region: 'sul',
+                rating: 4.4,
+                reviewCount: 47,
+                reviews: [
+                    { name: 'Roberto F.', stars: 4, date: 'há 1 mês', comment: 'Bom para quem já corrigiu o Mg antes, funcionou bem na minha área de pastagem.' },
+                    { name: 'Juliana P.', stars: 5, date: 'há 3 semanas', comment: 'Reação rápida, já vi diferença na análise de solo em 45 dias.' }
+                ]
+            },
+            'gesso-agricola': {
+                name: 'Gesso Agrícola',
+                categoryLabel: 'Corretivo',
+                categoryClass: 'bg-[#eaf7e2] text-[#066a04]',
+                description: 'Subproduto da produção de superfosfato triplo, rico em Cálcio e Enxofre na forma de sulfato. Ajuda a neutralizar o alumínio tóxico em subsuperfície e melhora o desenvolvimento radicular em profundidade, sendo um complemento à calagem e não um substituto.',
+                priceLabel: 'R$ 48,00 / 50kg',
+                region: 'centro-oeste',
+                rating: 4.5,
+                reviewCount: 58,
+                reviews: [
+                    { name: 'Anderson M.', stars: 5, date: 'há 2 semanas', comment: 'Uso junto com o calcário há anos, ótimo para soja em solo argiloso.' },
+                    { name: 'Patrícia C.', stars: 4, date: 'há 1 mês', comment: 'Bom produto, mas é importante saber que não substitui a calagem.' }
+                ]
+            },
+            'calcario-filler': {
+                name: 'Calcário Filler',
+                categoryLabel: 'Corretivo',
+                categoryClass: 'bg-[#eaf7e2] text-[#066a04]',
+                description: 'Calcário calcítico moído em granulometria extra fina (filler), com altíssima reatividade e ação rápida sobre o pH do solo. Indicado para pequenas áreas, canteiros e correções pontuais onde se busca resposta em curto prazo.',
+                priceLabel: 'R$ 45,00 / 50kg',
+                region: 'nordeste',
+                rating: 4.3,
+                reviewCount: 29,
+                reviews: [
+                    { name: 'Elaine R.', stars: 4, date: 'há 10 dias', comment: 'Perfeito para os canteiros da horta, dissolve rapidinho.' },
+                    { name: 'Bruno T.', stars: 4, date: 'há 1 mês', comment: 'Granulometria bem fina, gostei do resultado.' }
+                ]
+            },
+            'silicato-calcio-magnesio': {
+                name: 'Silicato de Cálcio e Magnésio',
+                categoryLabel: 'Corretivo',
+                categoryClass: 'bg-[#eaf7e2] text-[#066a04]',
+                description: 'Corretivo de acidez à base de escória silicatada, fornece Cálcio, Magnésio e Silício em forma assimilável. O Silício confere maior resistência das plantas a pragas, doenças e acamamento, sendo bastante usado em cana-de-açúcar e arroz.',
+                priceLabel: 'R$ 65,00 / 25kg',
+                region: 'sul',
+                rating: 4.5,
+                reviewCount: 22,
+                reviews: [
+                    { name: 'Fábio L.', stars: 5, date: 'há 3 semanas', comment: 'Notei as plantas mais resistentes ao ataque de pragas depois de aplicar.' },
+                    { name: 'Cristina A.', stars: 4, date: 'há 2 meses', comment: 'Produto interessante, só achei o preço um pouco salgado.' }
+                ]
+            },
+            'cloreto-potassio': {
+                name: 'Cloreto de Potássio (KCl)',
+                categoryLabel: 'Mineral',
+                categoryClass: 'bg-[#eaf7e2] text-[#066a04]',
+                description: 'Fertilizante mineral com alta concentração de Potássio (58-60% K2O), essencial para o transporte de açúcares, ativação enzimática e resistência das plantas a estresse hídrico e doenças. Indicado para adubação de cobertura em culturas de grãos e fruticultura.',
+                priceLabel: 'R$ 185,00 / 50kg',
+                region: 'centro-oeste',
+                rating: 4.3,
+                reviewCount: 89,
+                reviews: [
+                    { name: 'Rodrigo A.', stars: 4, date: 'há 3 semanas', comment: 'Produto de qualidade, mas o preço variou bastante em relação ao anunciado.' },
+                    { name: 'Fernanda L.', stars: 5, date: 'há 1 mês', comment: 'Excelente resposta na soja, folhas mais resistentes ao final do ciclo.' }
+                ]
+            },
+            'superfosfato-simples': {
+                name: 'Superfosfato Simples',
+                categoryLabel: 'Fertilizante',
+                categoryClass: 'bg-blue-100 text-blue-800',
+                description: 'Fonte de Fósforo (18-20% P2O5), Enxofre e Cálcio, fundamental para o desenvolvimento do sistema radicular e para a formação de flores e sementes. Recomendado na fundação da lavoura, aplicado no sulco de plantio.',
+                priceLabel: 'R$ 140,00 / 50kg',
+                region: 'sudeste',
+                rating: 4.5,
+                reviewCount: 76,
+                reviews: [
+                    { name: 'Paulo H.', stars: 5, date: 'há 10 dias', comment: 'Enraizamento visivelmente melhor logo nas primeiras semanas.' },
+                    { name: 'Ana C.', stars: 4, date: 'há 1 mês', comment: 'Bom produto, embalagem de 50kg um pouco frágil no transporte.' }
+                ]
+            },
+            'npk-10-10-10': {
+                name: 'Formulação NPK 10-10-10',
+                categoryLabel: 'Fertilizante NPK',
+                categoryClass: 'bg-blue-100 text-blue-800',
+                description: 'Fertilizante balanceado de manutenção com Nitrogênio, Fósforo e Potássio em proporções iguais, indicado para adubação de manutenção em diversas culturas e plantas ornamentais ao longo do ciclo produtivo.',
+                priceLabel: 'R$ 125,00 / 50kg',
+                region: 'centro-oeste',
+                rating: 4.4,
+                reviewCount: 112,
+                reviews: [
+                    { name: 'Gabriel M.', stars: 4, date: 'há 2 semanas', comment: 'Formulação equilibrada, uso em cobertura mensal no pomar.' },
+                    { name: 'Sandra K.', stars: 5, date: 'há 1 mês', comment: 'Resultado visível nas plantas ornamentais em poucas semanas.' }
+                ]
+            },
+            'ureia': {
+                name: 'Ureia',
+                categoryLabel: 'Fertilizante Nitrogenado',
+                categoryClass: 'bg-blue-100 text-blue-800',
+                description: 'Fertilizante nitrogenado sólido com a maior concentração de Nitrogênio entre os fertilizantes sólidos comuns (45% N). Fundamental para o crescimento vegetativo, produção de clorofila e proteínas. Recomenda-se incorporação ao solo ou uso de inibidor de urease para reduzir perdas por volatilização.',
+                priceLabel: 'R$ 210,00 / 50kg',
+                region: 'norte',
+                rating: 4.2,
+                reviewCount: 74,
+                reviews: [
+                    { name: 'Rafael O.', stars: 4, date: 'há 1 semana', comment: 'Resposta rápida na lavoura, mas exige cuidado na aplicação para não perder N.' },
+                    { name: 'Simone V.', stars: 4, date: 'há 1 mês', comment: 'Bom fertilizante, uso incorporado sempre para evitar volatilização.' }
+                ]
+            },
+            'esterco-galinha': {
+                name: 'Esterco de Galinha Curtido',
+                categoryLabel: 'Fertilizante Orgânico',
+                categoryClass: 'bg-[#eaf7e2] text-[#066a04]',
+                description: 'Fertilizante orgânico rico em Nitrogênio e matéria orgânica, já curtido para reduzir odor e evitar queima das raízes. Melhora a estrutura e a atividade biológica do solo, com liberação de nutrientes de rápida a média mineralização.',
+                priceLabel: 'R$ 15,00 / 20kg',
+                region: 'sudeste',
+                rating: 4.5,
+                reviewCount: 32,
+                reviews: [
+                    { name: 'Isabela G.', stars: 5, date: 'há 4 dias', comment: 'Bem curtido mesmo, sem cheiro forte. Hortaliças responderam muito bem.' },
+                    { name: 'Vitor S.', stars: 4, date: 'há 3 semanas', comment: 'Bom produto, preço justo para quantidade orgânica que traz.' }
+                ]
+            },
+            'turfa-sphagnum': {
+                name: 'Turfa de Sphagnum fibra fina',
+                categoryLabel: 'Substrato',
+                categoryClass: 'bg-amber-100 text-amber-800',
+                description: 'Material orgânico de origem vegetal com excelente capacidade de retenção hídrica e aeração, baixo pH natural e ausência de patógenos. Ideal para produção de mudas em bandejas e substratos para plantas ornamentais e hortaliças.',
+                priceLabel: 'R$ 95,00 / 40kg',
+                region: 'sul',
+                rating: 4.8,
+                reviewCount: 54,
+                reviews: [
+                    { name: 'Beatriz M.', stars: 5, date: 'há 5 dias', comment: 'Textura excelente, germinação uniforme em todas as bandejas.' },
+                    { name: 'Diego F.', stars: 5, date: 'há 3 semanas', comment: 'Melhor turfa que já usei no viveiro, recomendo sem dúvida.' }
+                ]
+            },
+            'casca-arroz-carbonizada': {
+                name: 'Casca de Arroz Carbonizada',
+                categoryLabel: 'Substrato',
+                categoryClass: 'bg-amber-100 text-amber-800',
+                description: 'Condicionador de solo obtido pela carbonização controlada da casca de arroz. Melhora a drenagem e a aeração do substrato, é leve, estéril e livre de sementes de plantas daninhas e patógenos. Muito usado em misturas de substrato para viveiros.',
+                priceLabel: 'R$ 38,00 / 100L',
+                region: 'sul',
+                rating: 4.4,
+                reviewCount: 41,
+                reviews: [
+                    { name: 'Renata T.', stars: 4, date: 'há 2 semanas', comment: 'Ótimo para misturar com terra vegetal, deixou o substrato bem mais leve.' },
+                    { name: 'Marcos V.', stars: 5, date: 'há 1 mês', comment: 'Chegou seco e limpo, sem impurezas. Vou comprar de novo.' }
+                ]
+            },
+            'fibra-coco': {
+                name: 'Fibra de Coco',
+                categoryLabel: 'Substrato',
+                categoryClass: 'bg-amber-100 text-amber-800',
+                description: 'Substrato obtido da fibra da casca de coco, processado e lavado para reduzir salinidade. Possui excelente capacidade de retenção de água aliada a boa aeração, além de ser uma fonte renovável e biodegradável, ideal para produção de mudas e cultivo em vasos.',
+                priceLabel: 'R$ 55,00 / 45kg',
+                region: 'nordeste',
+                rating: 4.6,
+                reviewCount: 38,
+                reviews: [
+                    { name: 'Henrique D.', stars: 5, date: 'há 5 dias', comment: 'Excelente retenção de água, minhas mudas nunca ficaram tão bem.' },
+                    { name: 'Tatiane B.', stars: 5, date: 'há 3 semanas', comment: 'Substrato leve e de ótima qualidade, super recomendo.' }
+                ]
+            },
+            'vermiculita-expandida': {
+                name: 'Vermiculita Expandida',
+                categoryLabel: 'Substrato',
+                categoryClass: 'bg-amber-100 text-amber-800',
+                description: 'Mineral micáceo expandido termicamente, resultando em um material leve, poroso e estéril. Melhora a aeração, retenção de água e nutrientes quando misturado a outros componentes de substrato, sendo muito usado em sementeiras e vasos.',
+                priceLabel: 'R$ 60,00 / 100L',
+                region: 'sudeste',
+                rating: 4.5,
+                reviewCount: 33,
+                reviews: [
+                    { name: 'Leonardo S.', stars: 4, date: 'há 2 semanas', comment: 'Ótima para misturar com terra, deixou o vaso bem mais leve.' },
+                    { name: 'Débora N.', stars: 5, date: 'há 1 mês', comment: 'Uso nas sementeiras, germinação excelente.' }
+                ]
+            },
+            'substrato-hortalicas': {
+                name: 'Substrato para Hortaliças',
+                categoryLabel: 'Substrato',
+                categoryClass: 'bg-amber-100 text-amber-800',
+                description: 'Substrato já formulado e balanceado, combinando matéria orgânica, casca de pinus e vermiculita, pronto para uso no cultivo de hortaliças em vasos, floreiras e canteiros elevados, sem necessidade de mistura adicional.',
+                priceLabel: 'R$ 32,00 / 20L',
+                region: 'norte',
+                rating: 4.4,
+                reviewCount: 19,
+                reviews: [
+                    { name: 'Vanessa H.', stars: 5, date: 'há 1 semana', comment: 'Pronto para uso mesmo, minha horta em vasos ficou linda.' },
+                    { name: 'Guilherme K.', stars: 4, date: 'há 1 mês', comment: 'Bom substrato, só achei o pacote de 20L um pouco pequeno.' }
+                ]
+            },
+            'fungicida-cuprico': {
+                name: 'Fungicida Cúprico',
+                categoryLabel: 'Defensivo',
+                categoryClass: 'bg-red-100 text-red-800',
+                description: 'Defensivo à base de cobre para controle preventivo de doenças fúngicas e bacterianas como requeima e cancro cítrico. Baixa toxicidade residual e ação de contato. Aplicar antes do fechamento de copa, respeitando o intervalo de segurança da cultura.',
+                priceLabel: 'R$ 55,00 / kg',
+                region: 'sudeste',
+                rating: 4.2,
+                reviewCount: 63,
+                reviews: [
+                    { name: 'Luciana R.', stars: 4, date: 'há 3 semanas', comment: 'Funciona bem como preventivo, mas precisa reaplicar após chuva forte.' },
+                    { name: 'Eduardo N.', stars: 4, date: 'há 2 meses', comment: 'Bom custo-benefício comparado a outros fungicidas cúpricos do mercado.' }
+                ]
+            },
+            'bacillus-thuringiensis': {
+                name: 'Bacillus thuringiensis',
+                categoryLabel: 'Defensivo Biológico',
+                categoryClass: 'bg-red-100 text-red-800',
+                description: 'Inseticida biológico à base da bactéria Bacillus thuringiensis, altamente eficaz contra lagartas desfolhadoras. Age por ingestão, é seletivo e não afeta inimigos naturais nem polinizadores, sendo indicado para manejo integrado de pragas.',
+                priceLabel: 'R$ 110,00 / Litro',
+                region: 'sudeste',
+                rating: 4.7,
+                reviewCount: 97,
+                reviews: [
+                    { name: 'Camila D.', stars: 5, date: 'há 1 semana', comment: 'Reduziu a infestação de lagartas em poucos dias, sem afetar as abelhas.' },
+                    { name: 'Thiago B.', stars: 5, date: 'há 1 mês', comment: 'Produto biológico de verdade, resultado consistente em toda a safra.' },
+                    { name: 'Priscila W.', stars: 4, date: 'há 2 meses', comment: 'Ótimo produto, só precisa de aplicação mais frequente que os químicos.' }
+                ]
+            },
+            'herbicida-pos-emergente': {
+                name: 'Herbicida Pós-emergente',
+                categoryLabel: 'Defensivo',
+                categoryClass: 'bg-red-100 text-red-800',
+                description: 'Herbicida de ação sistêmica para controle de plantas daninhas de folha larga e estreita já emergidas na lavoura. Absorvido pelas folhas e translocado até as raízes, interrompendo o desenvolvimento da planta daninha sem prejudicar a cultura quando aplicado conforme a bula.',
+                priceLabel: 'R$ 78,00 / Litro',
+                region: 'centro-oeste',
+                rating: 4.1,
+                reviewCount: 51,
+                reviews: [
+                    { name: 'Marcelo Q.', stars: 4, date: 'há 2 semanas', comment: 'Bom controle das daninhas, só precisa aplicar no ponto certo de umidade.' },
+                    { name: 'Adriana F.', stars: 4, date: 'há 1 mês', comment: 'Funcionou bem na minha lavoura de milho, sem fitotoxidade.' }
+                ]
+            },
+            'inseticida-piretroide': {
+                name: 'Inseticida Piretroide',
+                categoryLabel: 'Defensivo',
+                categoryClass: 'bg-red-100 text-red-800',
+                description: 'Inseticida piretroide de contato e ingestão, com ação de choque sobre o sistema nervoso das pragas. Amplo espectro de controle contra insetos sugadores e mastigadores, com curto intervalo de segurança para a maioria das culturas.',
+                priceLabel: 'R$ 92,00 / Litro',
+                region: 'nordeste',
+                rating: 4.0,
+                reviewCount: 44,
+                reviews: [
+                    { name: 'Wagner P.', stars: 4, date: 'há 3 semanas', comment: 'Ação rápida contra as pragas, mas o efeito residual é curto.' },
+                    { name: 'Larissa M.', stars: 4, date: 'há 1 mês', comment: 'Bom custo-benefício para controle emergencial.' }
+                ]
+            },
+            'oleo-mineral-adjuvante': {
+                name: 'Óleo Mineral Adjuvante',
+                categoryLabel: 'Defensivo',
+                categoryClass: 'bg-red-100 text-red-800',
+                description: 'Óleo mineral emulsionável usado como adjuvante em caldas de pulverização, melhorando a espalhabilidade, adesão e penetração de defensivos foliares nas folhas das plantas, aumentando a eficácia do produto aplicado.',
+                priceLabel: 'R$ 35,00 / Litro',
+                region: 'sul',
+                rating: 4.3,
+                reviewCount: 27,
+                reviews: [
+                    { name: 'Otávio C.', stars: 5, date: 'há 1 semana', comment: 'Melhorou muito a eficiência da pulverização, virou item fixo na calda.' },
+                    { name: 'Renata P.', stars: 4, date: 'há 1 mês', comment: 'Bom adjuvante, recomendo usar sempre a dose indicada na bula.' }
+                ]
+            },
+            'cal-hidratada': {
+                name: 'Cal Hidratada Agrícola',
+                categoryLabel: 'Corretivo',
+                categoryClass: 'bg-[#eaf7e2] text-[#066a04]',
+                description: 'Corretivo de acidez obtido pela hidratação da cal virgem, com reação muito mais rápida que o calcário. Indicado para correções emergenciais e para desinfecção de viveiros e instalações, mas exige cuidado no manuseio por ser cáustico.',
+                priceLabel: 'R$ 35,00 / 40kg',
+                region: 'nordeste',
+                rating: 4.2,
+                reviewCount: 24,
+                reviews: [
+                    { name: 'Denis A.', stars: 4, date: 'há 2 semanas', comment: 'Ação rápida mesmo, só precisa ter cuidado ao manusear.' },
+                    { name: 'Silvana T.', stars: 4, date: 'há 1 mês', comment: 'Usei para desinfetar o viveiro, funcionou bem.' }
+                ]
+            },
+            'sulfato-amonio': {
+                name: 'Sulfato de Amônio',
+                categoryLabel: 'Fertilizante',
+                categoryClass: 'bg-blue-100 text-blue-800',
+                description: 'Fertilizante mineral com 20% de Nitrogênio e 24% de Enxofre na forma de sulfato, com baixo potencial de volatilização comparado à ureia. Muito usado em coberturas de cana-de-açúcar, café e culturas com alta demanda de enxofre.',
+                priceLabel: 'R$ 165,00 / 50kg',
+                region: 'sul',
+                rating: 4.3,
+                reviewCount: 41,
+                reviews: [
+                    { name: 'Alessandro G.', stars: 4, date: 'há 3 semanas', comment: 'Bom para cobertura, notei menos perda comparado à ureia em dias secos.' },
+                    { name: 'Cíntia R.', stars: 5, date: 'há 1 mês', comment: 'Excelente fonte de enxofre pro cafezal.' }
+                ]
+            },
+            'map-fosfato-monoamonico': {
+                name: 'MAP - Fosfato Monoamônico',
+                categoryLabel: 'Fertilizante',
+                categoryClass: 'bg-blue-100 text-blue-800',
+                description: 'Fertilizante granulado com alta concentração de Fósforo (52% P2O5) e Nitrogênio (11% N), totalmente solúvel em água. Muito utilizado na adubação de base do plantio, proporcionando fósforo prontamente disponível para o início do desenvolvimento radicular.',
+                priceLabel: 'R$ 245,00 / 50kg',
+                region: 'centro-oeste',
+                rating: 4.5,
+                reviewCount: 67,
+                reviews: [
+                    { name: 'Wellington D.', stars: 5, date: 'há 1 semana', comment: 'Melhor resposta em fósforo que já usei no plantio da soja.' },
+                    { name: 'Michele S.', stars: 4, date: 'há 1 mês', comment: 'Preço alto, mas o resultado compensa em solo pobre em P.' }
+                ]
+            },
+            'esterco-bovino': {
+                name: 'Esterco Bovino Curtido',
+                categoryLabel: 'Adubo Orgânico',
+                categoryClass: 'bg-[#eaf7e2] text-[#066a04]',
+                description: 'Esterco de gado curtido por período mínimo de 90 dias, reduzindo patógenos e sementes de plantas daninhas. Fornece matéria orgânica de liberação lenta, melhora a retenção de água e a atividade microbiológica do solo.',
+                priceLabel: 'R$ 18,00 / 20kg',
+                region: 'sul',
+                rating: 4.4,
+                reviewCount: 36,
+                reviews: [
+                    { name: 'Jorge P.', stars: 4, date: 'há 2 semanas', comment: 'Bem curtido, sem cheiro forte. Uso na horta há anos.' },
+                    { name: 'Aline M.', stars: 5, date: 'há 1 mês', comment: 'Ótimo adubo, solo ficou visivelmente mais solto.' }
+                ]
+            },
+            'composto-organico': {
+                name: 'Composto Orgânico Compostado',
+                categoryLabel: 'Adubo Orgânico',
+                categoryClass: 'bg-[#eaf7e2] text-[#066a04]',
+                description: 'Composto orgânico produzido pela compostagem controlada de resíduos vegetais, totalmente maturado e estabilizado. Melhora a capacidade de troca catiônica (CTC) e a retenção de água do solo, sendo indicado para qualquer tipo de cultivo.',
+                priceLabel: 'R$ 25,00 / 25kg',
+                region: 'sudeste',
+                rating: 4.6,
+                reviewCount: 29,
+                reviews: [
+                    { name: 'Natália F.', stars: 5, date: 'há 4 dias', comment: 'Cheiro de terra, bem maturado. Recomendo bastante.' },
+                    { name: 'Ricardo B.', stars: 4, date: 'há 3 semanas', comment: 'Bom composto, resultado visível nas plantas em poucas semanas.' }
+                ]
+            },
+            'humus-minhoca': {
+                name: 'Húmus de Minhoca',
+                categoryLabel: 'Adubo Orgânico',
+                categoryClass: 'bg-[#eaf7e2] text-[#066a04]',
+                description: 'Produzido pela digestão de matéria orgânica por minhocas californianas, o húmus é um dos adubos orgânicos mais ricos em microrganismos benéficos e ácidos húmicos. Nutrientes já estão em forma prontamente disponível para as plantas.',
+                priceLabel: 'R$ 22,00 / 5kg',
+                region: 'sudeste',
+                rating: 4.8,
+                reviewCount: 52,
+                reviews: [
+                    { name: 'Bianca L.', stars: 5, date: 'há 1 semana', comment: 'Uso em todos os vasos de casa, diferença absurda no crescimento.' },
+                    { name: 'Felipe N.', stars: 5, date: 'há 1 mês', comment: 'Melhor adubo orgânico que já testei, vale muito o preço.' }
+                ]
+            },
+            'farinha-osso': {
+                name: 'Farinha de Osso',
+                categoryLabel: 'Adubo Orgânico',
+                categoryClass: 'bg-[#eaf7e2] text-[#066a04]',
+                description: 'Subproduto animal moído, rico em Fósforo e Cálcio de liberação lenta e gradual. Muito indicado para o plantio de árvores frutíferas e perenes, fornecendo fósforo de forma sustentada ao longo dos meses.',
+                priceLabel: 'R$ 58,00 / 25kg',
+                region: 'nordeste',
+                rating: 4.3,
+                reviewCount: 18,
+                reviews: [
+                    { name: 'Marcela V.', stars: 4, date: 'há 2 semanas', comment: 'Uso no plantio das mudas de frutífera, bom resultado a longo prazo.' },
+                    { name: 'Igor C.', stars: 4, date: 'há 1 mês', comment: 'Produto de qualidade, só o cheiro incomoda um pouco no início.' }
+                ]
+            },
+            'torta-mamona': {
+                name: 'Torta de Mamona',
+                categoryLabel: 'Adubo Orgânico',
+                categoryClass: 'bg-[#eaf7e2] text-[#066a04]',
+                description: 'Subproduto da extração do óleo de mamona, rico em Nitrogênio orgânico (aproximadamente 5-6% N). Além do valor nutricional, possui ação biofumigante natural, ajudando no controle de nematoides do solo.',
+                priceLabel: 'R$ 40,00 / 20kg',
+                region: 'centro-oeste',
+                rating: 4.5,
+                reviewCount: 31,
+                reviews: [
+                    { name: 'Douglas H.', stars: 5, date: 'há 3 semanas', comment: 'Notei menos problema com nematoides depois que passei a usar.' },
+                    { name: 'Kelly A.', stars: 4, date: 'há 1 mês', comment: 'Bom adubo, cheiro forte mas efeito muito bom no solo.' }
+                ]
+            },
+            'perlita-expandida': {
+                name: 'Perlita Expandida',
+                categoryLabel: 'Substrato',
+                categoryClass: 'bg-amber-100 text-amber-800',
+                description: 'Mineral vulcânico expandido termicamente, resultando em grânulos brancos extremamente leves e porosos. Melhora a drenagem e a aeração de substratos, sendo muito usado em misturas para suculentas, cactos e sementeiras.',
+                priceLabel: 'R$ 52,00 / 100L',
+                region: 'norte',
+                rating: 4.6,
+                reviewCount: 25,
+                reviews: [
+                    { name: 'Yasmin O.', stars: 5, date: 'há 1 semana', comment: 'Perfeita para minha coleção de suculentas, drenagem excelente.' },
+                    { name: 'Caio R.', stars: 4, date: 'há 1 mês', comment: 'Boa perlita, só é bem leve e voa fácil se tiver vento.' }
+                ]
+            },
+            'formicida-granulado': {
+                name: 'Formicida Granulado',
+                categoryLabel: 'Defensivo',
+                categoryClass: 'bg-red-100 text-red-800',
+                description: 'Isca formicida granulada à base de sulfluramida, atrativa para formigas cortadeiras. As operárias transportam o produto até o formigueiro, eliminando toda a colônia, incluindo a rainha, em poucos dias.',
+                priceLabel: 'R$ 48,00 / kg',
+                region: 'norte',
+                rating: 4.1,
+                reviewCount: 39,
+                reviews: [
+                    { name: 'Alexandre F.', stars: 4, date: 'há 2 semanas', comment: 'Eliminou o formigueiro em poucos dias, bom produto.' },
+                    { name: 'Regiane P.', stars: 4, date: 'há 1 mês', comment: 'Funciona bem, mas precisa aplicar em dia seco para não perder eficácia.' }
+                ]
+            }
+        };
+
+        function renderStars(rating) {
+            const full = Math.round(rating);
+            let html = '';
+            for (let i = 1; i <= 5; i++) {
+                html += i <= full ? '★' : '<span class="text-gray-300">★</span>';
+            }
+            return html;
+        }
+
+        function openProductModal(slug) {
+            const data = productDetails[slug];
+            if (!data) return;
+
+            document.getElementById('modalCategory').textContent = data.categoryLabel;
+            document.getElementById('modalCategory').className = 'category-tag ' + data.categoryClass;
+            document.getElementById('modalName').textContent = data.name;
+            document.getElementById('modalStars').innerHTML = renderStars(data.rating);
+            document.getElementById('modalRatingText').textContent = data.rating.toFixed(1) + ' (' + data.reviewCount + ' avaliações)';
+            document.getElementById('modalDescription').textContent = data.description;
+            document.getElementById('modalPrice').textContent = data.priceLabel;
+            document.getElementById('modalCompany').textContent = 'Empresa Fictícia';
+            document.getElementById('modalLocation').textContent = REGION_LABELS[data.region] || '';
+
+            document.getElementById('modalReviews').innerHTML = data.reviews.map(function(r) {
+                return '<div class="border-b border-gray-100 pb-4 last:border-0 last:pb-0">' +
+                    '<div class="flex items-center justify-between mb-1">' +
+                        '<span class="font-semibold text-sm text-gray-800">' + r.name + '</span>' +
+                        '<span class="text-amber-500 text-sm">' + renderStars(r.stars) + '</span>' +
+                    '</div>' +
+                    '<p class="text-sm text-gray-600">' + r.comment + '</p>' +
+                    '<span class="text-xs text-gray-400">' + r.date + '</span>' +
+                '</div>';
+            }).join('');
+
+            document.getElementById('productModal').classList.remove('hidden');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeProductModal() {
+            document.getElementById('productModal').classList.add('hidden');
+            document.body.style.overflow = '';
+        }
+    </script>
+</body>
+</html>

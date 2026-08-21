@@ -1,0 +1,767 @@
+<!-- ============================================================================
+     index.html — página inicial e formulário de análise de solo.
+     Página protegida (redireciona para login.html sem sessão ativa). O
+     usuário digita pH, matéria orgânica, macro/micronutrientes etc.; main.js
+     calcula tudo em tempo real (score de saúde, compatibilidade com as 4
+     culturas) e "Gerar Relatório"/"Salvar Relatório" grava o resultado em
+     userStorage (localStorage isolado por usuário) para relatorios.html e
+     recommendations.html lerem depois.
+     ============================================================================ -->
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Análise Inteligente de Solo - Cycle Sown</title>
+    <script src="userStorage.js"></script>
+    <script>
+        // Guarda de rota: sem usuário logado, manda para o login antes de
+        // renderizar qualquer dado.
+        if (!userStorage.getCurrentUserId()) {
+            window.location.href = 'login.html';
+        }
+    </script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/theme.css">
+    <style>
+        :root {
+            --surface-white: rgba(255, 255, 255, 0.94);
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: radial-gradient(circle at top left, rgba(6, 106, 4, 0.12), transparent 28%),
+                        var(--cream-white);
+            color: var(--charcoal-gray);
+            line-height: 1.6;
+        }
+
+        .hero-bg {
+            background: linear-gradient(180deg, rgba(4, 63, 3, 0.28), rgba(4, 63, 3, 0.85)),
+                        url('empresas/campo.png');
+            background-size: cover;
+            background-position: center;
+            min-height: 88vh;
+        }
+
+        .hero-caption {
+            max-width: 42rem;
+            margin: 0 auto;
+        }
+
+        .glass-effect {
+            backdrop-filter: blur(18px);
+            background: rgba(255, 255, 255, 0.78);
+        }
+
+        .glass-surface {
+            background: var(--surface-white);
+            border: 1px solid rgba(148, 163, 184, 0.18);
+            box-shadow: 0 30px 60px rgba(15, 23, 42, 0.08);
+        }
+
+        .input-focus {
+            transition: border-color 0.25s ease, box-shadow 0.25s ease, transform 0.25s ease;
+        }
+        
+        .input-focus:focus {
+            border-color: var(--forest-green);
+            box-shadow: 0 0 0 4px rgba(6, 106, 4, 0.12);
+            transform: translateY(-1px);
+            outline: none;
+        }
+        
+        .animate-fade-in {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        
+        .ph-indicator {
+            background: linear-gradient(to right, 
+                var(--terracotta) 0%, 
+                var(--golden-wheat) 32%, 
+                var(--sage-green) 64%, 
+                var(--forest-green) 100%);
+            min-height: 0.75rem;
+            border-radius: 999px;
+        }
+
+        .section-heading {
+            letter-spacing: 0.03em;
+        }
+
+        .pill-badge {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            padding: 0.7rem 1rem;
+            border-radius: 999px;
+            background: rgba(6, 106, 4, 0.08);
+            color: #066a04;
+            font-weight: 700;
+            font-size: 0.82rem;
+            text-transform: uppercase;
+            letter-spacing: 0.12em;
+        }
+
+        .panel-label {
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            color: var(--medium-gray);
+            letter-spacing: 0.12em;
+        }
+
+        /* Seletor de unidade de medida ao lado dos campos numéricos do laudo
+           de solo. Cores do design system: verde primário/escuro + amarelo
+           de destaque, para diferenciar visualmente do input mas continuar
+           no mesmo grupo visual. */
+        .field-with-unit {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+
+        .field-with-unit .input-focus {
+            flex: 1 1 8rem;
+            min-width: 0;
+        }
+
+        .unit-select {
+            flex: 0 0 auto;
+            min-width: 6.75rem;
+            max-width: 100%;
+            font-family: 'Inter', sans-serif;
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: #055503;
+            background: var(--cream-white);
+            border: 1.5px solid #066a04;
+            border-radius: 0.65rem;
+            padding: 0 0.6rem;
+            cursor: pointer;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .unit-select:hover {
+            border-color: #055503;
+        }
+
+        .unit-select:focus {
+            outline: none;
+            border-color: #F9A825;
+            box-shadow: 0 0 0 3px rgba(249, 168, 37, 0.25);
+        }
+
+        @media (max-width: 768px) {
+            .hero-bg { min-height: 72vh; }
+        }
+
+        /* Upload do laudo de solo (leitura automática via IA) */
+        .laudo-upload-section {
+            width: 100%;
+        }
+
+        .laudo-upload-area {
+            border: 2px dashed #066a04;
+            border-radius: 12px;
+            background: rgba(6, 106, 4, 0.04);
+            padding: 2.25rem 1.5rem;
+            text-align: center;
+            cursor: pointer;
+            transition: background-color 0.2s ease, border-color 0.2s ease, opacity 0.2s ease;
+        }
+
+        .laudo-upload-area:hover {
+            background: rgba(6, 106, 4, 0.09);
+        }
+
+        .laudo-upload-area.drag-over {
+            border-color: #F9A825;
+            background: rgba(249, 168, 37, 0.1);
+        }
+
+        .laudo-upload-area.loading {
+            opacity: 0.6;
+            pointer-events: none;
+        }
+
+        .laudo-upload-area .upload-icon {
+            color: #066a04;
+            display: flex;
+            justify-content: center;
+            margin-bottom: 0.75rem;
+        }
+
+        .laudo-upload-area .upload-title {
+            font-weight: 600;
+            font-size: 1.05rem;
+            color: #055503;
+            margin-bottom: 0.4rem;
+        }
+
+        .laudo-upload-area .upload-subtitle {
+            font-size: 0.85rem;
+            color: var(--medium-gray);
+            line-height: 1.5;
+        }
+
+        .laudo-status {
+            margin-top: 0.9rem;
+            padding: 0.75rem 1rem;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+
+        .laudo-status.loading {
+            background: rgba(249, 168, 37, 0.12);
+            color: #8a6a10;
+            border: 1px solid rgba(249, 168, 37, 0.35);
+        }
+
+        .laudo-status.success {
+            background: rgba(6, 106, 4, 0.1);
+            color: #055503;
+            border: 1px solid rgba(6, 106, 4, 0.35);
+        }
+
+        .laudo-status.error {
+            background: rgba(198, 40, 40, 0.08);
+            color: #c62828;
+            border: 1px solid rgba(198, 40, 40, 0.25);
+        }
+
+        /* Destaque nos campos preenchidos automaticamente pela IA — some assim
+           que o agricultor clicar no campo para conferir/editar o valor. */
+        input.ai-filled,
+        select.ai-filled {
+            background-color: rgba(6, 106, 4, 0.08) !important;
+            box-shadow: 0 0 0 2px rgba(6, 106, 4, 0.35);
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="fixed top-0 w-full z-50 backdrop-blur-xl bg-white/80 border-b border-slate-200 shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center gap-3">
+                    <a href="index.html" class="flex items-center shrink-0">
+                        <img src="img/logo.png" alt="Cycle Sown" class="h-14 w-auto">
+                    </a>
+                    <button type="button" aria-label="Abrir menu" onclick="toggleMenu(true)" class="p-2 rounded-full text-slate-700 hover:bg-slate-100 transition-colors">
+                        <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" xmlns="http://www.w3.org/2000/svg">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+                        </svg>
+                    </button>
+                </div>
+                <div class="hidden md:block">
+                    <div class="ml-10 flex items-baseline space-x-8">
+                        <a href="#analysis" class="text-slate-800 hover:text-[#066a04] px-3 py-2 text-sm font-medium transition-colors">Análise</a>
+                        <a href="recommendations.html" class="text-slate-600 hover:text-[#066a04] px-3 py-2 text-sm font-medium transition-colors">Recomendações</a>
+                        <a href="relatorios.html" class="text-slate-600 hover:text-[#066a04] px-3 py-2 text-sm font-medium transition-colors">Relatórios</a>
+                        <a href="profile.html" class="text-slate-600 hover:text-[#066a04] px-3 py-2 text-sm font-medium transition-colors">Perfil</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div id="slideMenu" class="fixed inset-0 z-[9998] hidden">
+        <div class="absolute inset-0 bg-black/40 z-[9998]" onclick="toggleMenu(false)"></div>
+        <div class="absolute left-0 top-0 h-full w-72 bg-white border-r shadow-xl overflow-y-auto z-[9999]">
+            <div class="flex items-center justify-between p-5 border-b border-gray-200">
+                <span class="flex items-center gap-2">
+                    <img src="img/logo.png" alt="Cycle Sown" class="h-12 w-auto">
+                    <span class="text-lg font-semibold text-gray-900">Menu</span>
+                </span>
+                <button type="button" aria-label="Fechar menu" onclick="toggleMenu(false)" class="text-gray-600 hover:text-gray-900">
+                    <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" xmlns="http://www.w3.org/2000/svg">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+            <nav class="p-5 space-y-3">
+                <hr class="my-3">
+                <a href="calendar.html" onclick="toggleMenu(false)" class="block text-gray-900 px-4 py-3 rounded-lg hover:bg-[#eaf7e2] transition-colors">Calendário</a>
+                <a href="catalogo.html" onclick="toggleMenu(false)" class="block text-gray-900 px-4 py-3 rounded-lg hover:bg-[#eaf7e2] transition-colors">Catálogo</a>
+                <a href="produtividade.html" onclick="toggleMenu(false)" class="block text-gray-900 px-4 py-3 rounded-lg hover:bg-[#eaf7e2] transition-colors">Produtividade</a>
+                <a href="mapa-fertilidade.html" onclick="toggleMenu(false)" class="block text-gray-900 px-4 py-3 rounded-lg hover:bg-[#eaf7e2] transition-colors">Mapa de Fertilidade</a>
+                <a href="cotacoes.html" onclick="toggleMenu(false)" class="block text-gray-900 px-4 py-3 rounded-lg hover:bg-[#eaf7e2] transition-colors">Cotações</a>
+                <a href="rotacao.html" onclick="toggleMenu(false)" class="block text-gray-900 px-4 py-3 rounded-lg hover:bg-[#eaf7e2] transition-colors">Rotação</a>
+                <a href="relatorios.html" onclick="toggleMenu(false)" class="block text-gray-900 px-4 py-3 rounded-lg hover:bg-[#eaf7e2] transition-colors">Relatórios</a>
+                <a href="empresas/index.html" onclick="toggleMenu(false)" class="block text-gray-900 px-4 py-3 rounded-lg hover:bg-[#eaf7e2] transition-colors">Vender Produção</a>
+                            <a href="profile.html" onclick="toggleMenu(false)" class="block text-[#066a04] font-semibold px-4 py-3 rounded-lg hover:bg-[#eaf7e2] transition-colors">Meu Perfil</a>
+            </nav>
+        </div>
+    </div>
+
+    <div class="pt-16">
+        <!-- Hero Section -->
+        <section class="hero-bg min-h-screen flex items-center justify-center relative">
+        <div class="absolute inset-0 bg-gradient-to-b from-transparent to-[#043f03]/85 opacity-80"></div>
+        <div class="relative z-10 text-center text-white px-4 hero-caption">
+            <div class="mb-6 inline-flex items-center rounded-full bg-white/10 px-4 py-2 text-sm uppercase tracking-[0.24em] text-white/90 shadow-sm">
+                Análise de Solo Premium
+            </div>
+            <h1 class="font-display text-5xl md:text-7xl font-bold mb-6 animate-fade-in">
+                CYCLE SOWN
+            </h1>
+            <p class="text-xl md:text-2xl mb-8 font-light leading-relaxed animate-fade-in">
+                Descubra o potencial real do seu solo com análises científicas e recomendações personalizadas para otimizar a produtividade da sua propriedade.
+            </p>
+            <button onclick="scrollToAnalysis()" class="bg-[#eaf7e2] text-[#066a04] px-8 py-4 rounded-full text-lg font-semibold hover:bg-white transition-all transform hover:-translate-y-0.5 shadow-lg animate-fade-in">
+                Começar Análise
+            </button>
+        </div>
+    </section>
+
+    <!-- Main Analysis Section -->
+    <section id="analysis" class="py-20 px-4">
+        <div class="max-w-7xl mx-auto">
+            <div class="text-center mb-16">
+                <h2 class="font-display text-4xl font-bold mb-6" style="color: var(--forest-green);">Análise do Seu Solo</h2>
+                <p class="text-xl text-gray-600 max-w-3xl mx-auto">
+                    Insira os dados do seu teste de solo e receba análises em tempo real com recomendações personalizadas para otimizar a produção da sua propriedade.
+                </p>
+            </div>
+
+            <div class="grid md:grid-cols-[1.8fr_1fr] gap-8 items-start justify-items-start">
+                <!-- Input Form -->
+                <div class="space-y-10 w-full">
+                    <div class="w-full">
+                        <h3 class="font-display text-2xl font-semibold mb-8 section-heading text-[#066a04]">Dados do Solo</h3>
+
+                        <!-- Upload do Laudo de Análise de Solo (leitura automática via IA) -->
+                        <div class="mb-8 laudo-upload-section">
+                            <div id="laudo-upload-area" class="laudo-upload-area">
+                                <input type="file" id="laudo-file-input" accept=".pdf,.png,.jpg,.jpeg,.webp" hidden />
+                                <div class="upload-icon">
+                                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none"
+                                         stroke="currentColor" stroke-width="1.5"
+                                         stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                                        <polyline points="17 8 12 3 7 8"/>
+                                        <line x1="12" y1="3" x2="12" y2="15"/>
+                                    </svg>
+                                </div>
+                                <p class="upload-title">Importar Laudo de Análise de Solo</p>
+                                <p class="upload-subtitle">
+                                    Arraste o PDF ou foto do laudo aqui, ou clique para selecionar.<br/>
+                                    <small>A IA vai ler o laudo e preencher os campos automaticamente.</small>
+                                </p>
+                            </div>
+                            <div id="laudo-status" class="laudo-status" style="display: none;"></div>
+                        </div>
+                        
+                        <!-- Basic Soil Info -->
+                        <div class="mb-8">
+                            <h4 class="text-lg font-semibold mb-4 text-gray-800">Informações Básicas</h4>
+                            <div class="grid md:grid-cols-2 gap-6 mb-6">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Região</label>
+                                    <input type="text" id="region" placeholder="Ex.: Oeste Paulista" 
+                                           class="w-full px-4 py-3 border border-gray-300 rounded-lg input-focus"
+                                           oninput="updateAnalysis()">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Estado</label>
+                                    <input type="text" id="state" placeholder="Ex.: SP" 
+                                           class="w-full px-4 py-3 border border-gray-300 rounded-lg input-focus"
+                                           oninput="updateAnalysis()">
+                                </div>
+                                <div class="md:col-span-2">
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Tipo de Solo</label>
+                                    <input type="text" id="soilType" placeholder="Ex.: Latossolo Vermelho, Argiloso..." 
+                                           class="w-full px-4 py-3 border border-gray-300 rounded-lg input-focus"
+                                           oninput="updateAnalysis()">
+                                </div>
+                            </div>
+                            <div class="grid md:grid-cols-3 gap-6">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">pH (H₂O)</label>
+                                    <input type="number" id="soilPH" min="0" max="14" step="0.1" placeholder="6.5"
+                                           class="w-full px-4 py-3 border border-gray-300 rounded-lg input-focus font-mono text-lg"
+                                           oninput="updateAnalysis()">
+                                    <div class="mt-2 h-2 rounded-full ph-indicator" id="phIndicator"></div>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">pH (CaCl₂)</label>
+                                    <input type="number" id="soilPHCaCl2" min="0" max="14" step="0.1" placeholder="5.7"
+                                           class="w-full px-4 py-3 border border-gray-300 rounded-lg input-focus font-mono text-lg"
+                                           oninput="updateAnalysis()">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Matéria Orgânica</label>
+                                    <div class="field-with-unit">
+                                        <input type="number" id="organicMatter" min="0" max="10" step="0.1" placeholder="3.0"
+                                               class="px-4 py-3 border border-gray-300 rounded-lg input-focus font-mono text-lg"
+                                               oninput="updateAnalysis()">
+                                        <select id="organicMatter_unit" class="unit-select" onchange="updateAnalysis()"></select>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <button type="button" id="soilDataToggleBtn" aria-expanded="false" aria-controls="soilDataWrapper" class="w-full flex items-center justify-between gap-4 text-left group mb-8 pt-5 border-t border-gray-200 hover:border-gray-300 transition-colors">
+                            <div>
+                                <h4 class="text-lg font-semibold text-gray-800 mb-1">Acidez e Troca de Cátions</h4>
+                                <p class="text-xs text-gray-400">Mais informações abaixo: Complexo Sortivo, Textura do Solo, Macro e Micronutrientes</p>
+                            </div>
+                            <div class="flex items-center gap-1.5 shrink-0 text-gray-400 group-hover:text-gray-600">
+                                <span id="soilDataToggleLabel" class="text-xs font-medium uppercase tracking-wide">Ver mais</span>
+                                <svg id="soilDataToggleIcon" class="h-4 w-4 transition-transform duration-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" xmlns="http://www.w3.org/2000/svg">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                                </svg>
+                            </div>
+                        </button>
+                        <div id="soilDataWrapper" class="grid grid-rows-[0fr] transition-[grid-template-rows] duration-300 ease-in-out">
+                        <div class="min-h-0 overflow-hidden">
+
+                        <!-- Soil Acidity / CTC -->
+                        <div class="mb-8">
+                            <div class="grid md:grid-cols-2 gap-6">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Alumínio (Al³⁺)</label>
+                                    <div class="field-with-unit">
+                                        <input type="number" id="aluminum" min="0" max="10" step="0.01" placeholder="0.00"
+                                               class="px-4 py-3 border border-gray-300 rounded-lg input-focus font-mono"
+                                               oninput="updateAnalysis()">
+                                        <select id="aluminum_unit" class="unit-select" onchange="updateAnalysis()"></select>
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Acidez Potencial (H+Al)</label>
+                                    <div class="field-with-unit">
+                                        <input type="number" id="potentialAcidity" min="0" max="20" step="0.1" placeholder="3.60"
+                                               class="px-4 py-3 border border-gray-300 rounded-lg input-focus font-mono"
+                                               oninput="updateAnalysis()">
+                                        <select id="potentialAcidity_unit" class="unit-select" onchange="updateAnalysis()"></select>
+                                    </div>
+                                </div>
+                            </div>
+                            <div id="aluminumWarning" class="mt-3 text-sm hidden"></div>
+                        </div>
+
+                        <!-- Complexo Sortivo e Saturações -->
+                        <div class="mb-8">
+                            <h4 class="text-lg font-semibold mb-4 text-gray-800">Complexo Sortivo e Saturações</h4>
+                            <div class="grid md:grid-cols-3 gap-4 mb-6">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">SB (Soma de Bases)</label>
+                                    <div class="field-with-unit">
+                                        <input type="number" id="sb" min="0" max="50" step="0.01" placeholder="Calculado automaticamente"
+                                               class="px-4 py-3 border border-gray-300 rounded-lg input-focus font-mono"
+                                               style="background: #f5f3f0;"
+                                               oninput="updateAnalysis()">
+                                        <select id="sb_unit" class="unit-select" onchange="updateAnalysis()"></select>
+                                    </div>
+                                    <p class="mt-1 text-gray-400" style="font-size: 11px;">(calculado automaticamente)</p>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">CTC efetiva (t)</label>
+                                    <div class="field-with-unit">
+                                        <input type="number" id="ctcEfetiva" min="0" max="50" step="0.01" placeholder="Calculado automaticamente"
+                                               class="px-4 py-3 border border-gray-300 rounded-lg input-focus font-mono"
+                                               style="background: #f5f3f0;"
+                                               oninput="updateAnalysis()">
+                                        <select id="ctcEfetiva_unit" class="unit-select" onchange="updateAnalysis()"></select>
+                                    </div>
+                                    <p class="mt-1 text-gray-400" style="font-size: 11px;">(calculado automaticamente)</p>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">CTC a pH 7,0 (T)</label>
+                                    <div class="field-with-unit">
+                                        <input type="number" id="ctcPH7" min="0" max="50" step="0.01" placeholder="Calculado automaticamente"
+                                               class="px-4 py-3 border border-gray-300 rounded-lg input-focus font-mono"
+                                               style="background: #f5f3f0;"
+                                               oninput="updateAnalysis()">
+                                        <select id="ctcPH7_unit" class="unit-select" onchange="updateAnalysis()"></select>
+                                    </div>
+                                    <p class="mt-1 text-gray-400" style="font-size: 11px;">(calculado automaticamente)</p>
+                                </div>
+                            </div>
+                            <div class="grid md:grid-cols-3 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">V% (Sat. Bases)</label>
+                                    <input type="number" id="vPercent" min="0" max="100" step="0.1" placeholder="Calculado automaticamente"
+                                           class="w-full px-4 py-3 border border-gray-300 rounded-lg input-focus font-mono"
+                                           style="background: #f5f3f0;"
+                                           oninput="updateAnalysis()">
+                                    <p class="mt-1 text-gray-400" style="font-size: 11px;">(calculado automaticamente)</p>
+                                    <div class="mt-2 h-2 bg-gray-200 rounded-full overflow-hidden">
+                                        <div id="vPercentBar" class="h-2 rounded-full transition-all duration-500" style="width: 0%;"></div>
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">m% (Sat. Alumínio)</label>
+                                    <input type="number" id="mPercent" min="0" max="100" step="0.1" placeholder="Calculado automaticamente"
+                                           class="w-full px-4 py-3 border border-gray-300 rounded-lg input-focus font-mono"
+                                           style="background: #f5f3f0;"
+                                           oninput="updateAnalysis()">
+                                    <p class="mt-1 text-gray-400" style="font-size: 11px;">(calculado automaticamente)</p>
+                                    <div class="mt-2 h-2 bg-gray-200 rounded-full overflow-hidden">
+                                        <div id="mPercentBar" class="h-2 rounded-full transition-all duration-500" style="width: 0%;"></div>
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Índice SMP</label>
+                                    <input type="number" id="indiceSMP" min="4.0" max="7.5" step="0.1" placeholder="Ex: 5.8"
+                                           class="w-full px-4 py-3 border border-gray-300 rounded-lg input-focus font-mono"
+                                           oninput="updateAnalysis()">
+                                    <p class="mt-1 text-gray-400" style="font-size: 11px;">Presente na maioria dos laudos do RS/SC</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Soil Texture -->
+                        <div class="mb-8">
+                            <h4 class="text-lg font-semibold mb-4 text-gray-800">Textura do Solo - Análise Física</h4>
+                            <div class="grid md:grid-cols-3 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Areia</label>
+                                    <div class="field-with-unit">
+                                        <input type="number" id="sandContent" min="0" max="1000" step="1" placeholder="260"
+                                               class="px-4 py-3 border border-gray-300 rounded-lg input-focus font-mono"
+                                               oninput="updateAnalysis()">
+                                        <select id="sandContent_unit" class="unit-select" onchange="updateAnalysis()"></select>
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Silte</label>
+                                    <div class="field-with-unit">
+                                        <input type="number" id="siltContent" min="0" max="1000" step="1" placeholder="180"
+                                               class="px-4 py-3 border border-gray-300 rounded-lg input-focus font-mono"
+                                               oninput="updateAnalysis()">
+                                        <select id="siltContent_unit" class="unit-select" onchange="updateAnalysis()"></select>
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Argila</label>
+                                    <div class="field-with-unit">
+                                        <input type="number" id="clayContent" min="0" max="1000" step="1" placeholder="558"
+                                               class="px-4 py-3 border border-gray-300 rounded-lg input-focus font-mono"
+                                               oninput="updateAnalysis()">
+                                        <select id="clayContent_unit" class="unit-select" onchange="updateAnalysis()"></select>
+                                    </div>
+                                </div>
+                            </div>
+                            <div id="textureSum" class="mt-2 text-xs text-gray-500"></div>
+                        </div>
+
+                        <!-- Macronutrients -->
+                        <div class="mb-8">
+                            <h4 class="text-lg font-semibold mb-4 text-gray-800">Macronutrientes</h4>
+                            <div class="grid md:grid-cols-3 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Fósforo (P)</label>
+                                    <div class="field-with-unit">
+                                        <input type="number" id="phosphorus" min="0" max="200" step="1" placeholder="15"
+                                               class="px-4 py-3 border border-gray-300 rounded-lg input-focus font-mono"
+                                               oninput="updateAnalysis()">
+                                        <select id="phosphorus_unit" class="unit-select" onchange="updateAnalysis()"></select>
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Potássio (K)</label>
+                                    <div class="field-with-unit">
+                                        <input type="number" id="potassium" min="0" max="500" step="1" placeholder="120"
+                                               class="px-4 py-3 border border-gray-300 rounded-lg input-focus font-mono"
+                                               oninput="updateAnalysis()">
+                                        <select id="potassium_unit" class="unit-select" onchange="updateAnalysis()"></select>
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Cálcio (Ca)</label>
+                                    <div class="field-with-unit">
+                                        <input type="number" id="calcium" min="0" max="5000" step="1" placeholder="800"
+                                               class="px-4 py-3 border border-gray-300 rounded-lg input-focus font-mono"
+                                               oninput="updateAnalysis()">
+                                        <select id="calcium_unit" class="unit-select" onchange="updateAnalysis()"></select>
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Magnésio (Mg)</label>
+                                    <div class="field-with-unit">
+                                        <input type="number" id="magnesium" min="0" max="1000" step="1" placeholder="120"
+                                               class="px-4 py-3 border border-gray-300 rounded-lg input-focus font-mono"
+                                               oninput="updateAnalysis()">
+                                        <select id="magnesium_unit" class="unit-select" onchange="updateAnalysis()"></select>
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Enxofre (S)</label>
+                                    <div class="field-with-unit">
+                                        <input type="number" id="sulfur" min="0" max="100" step="1" placeholder="12"
+                                               class="px-4 py-3 border border-gray-300 rounded-lg input-focus font-mono"
+                                               oninput="updateAnalysis()">
+                                        <select id="sulfur_unit" class="unit-select" onchange="updateAnalysis()"></select>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Micronutrients -->
+                        <div class="mb-8">
+                            <h4 class="text-lg font-semibold mb-4 text-gray-800">Micronutrientes</h4>
+                            <div class="grid md:grid-cols-3 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Ferro (Fe)</label>
+                                    <div class="field-with-unit">
+                                        <input type="number" id="iron" min="0" max="200" step="0.1" placeholder="45"
+                                               class="px-4 py-3 border border-gray-300 rounded-lg input-focus font-mono"
+                                               oninput="updateAnalysis()">
+                                        <select id="iron_unit" class="unit-select" onchange="updateAnalysis()"></select>
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Manganês (Mn)</label>
+                                    <div class="field-with-unit">
+                                        <input type="number" id="manganese" min="0" max="200" step="0.1" placeholder="25"
+                                               class="px-4 py-3 border border-gray-300 rounded-lg input-focus font-mono"
+                                               oninput="updateAnalysis()">
+                                        <select id="manganese_unit" class="unit-select" onchange="updateAnalysis()"></select>
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Zinco (Zn)</label>
+                                    <div class="field-with-unit">
+                                        <input type="number" id="zinc" min="0" max="50" step="0.1" placeholder="2.5"
+                                               class="px-4 py-3 border border-gray-300 rounded-lg input-focus font-mono"
+                                               oninput="updateAnalysis()">
+                                        <select id="zinc_unit" class="unit-select" onchange="updateAnalysis()"></select>
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Cobre (Cu)</label>
+                                    <div class="field-with-unit">
+                                        <input type="number" id="copper" min="0" max="20" step="0.1" placeholder="1.2"
+                                               class="px-4 py-3 border border-gray-300 rounded-lg input-focus font-mono"
+                                               oninput="updateAnalysis()">
+                                        <select id="copper_unit" class="unit-select" onchange="updateAnalysis()"></select>
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Boro (B)</label>
+                                    <div class="field-with-unit">
+                                        <input type="number" id="boron" min="0" max="5" step="0.1" placeholder="0.8"
+                                               class="px-4 py-3 border border-gray-300 rounded-lg input-focus font-mono"
+                                               oninput="updateAnalysis()">
+                                        <select id="boron_unit" class="unit-select" onchange="updateAnalysis()"></select>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Analysis Dashboard -->
+                <div class="lg:col-span-1">
+                    <div class="glass-surface rounded-[2rem] p-6 card-hover space-y-6">
+                        <h3 class="font-display text-xl font-semibold mb-6 section-heading text-[#066a04]">Análise em Tempo Real</h3>
+
+                        <!-- Overall Health Score -->
+                        <div class="mb-6">
+                            <div class="flex justify-between items-center mb-2">
+                                <h4 class="font-semibold text-gray-800">Saúde Geral do Solo</h4>
+                                <span id="healthScore" class="text-2xl font-bold font-mono">0</span>
+                            </div>
+                            <div class="w-full h-2 bg-gray-200 rounded-full overflow-hidden">
+                                <div id="healthBar" class="h-2 rounded-full transition-all duration-500" style="width: 0%"></div>
+                            </div>
+                        </div>
+
+                        <!-- Cultura plantada posteriormente -->
+                        <div class="mb-4">
+                            <label for="plantedCropFollowUp" class="block text-sm font-medium text-gray-700 mb-2">Cultura plantada posteriormente</label>
+                            <select id="plantedCropFollowUp" class="w-full px-4 py-3 border border-gray-300 rounded-lg input-focus font-mono">
+                                <option value="">Não informado</option>
+                                <option value="milho">Milho</option>
+                                <option value="soja">Soja</option>
+                                <option value="trigo">Trigo</option>
+                                <option value="tabaco">Tabaco</option>
+                            </select>
+                        </div>
+
+                        <!-- Action Buttons -->
+                        <div class="space-y-3">
+                                <button onclick="saveReportAndRedirect('relatorios.html')" class="w-full bg-[#066a04] text-white py-3 rounded-lg font-semibold hover:bg-[#055503] transition-colors">
+                                    Gerar Relatório Completo
+                                </button>
+                                <button onclick="saveReport()" class="w-full border-2 border-[#066a04] text-[#066a04] py-3 rounded-lg font-semibold hover:bg-[#eaf7e2] transition-colors">
+                                    Salvar Relatório
+                                </button>
+                        </div>
+                            <div class="mt-4 text-sm text-gray-600 text-center">
+                                <strong id="savedReportCount">0</strong> relatório(s) salvo(s)
+                            </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    </div>
+
+    <div id="site-footer"></div>
+
+    <script src="js/laudo-parser-client.js"></script>
+    <script src="main.js"></script>
+    <script src="footer.js"></script>
+    <script>
+        // Initialize animations
+        document.addEventListener('DOMContentLoaded', function() {
+            // Animate fade-in elements
+            anime({
+                targets: '.animate-fade-in',
+                opacity: [0, 1],
+                translateY: [20, 0],
+                delay: anime.stagger(200),
+                duration: 800,
+                easing: 'easeOutQuart'
+            });
+
+            // Initialize analysis
+            initializeAnalysis();
+        });
+
+        function scrollToAnalysis() {
+            document.getElementById('analysis').scrollIntoView({
+                behavior: 'smooth'
+            });
+        }
+
+        function toggleMenu(open) {
+            const menu = document.getElementById('slideMenu');
+            if (!menu) return;
+            menu.classList.toggle('hidden', !open);
+            document.body.style.overflow = open ? 'hidden' : '';
+        }
+
+        (function() {
+            const btn = document.getElementById('soilDataToggleBtn');
+            const wrapper = document.getElementById('soilDataWrapper');
+            const icon = document.getElementById('soilDataToggleIcon');
+            const label = document.getElementById('soilDataToggleLabel');
+            if (!btn || !wrapper || !icon) return;
+
+            btn.addEventListener('click', function() {
+                const isOpen = btn.getAttribute('aria-expanded') === 'true';
+                btn.setAttribute('aria-expanded', String(!isOpen));
+                wrapper.classList.toggle('grid-rows-[0fr]', isOpen);
+                wrapper.classList.toggle('grid-rows-[1fr]', !isOpen);
+                icon.classList.toggle('rotate-180', !isOpen);
+                if (label) label.textContent = isOpen ? 'Ver mais' : 'Ver menos';
+            });
+        })();
+    </script>
+</body>
+</html>

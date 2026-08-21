@@ -1,0 +1,424 @@
+/* ============================================================================
+   Cycle Sown — estilos compartilhados das telas de login e cadastro.
+   Layout split-panel: painel esquerdo decorativo (gradiente verde + SVGs
+   inline) e painel direito com o formulário. Cores = paleta oficial da marca
+   (#066a04 / #5dc135 e derivadas), a mesma usada no resto do site.
+   ============================================================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+:root {
+    --verde-escuro: #043f03;
+    --verde-principal: #066a04;
+    --verde-principal-escuro: #055503;
+    --verde-claro: #5dc135;
+    --tint-bg: #eaf7e2;
+    --tint-border: #cdeab8;
+    --fundo: #f4f7f2;
+    --branco: #ffffff;
+    --cinza-borda: #d7ddd4;
+    --texto: #2f3a33;
+    --texto-suave: #6b756f;
+    --erro: #c62828;
+    --sucesso: #066a04;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+html, body {
+    height: 100%;
+}
+
+body {
+    margin: 0;
+    min-height: 100vh;
+    font-family: 'Inter', sans-serif;
+    color: var(--texto);
+    background: var(--fundo);
+}
+
+.container {
+    display: flex;
+    min-height: 100vh;
+    width: 100%;
+}
+
+/* ----------------------------------------------------------------------
+   Painel esquerdo — decorativo
+   ---------------------------------------------------------------------- */
+
+.panel-left {
+    position: relative;
+    flex: 1 1 50%;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 64px;
+    background: linear-gradient(135deg, var(--verde-escuro) 0%, var(--verde-principal) 65%, var(--verde-principal) 100%);
+}
+
+.panel-decor {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    display: block;
+}
+
+.panel-decor .decor-rotate {
+    transform-box: fill-box;
+    transform-origin: 50% 50%;
+    animation: decorSpin 70s linear infinite;
+}
+
+.panel-decor .decor-drift {
+    transform-box: fill-box;
+    transform-origin: 50% 50%;
+    animation: decorDrift 22s ease-in-out infinite;
+}
+
+@keyframes decorSpin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+@keyframes decorDrift {
+    0%, 100% { transform: translate(0, 0); }
+    50% { transform: translate(8px, -12px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .panel-decor .decor-rotate,
+    .panel-decor .decor-drift {
+        animation: none;
+    }
+}
+
+.panel-left-content {
+    position: relative;
+    z-index: 1;
+    max-width: 420px;
+}
+
+.panel-logo {
+    height: 160px;
+    width: auto;
+    margin-bottom: 28px;
+    display: block;
+}
+
+.panel-title {
+    margin: 0;
+    font-size: 38px;
+    font-weight: 800;
+    color: #ffffff;
+    line-height: 1.2;
+    letter-spacing: -0.5px;
+}
+
+.panel-subtitle {
+    margin: 16px 0 0;
+    font-size: 16px;
+    font-weight: 400;
+    color: rgba(255, 255, 255, 0.75);
+    line-height: 1.6;
+    max-width: 380px;
+}
+
+/* ----------------------------------------------------------------------
+   Painel direito — formulário
+   ---------------------------------------------------------------------- */
+
+.panel-right {
+    flex: 1 1 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 24px;
+    background: var(--fundo);
+}
+
+.form-box {
+    width: 100%;
+    max-width: 420px;
+    opacity: 0;
+    animation: formFadeIn 0.4s ease forwards;
+    animation-delay: 0.1s;
+}
+
+@keyframes formFadeIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .form-box {
+        animation: none;
+        opacity: 1;
+    }
+}
+
+.logo {
+    display: flex;
+    align-items: center;
+    margin-bottom: 28px;
+}
+
+.logo-img {
+    height: 48px;
+    width: auto;
+}
+
+.form-box h2 {
+    margin: 0 0 6px;
+    font-size: 26px;
+    font-weight: 800;
+    color: var(--texto);
+    letter-spacing: -0.3px;
+}
+
+.form-subtitle {
+    margin: 0 0 24px;
+    font-size: 14px;
+    color: var(--texto-suave);
+}
+
+/* ----------------------------------------------------------------------
+   Campos do formulário
+   ---------------------------------------------------------------------- */
+
+.auth-form label {
+    display: block;
+    font-size: 13px;
+    font-weight: 600;
+    margin-bottom: 6px;
+    color: var(--texto);
+}
+
+.auth-field {
+    margin-bottom: 18px;
+}
+
+.field-label-row {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.field-label-row a {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--verde-principal);
+    text-decoration: none;
+    white-space: nowrap;
+}
+
+.field-label-row a:hover {
+    text-decoration: underline;
+}
+
+.auth-form input {
+    width: 100%;
+    padding: 12px 14px;
+    border: 1.5px solid var(--cinza-borda);
+    border-radius: 10px;
+    font-size: 14px;
+    font-family: inherit;
+    color: var(--texto);
+    background: var(--branco);
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.auth-form input::placeholder {
+    color: #a0afa3;
+}
+
+.auth-form input:focus {
+    outline: none;
+    border-color: var(--verde-principal);
+    box-shadow: 0 0 0 3px rgba(6, 106, 4, 0.12);
+}
+
+.auth-hint {
+    font-size: 12px;
+    color: var(--texto-suave);
+    margin: 6px 0 0;
+}
+
+.password-wrap {
+    position: relative;
+}
+
+.password-wrap input {
+    padding-right: 44px;
+}
+
+.toggle-password {
+    position: absolute;
+    right: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 6px;
+    border: none;
+    background: none;
+    color: var(--texto-suave);
+    cursor: pointer;
+    border-radius: 6px;
+}
+
+.toggle-password:hover {
+    color: var(--verde-principal);
+}
+
+.toggle-password svg {
+    width: 19px;
+    height: 19px;
+}
+
+.toggle-password .icon-eye-off {
+    display: none;
+}
+
+.toggle-password.is-visible .icon-eye {
+    display: none;
+}
+
+.toggle-password.is-visible .icon-eye-off {
+    display: block;
+}
+
+/* ----------------------------------------------------------------------
+   Botão, links e mensagens
+   ---------------------------------------------------------------------- */
+
+.auth-button {
+    width: 100%;
+    padding: 14px;
+    border: none;
+    border-radius: 10px;
+    background: var(--verde-principal);
+    color: #ffffff;
+    font-size: 15px;
+    font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+    transition: background-color 0.2s ease, transform 0.1s ease;
+    margin-top: 4px;
+}
+
+.auth-button:hover:not(:disabled) {
+    background: var(--verde-principal-escuro);
+}
+
+.auth-button:active:not(:disabled) {
+    transform: scale(0.98);
+}
+
+.auth-button:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+}
+
+.auth-links {
+    margin-top: 22px;
+    text-align: center;
+    font-size: 14px;
+}
+
+.auth-links p {
+    margin: 8px 0;
+    color: var(--texto-suave);
+}
+
+.auth-links a {
+    color: var(--verde-principal);
+    text-decoration: none;
+    font-weight: 600;
+}
+
+.auth-links a:hover {
+    text-decoration: underline;
+}
+
+.auth-message {
+    display: none;
+    padding: 12px 14px;
+    border-radius: 8px;
+    font-size: 13px;
+    margin-bottom: 18px;
+}
+
+.auth-message.is-visible {
+    display: block;
+}
+
+.auth-message.is-error {
+    background: rgba(198, 40, 40, 0.08);
+    color: var(--erro);
+    border: 1px solid rgba(198, 40, 40, 0.25);
+}
+
+.auth-message.is-success {
+    background: var(--tint-bg);
+    color: var(--sucesso);
+    border: 1px solid var(--tint-border);
+}
+
+/* ----------------------------------------------------------------------
+   Mobile: painel esquerdo vira um cabeçalho compacto, sem os SVGs
+   decorativos, e o formulário ocupa o resto da tela.
+   ---------------------------------------------------------------------- */
+
+@media (max-width: 900px) {
+    .container {
+        flex-direction: column;
+    }
+
+    .panel-left {
+        flex: none;
+        padding: 32px 24px;
+    }
+
+    .panel-decor {
+        display: none;
+    }
+
+    .panel-left-content {
+        max-width: none;
+    }
+
+    .panel-logo {
+        height: 88px;
+        margin-bottom: 16px;
+    }
+
+    .panel-title {
+        font-size: 26px;
+    }
+
+    .panel-subtitle {
+        font-size: 14px;
+        margin-top: 10px;
+    }
+
+    .panel-right {
+        padding: 32px 20px 48px;
+    }
+}
+
+@media (max-width: 480px) {
+    .panel-left {
+        padding: 24px 20px;
+    }
+
+    .panel-title {
+        font-size: 22px;
+    }
+}

@@ -58,8 +58,9 @@ app.use(cors({
 app.use(express.json());
 
 // Serve os arquivos estáticos do frontend (index.html, login.html, css/, js/, img/...)
-// que ficam na pasta pai de backend/.
-const FRONTEND_DIR = path.join(__dirname, '..');
+// que ficam em backend/public/ (cópia usada em produção, porque o Railway só
+// faz deploy da pasta backend/).
+const FRONTEND_DIR = path.join(__dirname, 'public');
 console.log('FRONTEND_DIR:', FRONTEND_DIR);
 console.log('Arquivos no FRONTEND_DIR:', require('fs').readdirSync(FRONTEND_DIR));
 app.use(express.static(FRONTEND_DIR));

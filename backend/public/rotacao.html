@@ -1,0 +1,595 @@
+<!-- ============================================================================
+     rotacao.html — Planejador de Rotação de Culturas. Para cada talhão do
+     agricultor, busca em GET /api/rotacao (backend/routes/rotacao.js +
+     utils/rotacaoEngine.js) as 3 melhores culturas para a próxima safra,
+     combinando calendário agrícola, histórico de plantio (não repetir
+     família), dados de solo do talhão e preço atual da saca. Escolher uma
+     recomendação grava em POST /api/historico e atualiza o talhão via
+     PUT /api/talhoes/:id. Se a API não responder ou o agricultor ainda não
+     tiver talhões, mostra estado vazio orientando a criá-los no Mapa de
+     Fertilidade primeiro (sem dado de demonstração aqui — a recomendação
+     não faz sentido sem um talhão real).
+     ============================================================================ -->
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rotação de Culturas - Cycle Sown</title>
+    <script src="userStorage.js"></script>
+    <script>
+        if (!userStorage.getCurrentUserId()) {
+            window.location.href = 'login.html';
+        }
+    </script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/theme.css">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+
+        .badge-bom { background: #eaf7e2; color: #066a04; }
+        .badge-regular { background: #fef9c3; color: #a16207; }
+        .badge-ruim { background: #fee2e2; color: #b91c1c; }
+
+        .talhao-card { transition: transform 0.15s ease, box-shadow 0.15s ease; cursor: pointer; }
+        .talhao-card:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(0,0,0,0.08); }
+        .talhao-card.selected { outline: 2px solid #066a04; outline-offset: 2px; }
+
+        .rec-card.rank-1 { border-color: #066a04; }
+
+        @media (max-width: 700px) {
+            .detail-grid { grid-template-columns: 1fr !important; }
+        }
+    </style>
+</head>
+<body class="pt-16 bg-slate-50">
+    <nav class="fixed top-0 w-full z-50 backdrop-blur-xl bg-white/80 border-b border-slate-200 shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center gap-3">
+                    <a href="index.html" class="flex items-center shrink-0">
+                        <img src="img/logo.png" alt="Cycle Sown" class="h-14 w-auto">
+                    </a>
+                    <button type="button" aria-label="Abrir menu" onclick="toggleMenu(true)" class="p-2 rounded-full text-slate-700 hover:bg-slate-100 transition-colors">
+                        <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" xmlns="http://www.w3.org/2000/svg">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+                        </svg>
+                    </button>
+                </div>
+                <div class="hidden md:block">
+                    <div class="ml-10 flex items-baseline space-x-8">
+                        <a href="index.html#analysis" class="text-slate-600 hover:text-[#066a04] px-3 py-2 text-sm font-medium transition-colors">Análise</a>
+                        <a href="recommendations.html" class="text-slate-600 hover:text-[#066a04] px-3 py-2 text-sm font-medium transition-colors">Recomendações</a>
+                        <a href="relatorios.html" class="text-slate-600 hover:text-[#066a04] px-3 py-2 text-sm font-medium transition-colors">Relatórios</a>
+                        <a href="profile.html" class="text-slate-600 hover:text-[#066a04] px-3 py-2 text-sm font-medium transition-colors">Perfil</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div id="slideMenu" class="fixed inset-0 z-[9998] hidden">
+        <div class="absolute inset-0 bg-black/40 z-[9998]" onclick="toggleMenu(false)"></div>
+        <div class="absolute left-0 top-0 h-full w-72 bg-white border-r shadow-xl overflow-y-auto z-[9999]">
+            <div class="flex items-center justify-between p-5 border-b border-gray-200">
+                <span class="flex items-center gap-2">
+                    <img src="img/logo.png" alt="Cycle Sown" class="h-12 w-auto">
+                    <span class="text-lg font-semibold text-gray-900">Menu</span>
+                </span>
+                <button type="button" aria-label="Fechar menu" onclick="toggleMenu(false)" class="text-gray-600 hover:text-gray-900">
+                    <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" xmlns="http://www.w3.org/2000/svg">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+            <nav class="p-5 space-y-3">
+                <hr class="my-3">
+                <a href="calendar.html" onclick="toggleMenu(false)" class="block text-gray-900 px-4 py-3 rounded-lg hover:bg-[#eaf7e2] transition-colors">Calendário</a>
+                <a href="catalogo.html" onclick="toggleMenu(false)" class="block text-gray-900 px-4 py-3 rounded-lg hover:bg-[#eaf7e2] transition-colors">Catálogo</a>
+                <a href="produtividade.html" onclick="toggleMenu(false)" class="block text-gray-900 px-4 py-3 rounded-lg hover:bg-[#eaf7e2] transition-colors">Produtividade</a>
+                <a href="mapa-fertilidade.html" onclick="toggleMenu(false)" class="block text-gray-900 px-4 py-3 rounded-lg hover:bg-[#eaf7e2] transition-colors">Mapa de Fertilidade</a>
+                <a href="cotacoes.html" onclick="toggleMenu(false)" class="block text-gray-900 px-4 py-3 rounded-lg hover:bg-[#eaf7e2] transition-colors">Cotações</a>
+                <a href="rotacao.html" onclick="toggleMenu(false)" class="block text-gray-900 px-4 py-3 rounded-lg hover:bg-[#eaf7e2] transition-colors">Rotação</a>
+                <a href="relatorios.html" onclick="toggleMenu(false)" class="block text-gray-900 px-4 py-3 rounded-lg hover:bg-[#eaf7e2] transition-colors">Relatórios</a>
+                <a href="empresas/index.html" onclick="toggleMenu(false)" class="block text-gray-900 px-4 py-3 rounded-lg hover:bg-[#eaf7e2] transition-colors">Vender Produção</a>
+                <a href="profile.html" onclick="toggleMenu(false)" class="block text-[#066a04] font-semibold px-4 py-3 rounded-lg hover:bg-[#eaf7e2] transition-colors">Meu Perfil</a>
+            </nav>
+        </div>
+    </div>
+
+    <header class="page-header-band">
+        <div class="max-w-7xl mx-auto px-4 py-6">
+            <h1 class="text-2xl font-bold">Planejamento de Rotação</h1>
+            <p class="text-sm text-white/80 mt-1" id="proximaSafraLabel">Carregando...</p>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-4 py-8 space-y-8">
+
+        <!-- Visão geral: todos os talhões -->
+        <section class="bg-white border border-slate-200 rounded-2xl p-6">
+            <h2 class="text-lg font-bold text-slate-900 mb-4">Visão geral · Todos os talhões</h2>
+
+            <div id="overviewLoading" class="text-sm text-slate-500">Carregando talhões...</div>
+
+            <div id="overviewEmpty" class="hidden text-center py-10">
+                <p class="text-slate-600 mb-3">Você ainda não tem talhões cadastrados.</p>
+                <a href="mapa-fertilidade.html" class="inline-block px-5 py-2.5 rounded-lg bg-[#066a04] hover:bg-[#055503] text-white text-sm font-semibold transition-colors">
+                    Criar talhões no Mapa de Fertilidade
+                </a>
+            </div>
+
+            <div id="overviewGrid" class="hidden grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4"></div>
+
+            <div id="overviewSummary" class="hidden mt-5 pt-5 border-t border-slate-100 flex flex-wrap gap-x-8 gap-y-2 text-sm text-slate-600">
+                <div>Hectares planejados: <strong id="summaryHa" class="text-slate-900">—</strong></div>
+                <div>Receita total estimada: <strong id="summaryReceita" class="text-slate-900">—</strong></div>
+                <div>Talhões: <strong id="summaryCount" class="text-slate-900">—</strong></div>
+            </div>
+        </section>
+
+        <!-- Detalhe do talhão selecionado -->
+        <section id="detailSection" class="hidden bg-white border border-slate-200 rounded-2xl p-6">
+            <div class="flex items-start justify-between flex-wrap gap-2 mb-1">
+                <div>
+                    <h2 class="text-lg font-bold text-slate-900" id="detailNome">—</h2>
+                    <p class="text-sm text-slate-500" id="detailArea">—</p>
+                </div>
+            </div>
+            <p class="text-sm text-slate-600 mb-1">Última cultura: <span id="detailUltimaCultura" class="font-medium">—</span></p>
+            <p class="text-sm text-slate-600 mb-5" id="detailSolo">Solo: —</p>
+
+            <div id="detailRecomendacoes" class="space-y-4"></div>
+        </section>
+
+        <!-- Histórico do talhão selecionado -->
+        <section id="historicoSection" class="hidden bg-white border border-slate-200 rounded-2xl p-6">
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-lg font-bold text-slate-900">Histórico do talhão</h2>
+                <button type="button" id="registrarSafraBtn" class="px-4 py-2 rounded-lg border border-slate-300 text-sm font-medium hover:bg-slate-50 transition-colors">
+                    + Registrar safra anterior
+                </button>
+            </div>
+            <div id="historicoEmpty" class="hidden text-sm text-slate-500 text-center py-6">Nenhuma safra registrada ainda para este talhão.</div>
+            <div id="historicoList" class="hidden overflow-x-auto">
+                <table class="w-full text-sm text-left">
+                    <thead>
+                        <tr class="border-b border-slate-100 text-xs text-slate-400 uppercase font-bold">
+                            <th class="py-2 pr-4">Safra</th>
+                            <th class="py-2 pr-4">Cultura</th>
+                            <th class="py-2 pr-4">Plantio</th>
+                            <th class="py-2 pr-4">Colheita</th>
+                            <th class="py-2 pr-4">Produtividade</th>
+                            <th class="py-2 pr-4">Observações</th>
+                        </tr>
+                    </thead>
+                    <tbody id="historicoTableBody"></tbody>
+                </table>
+            </div>
+        </section>
+
+        <p class="text-xs text-slate-400 text-center max-w-2xl mx-auto">
+            As recomendações são geradas a partir de dados agronômicos de referência (Manual CQFS-RS/SC, Embrapa)
+            e não substituem a orientação de um engenheiro agrônomo — consulte um profissional para o planejamento
+            técnico completo da sua propriedade.
+        </p>
+    </main>
+
+    <!-- Modal: escolher cultura recomendada -->
+    <div id="escolherModal" class="fixed inset-0 z-[2000] hidden">
+        <div class="absolute inset-0 bg-black/50" onclick="closeEscolherModal()"></div>
+        <div class="absolute inset-0 flex items-center justify-center p-4">
+            <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md">
+                <div class="flex items-center justify-between px-6 py-4 border-b border-slate-200">
+                    <h3 class="text-lg font-bold text-slate-900">Confirmar plantio</h3>
+                    <button type="button" onclick="closeEscolherModal()" class="text-slate-500 hover:text-slate-800">✕</button>
+                </div>
+                <form id="escolherForm" class="px-6 py-4 space-y-4">
+                    <p class="text-sm text-slate-600">
+                        Registrar <strong id="escolherCulturaLabel">—</strong> como a cultura escolhida para
+                        <strong id="escolherSafraLabel">—</strong> neste talhão.
+                    </p>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">Data de plantio (opcional)</label>
+                        <input type="date" name="data_plantio" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">Observações (opcional)</label>
+                        <textarea name="observacoes" rows="2" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm"></textarea>
+                    </div>
+                    <p id="escolherError" class="text-sm text-red-600 hidden"></p>
+                    <div class="flex justify-end gap-2 pt-2">
+                        <button type="button" onclick="closeEscolherModal()" class="px-4 py-2 rounded-lg border border-slate-300 text-sm font-medium hover:bg-slate-50">Cancelar</button>
+                        <button type="submit" class="px-4 py-2 rounded-lg bg-[#066a04] hover:bg-[#055503] text-white text-sm font-semibold transition-colors">Confirmar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: registrar safra anterior -->
+    <div id="historicoModal" class="fixed inset-0 z-[2000] hidden">
+        <div class="absolute inset-0 bg-black/50" onclick="closeHistoricoModal()"></div>
+        <div class="absolute inset-0 flex items-center justify-center p-4">
+            <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
+                <div class="flex items-center justify-between px-6 py-4 border-b border-slate-200">
+                    <h3 class="text-lg font-bold text-slate-900">Registrar safra anterior</h3>
+                    <button type="button" onclick="closeHistoricoModal()" class="text-slate-500 hover:text-slate-800">✕</button>
+                </div>
+                <form id="historicoForm" class="px-6 py-4 space-y-4">
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700 mb-1">Cultura *</label>
+                            <input type="text" name="cultura_nome" required placeholder="Ex: Soja" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700 mb-1">Tipo de safra *</label>
+                            <select name="safra_tipo" required class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm">
+                                <option value="verao">Verão</option>
+                                <option value="inverno">Inverno</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">Safra (ano) *</label>
+                        <input type="text" name="safra_ano" required placeholder="Ex: 2025/2026 ou 2025" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm">
+                    </div>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700 mb-1">Data de plantio</label>
+                            <input type="date" name="data_plantio" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700 mb-1">Data de colheita</label>
+                            <input type="date" name="data_colheita" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">Produtividade obtida (sc/ha ou ton/ha)</label>
+                        <input type="number" step="0.01" name="produtividade_real" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">Observações</label>
+                        <textarea name="observacoes" rows="2" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm"></textarea>
+                    </div>
+                    <p id="historicoError" class="text-sm text-red-600 hidden"></p>
+                    <div class="flex justify-end gap-2 pt-2">
+                        <button type="button" onclick="closeHistoricoModal()" class="px-4 py-2 rounded-lg border border-slate-300 text-sm font-medium hover:bg-slate-50">Cancelar</button>
+                        <button type="submit" class="px-4 py-2 rounded-lg bg-[#066a04] hover:bg-[#055503] text-white text-sm font-semibold transition-colors">Salvar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div id="site-footer"></div>
+    <script src="footer.js"></script>
+    <script>
+        function toggleMenu(open) {
+            const menu = document.getElementById('slideMenu');
+            if (!menu) return;
+            menu.classList.toggle('hidden', !open);
+            document.body.style.overflow = open ? 'hidden' : '';
+        }
+    </script>
+    <script>
+    (function () {
+        const isLocalDev = window.location.protocol === 'file:' ||
+            ['localhost', '127.0.0.1'].includes(window.location.hostname);
+        const API_BASE_URL = isLocalDev
+            ? 'http://localhost:3000/api'
+            : 'https://backend-production-2af81.up.railway.app/api';
+
+        let planejamento = [];
+        let selectedTalhaoId = null;
+        let escolherPendente = null; // { talhaoId, cultura, safraTipo, safraLabel, safraAno }
+
+        function getToken() {
+            return localStorage.getItem('cycleSownToken');
+        }
+
+        async function apiRequest(path, method, body) {
+            const headers = { 'Content-Type': 'application/json' };
+            const token = getToken();
+            if (token) headers.Authorization = `Bearer ${token}`;
+
+            const response = await fetch(`${API_BASE_URL}${path}`, {
+                method,
+                headers,
+                body: body ? JSON.stringify(body) : undefined
+            });
+
+            let data = null;
+            try { data = await response.json(); } catch (e) { data = null; }
+
+            if (!response.ok) {
+                throw new Error((data && data.error) || 'Erro ao comunicar com o servidor.');
+            }
+            return data;
+        }
+
+        function scoreBadgeClass(score) {
+            if (score >= 70) return 'badge-bom';
+            if (score >= 50) return 'badge-regular';
+            return 'badge-ruim';
+        }
+
+        function money(value) {
+            return value.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        }
+
+        function formatLucroLinha(rec) {
+            if (rec.cobertura) return `Cobertura · custo R$ ${money(rec.custo_estimado_ha)}/ha`;
+            if (rec.lucro_estimado_ha == null) return `Sem preço de referência`;
+            const sinal = rec.lucro_estimado_ha >= 0 ? '' : '-';
+            return `Lucro estimado: R$ ${sinal}${money(Math.abs(rec.lucro_estimado_ha))}/ha`;
+        }
+
+        // ------------------------------------------------------------------
+        // Visão geral
+        // ------------------------------------------------------------------
+        function renderOverview() {
+            const loading = document.getElementById('overviewLoading');
+            const empty = document.getElementById('overviewEmpty');
+            const grid = document.getElementById('overviewGrid');
+            const summary = document.getElementById('overviewSummary');
+            loading.classList.add('hidden');
+
+            if (planejamento.length === 0) {
+                empty.classList.remove('hidden');
+                grid.classList.add('hidden');
+                summary.classList.add('hidden');
+                return;
+            }
+
+            empty.classList.add('hidden');
+            grid.classList.remove('hidden');
+            summary.classList.remove('hidden');
+
+            grid.innerHTML = '';
+            planejamento.forEach((item) => {
+                const top = item.top_recomendacao;
+                const card = document.createElement('div');
+                card.className = `talhao-card border border-slate-200 rounded-xl p-4 ${item.talhao.id === selectedTalhaoId ? 'selected' : ''}`;
+                card.innerHTML = `
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="font-semibold text-slate-900 truncate">${item.talhao.nome}</span>
+                        ${top ? `<span class="text-xs font-bold px-2 py-1 rounded-full ${scoreBadgeClass(top.score)}">${top.score}</span>` : ''}
+                    </div>
+                    ${top
+                        ? `<div class="text-lg">${top.cultura}</div>
+                           <div class="text-xs text-slate-500 mt-1">${top.cobertura ? 'Cobertura' : (top.lucro_ha != null ? `R$ ${money(top.lucro_ha)}/ha` : '—')}</div>`
+                        : `<div class="text-sm text-slate-400">Sem recomendação viável</div>`
+                    }
+                `;
+                card.addEventListener('click', () => selectTalhao(item.talhao.id));
+                grid.appendChild(card);
+            });
+
+            document.getElementById('summaryHa').textContent = `${window.__resumo.total_hectares.toLocaleString('pt-BR')} ha`;
+            document.getElementById('summaryReceita').textContent = `R$ ${money(window.__resumo.receita_total_estimada)}`;
+            document.getElementById('summaryCount').textContent = window.__resumo.talhoes_planejados;
+        }
+
+        // ------------------------------------------------------------------
+        // Detalhe do talhão
+        // ------------------------------------------------------------------
+        function selectTalhao(id) {
+            selectedTalhaoId = id;
+            renderOverview();
+            const item = planejamento.find((p) => p.talhao.id === id);
+            if (!item) return;
+
+            document.getElementById('detailSection').classList.remove('hidden');
+            document.getElementById('historicoSection').classList.remove('hidden');
+
+            document.getElementById('detailNome').textContent = item.talhao.nome;
+            document.getElementById('detailArea').textContent = item.talhao.area_ha != null ? `${item.talhao.area_ha} ha` : 'Área não informada';
+            document.getElementById('detailUltimaCultura').textContent = item.ultima_cultura || 'Nenhuma registrada';
+
+            const solo = item.solo_resumo || {};
+            const soloPartes = [];
+            if (solo.ph != null) soloPartes.push(`pH ${solo.ph}`);
+            if (solo.mo != null) soloPartes.push(`MO ${solo.mo}%`);
+            if (solo.P != null) soloPartes.push(`P ${solo.P}`);
+            if (solo.K != null) soloPartes.push(`K ${solo.K}`);
+            if (solo.V != null) soloPartes.push(`V% ${solo.V}`);
+            document.getElementById('detailSolo').textContent = soloPartes.length ? `Solo: ${soloPartes.join(' | ')}` : 'Solo: dados não informados neste talhão';
+
+            const recWrap = document.getElementById('detailRecomendacoes');
+            recWrap.innerHTML = '';
+            if (item.recomendacoes.length === 0) {
+                recWrap.innerHTML = '<p class="text-sm text-slate-500">Nenhuma cultura viável encontrada para a próxima safra deste talhão.</p>';
+            }
+            item.recomendacoes.forEach((rec) => {
+                const card = document.createElement('div');
+                card.className = `rec-card rank-${rec.rank} border-2 border-slate-200 rounded-xl p-4`;
+                card.innerHTML = `
+                    <div class="flex items-center justify-between mb-2 flex-wrap gap-2">
+                        <div class="flex items-center gap-2">
+                            <span class="text-xs font-bold text-slate-400">#${rec.rank}</span>
+                            <span class="text-lg font-bold text-slate-900">${rec.cultura.toUpperCase()}</span>
+                        </div>
+                        <span class="text-sm font-bold px-3 py-1 rounded-full ${scoreBadgeClass(rec.score)}">Score: ${rec.score}</span>
+                    </div>
+                    <p class="text-sm text-slate-700 font-medium mb-2">${formatLucroLinha(rec)}</p>
+                    <ul class="text-sm text-slate-600 space-y-1 mb-3">
+                        ${rec.justificativas.map((j) => `<li>${j}</li>`).join('')}
+                    </ul>
+                    <button type="button" class="escolher-btn px-4 py-2 rounded-lg bg-[#066a04] hover:bg-[#055503] text-white text-sm font-semibold transition-colors">
+                        Escolher esta cultura
+                    </button>
+                `;
+                card.querySelector('.escolher-btn').addEventListener('click', () => openEscolherModal(item, rec));
+                recWrap.appendChild(card);
+            });
+
+            loadHistorico(id);
+        }
+
+        // ------------------------------------------------------------------
+        // Modal: escolher cultura
+        // ------------------------------------------------------------------
+        function openEscolherModal(item, rec) {
+            escolherPendente = { talhaoId: item.talhao.id, cultura: rec.cultura };
+            document.getElementById('escolherCulturaLabel').textContent = rec.cultura;
+            document.getElementById('escolherSafraLabel').textContent = window.__proximaSafra ? window.__proximaSafra.label : 'a próxima safra';
+            document.getElementById('escolherError').classList.add('hidden');
+            document.getElementById('escolherForm').reset();
+            document.getElementById('escolherModal').classList.remove('hidden');
+        }
+
+        window.closeEscolherModal = function () {
+            document.getElementById('escolherModal').classList.add('hidden');
+            escolherPendente = null;
+        };
+
+        document.getElementById('escolherForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            if (!escolherPendente) return;
+            const errorEl = document.getElementById('escolherError');
+            errorEl.classList.add('hidden');
+
+            const fd = new FormData(e.target);
+            const safra = window.__proximaSafra || { tipo: 'verao', label: '' };
+            const safraAno = safra.tipo === 'verao'
+                ? (safra.label.match(/\d{4}\/\d{4}/) || [safra.label])[0]
+                : (safra.label.match(/\d{4}/) || [safra.label])[0];
+
+            try {
+                await apiRequest('/historico', 'POST', {
+                    talhao_id: escolherPendente.talhaoId,
+                    cultura_nome: escolherPendente.cultura,
+                    safra_tipo: safra.tipo,
+                    safra_ano: safraAno,
+                    data_plantio: fd.get('data_plantio') || undefined,
+                    observacoes: fd.get('observacoes') || undefined
+                });
+
+                await apiRequest(`/talhoes/${escolherPendente.talhaoId}`, 'PUT', {
+                    cultura_nome: escolherPendente.cultura,
+                    cultura_estagio: 'Recém-plantado'
+                });
+
+                closeEscolherModal();
+                await loadPlanejamento();
+                selectTalhao(escolherPendente ? escolherPendente.talhaoId : selectedTalhaoId);
+            } catch (err) {
+                errorEl.textContent = err.message;
+                errorEl.classList.remove('hidden');
+            }
+        });
+
+        // ------------------------------------------------------------------
+        // Histórico
+        // ------------------------------------------------------------------
+        function formatDateOnly(str) {
+            if (!str) return '—';
+            const datePart = str.split('T')[0];
+            const [y, m, d] = datePart.split('-');
+            return `${d}/${m}/${y}`;
+        }
+
+        async function loadHistorico(talhaoId) {
+            const emptyEl = document.getElementById('historicoEmpty');
+            const listEl = document.getElementById('historicoList');
+            const tbody = document.getElementById('historicoTableBody');
+
+            try {
+                const data = await apiRequest(`/historico/${talhaoId}`, 'GET');
+                const historico = data.historico || [];
+
+                if (historico.length === 0) {
+                    emptyEl.classList.remove('hidden');
+                    listEl.classList.add('hidden');
+                    return;
+                }
+
+                emptyEl.classList.add('hidden');
+                listEl.classList.remove('hidden');
+                tbody.innerHTML = historico.map((h) => `
+                    <tr class="border-b border-slate-50">
+                        <td class="py-2 pr-4">${h.safra_tipo === 'verao' ? 'Verão' : 'Inverno'} ${h.safra_ano}</td>
+                        <td class="py-2 pr-4">${h.cultura_nome}</td>
+                        <td class="py-2 pr-4">${formatDateOnly(h.data_plantio)}</td>
+                        <td class="py-2 pr-4">${formatDateOnly(h.data_colheita)}</td>
+                        <td class="py-2 pr-4">${h.produtividade_real != null ? h.produtividade_real : '—'}</td>
+                        <td class="py-2 pr-4 text-slate-500">${h.observacoes || '—'}</td>
+                    </tr>
+                `).join('');
+            } catch (err) {
+                console.warn('Não foi possível carregar histórico:', err.message);
+                emptyEl.classList.remove('hidden');
+                emptyEl.textContent = 'Não foi possível carregar o histórico agora.';
+                listEl.classList.add('hidden');
+            }
+        }
+
+        document.getElementById('registrarSafraBtn').addEventListener('click', () => {
+            document.getElementById('historicoError').classList.add('hidden');
+            document.getElementById('historicoForm').reset();
+            document.getElementById('historicoModal').classList.remove('hidden');
+        });
+
+        window.closeHistoricoModal = function () {
+            document.getElementById('historicoModal').classList.add('hidden');
+        };
+
+        document.getElementById('historicoForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            if (!selectedTalhaoId) return;
+            const errorEl = document.getElementById('historicoError');
+            errorEl.classList.add('hidden');
+
+            const fd = new FormData(e.target);
+            try {
+                await apiRequest('/historico', 'POST', {
+                    talhao_id: selectedTalhaoId,
+                    cultura_nome: fd.get('cultura_nome'),
+                    safra_tipo: fd.get('safra_tipo'),
+                    safra_ano: fd.get('safra_ano'),
+                    data_plantio: fd.get('data_plantio') || undefined,
+                    data_colheita: fd.get('data_colheita') || undefined,
+                    produtividade_real: fd.get('produtividade_real') || undefined,
+                    observacoes: fd.get('observacoes') || undefined
+                });
+
+                closeHistoricoModal();
+                await loadHistorico(selectedTalhaoId);
+            } catch (err) {
+                errorEl.textContent = err.message;
+                errorEl.classList.remove('hidden');
+            }
+        });
+
+        // ------------------------------------------------------------------
+        // Carregamento inicial
+        // ------------------------------------------------------------------
+        async function loadPlanejamento() {
+            try {
+                const data = await apiRequest('/rotacao', 'GET');
+                planejamento = data.planejamento || [];
+                window.__resumo = data.resumo || { total_hectares: 0, receita_total_estimada: 0, talhoes_planejados: 0 };
+                window.__proximaSafra = data.proxima_safra;
+
+                document.getElementById('proximaSafraLabel').textContent = data.proxima_safra
+                    ? `Próxima safra: ${data.proxima_safra.label}`
+                    : 'Nenhum talhão cadastrado ainda';
+
+                renderOverview();
+            } catch (err) {
+                console.warn('Não foi possível carregar o planejamento de rotação:', err.message);
+                document.getElementById('overviewLoading').textContent = 'Não foi possível carregar seus talhões agora. Verifique sua conexão e tente novamente.';
+                document.getElementById('proximaSafraLabel').textContent = '—';
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            loadPlanejamento();
+        });
+    })();
+    </script>
+</body>
+</html>

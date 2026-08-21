@@ -1,0 +1,231 @@
+<!-- ============================================================================
+     relatorios.html — Central de Relatórios. 4 relatórios (Nutricional,
+     Recomendação de Cultura, Planejamento de Rotação e Custos,
+     Produtividade), todos calculados no backend a partir de dados já
+     existentes (talhoes, historico_culturas, precos_culturas — ver
+     backend/routes/relatorios.js). Gerar um relatório o salva automaticamente
+     (POST /api/relatorios) para reabrir depois sem recalcular
+     (GET /api/relatorios/:id). Exportação em PDF via window.print()
+     com CSS @media print — sem biblioteca de PDF.
+     ============================================================================ -->
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Relatórios - Cycle Sown</title>
+    <script src="userStorage.js"></script>
+    <script>
+        if (!userStorage.getCurrentUserId()) {
+            window.location.href = 'login.html';
+        }
+    </script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/theme.css">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+
+        .badge-bom { background: #eaf7e2; color: #066a04; }
+        .badge-regular { background: #fef9c3; color: #a16207; }
+        .badge-ruim { background: #fee2e2; color: #b91c1c; }
+        .badge-indisponivel { background: #f1f5f9; color: #64748b; }
+
+        .gerar-card { transition: transform 0.15s ease, box-shadow 0.15s ease; }
+        .gerar-card:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(0,0,0,0.08); }
+
+        .print-only { display: none; }
+
+        @media print {
+            .no-print { display: none !important; }
+            .print-only { display: block !important; }
+            body { background: white !important; font-size: 11pt; }
+            .report-content { box-shadow: none !important; border: none !important; }
+            .report-section { page-break-inside: avoid; }
+            svg { max-width: 100%; height: auto; }
+        }
+    </style>
+</head>
+<body class="pt-16 bg-slate-50">
+    <nav class="fixed top-0 w-full z-50 backdrop-blur-xl bg-white/80 border-b border-slate-200 shadow-sm no-print">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center gap-3">
+                    <a href="index.html" class="flex items-center shrink-0">
+                        <img src="img/logo.png" alt="Cycle Sown" class="h-14 w-auto">
+                    </a>
+                    <button type="button" aria-label="Abrir menu" onclick="toggleMenu(true)" class="p-2 rounded-full text-slate-700 hover:bg-slate-100 transition-colors">
+                        <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" xmlns="http://www.w3.org/2000/svg">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+                        </svg>
+                    </button>
+                </div>
+                <div class="hidden md:block">
+                    <div class="ml-10 flex items-baseline space-x-8">
+                        <a href="index.html#analysis" class="text-slate-600 hover:text-[#066a04] px-3 py-2 text-sm font-medium transition-colors">Análise</a>
+                        <a href="recommendations.html" class="text-slate-600 hover:text-[#066a04] px-3 py-2 text-sm font-medium transition-colors">Recomendações</a>
+                        <a href="relatorios.html" class="text-[#066a04] px-3 py-2 text-sm font-semibold transition-colors">Relatórios</a>
+                        <a href="profile.html" class="text-slate-600 hover:text-[#066a04] px-3 py-2 text-sm font-medium transition-colors">Perfil</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div id="slideMenu" class="fixed inset-0 z-[9998] hidden no-print">
+        <div class="absolute inset-0 bg-black/40 z-[9998]" onclick="toggleMenu(false)"></div>
+        <div class="absolute left-0 top-0 h-full w-72 bg-white border-r shadow-xl overflow-y-auto z-[9999]">
+            <div class="flex items-center justify-between p-5 border-b border-gray-200">
+                <span class="flex items-center gap-2">
+                    <img src="img/logo.png" alt="Cycle Sown" class="h-12 w-auto">
+                    <span class="text-lg font-semibold text-gray-900">Menu</span>
+                </span>
+                <button type="button" aria-label="Fechar menu" onclick="toggleMenu(false)" class="text-gray-600 hover:text-gray-900">
+                    <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" xmlns="http://www.w3.org/2000/svg">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+            <nav class="p-5 space-y-3">
+                <hr class="my-3">
+                <a href="calendar.html" onclick="toggleMenu(false)" class="block text-gray-900 px-4 py-3 rounded-lg hover:bg-[#eaf7e2] transition-colors">Calendário</a>
+                <a href="catalogo.html" onclick="toggleMenu(false)" class="block text-gray-900 px-4 py-3 rounded-lg hover:bg-[#eaf7e2] transition-colors">Catálogo</a>
+                <a href="produtividade.html" onclick="toggleMenu(false)" class="block text-gray-900 px-4 py-3 rounded-lg hover:bg-[#eaf7e2] transition-colors">Produtividade</a>
+                <a href="mapa-fertilidade.html" onclick="toggleMenu(false)" class="block text-gray-900 px-4 py-3 rounded-lg hover:bg-[#eaf7e2] transition-colors">Mapa de Fertilidade</a>
+                <a href="cotacoes.html" onclick="toggleMenu(false)" class="block text-gray-900 px-4 py-3 rounded-lg hover:bg-[#eaf7e2] transition-colors">Cotações</a>
+                <a href="rotacao.html" onclick="toggleMenu(false)" class="block text-gray-900 px-4 py-3 rounded-lg hover:bg-[#eaf7e2] transition-colors">Rotação</a>
+                <a href="relatorios.html" onclick="toggleMenu(false)" class="block text-[#066a04] font-semibold px-4 py-3 rounded-lg hover:bg-[#eaf7e2] transition-colors">Relatórios</a>
+                <a href="empresas/index.html" onclick="toggleMenu(false)" class="block text-gray-900 px-4 py-3 rounded-lg hover:bg-[#eaf7e2] transition-colors">Vender Produção</a>
+                <a href="profile.html" onclick="toggleMenu(false)" class="block text-gray-900 px-4 py-3 rounded-lg hover:bg-[#eaf7e2] transition-colors">Meu Perfil</a>
+            </nav>
+        </div>
+    </div>
+
+    <header class="page-header-band no-print">
+        <div class="max-w-7xl mx-auto px-4 py-6">
+            <h1 class="text-2xl font-bold">Central de Relatórios</h1>
+            <p class="text-sm text-white/80 mt-1">Relatórios gerados a partir dos dados já cadastrados nos seus talhões e da sua Análise de Solo — a maioria não pede nada digitado de novo aqui (a Calculadora de Adubação e Calagem é a exceção, já que depende da cultura e do rendimento esperado que você escolher).</p>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-4 py-8 space-y-8">
+
+        <!-- Gerar novo relatório -->
+        <section class="bg-white border border-slate-200 rounded-2xl p-6 no-print">
+            <h2 class="text-lg font-bold text-slate-900 mb-4">Gerar novo relatório</h2>
+
+            <div class="gerar-card border-2 border-slate-200 rounded-xl p-5 flex flex-col mb-6">
+                <h3 class="font-bold text-slate-900 mb-1">Laudo de Fertilidade</h3>
+                <p class="text-xs text-slate-500 mb-4 flex-1">Nitrogênio, fósforo, potássio e mais 8 nutrientes — a partir da sua Análise de Solo (não depende de talhão).</p>
+                <button type="button" id="gerarLaudoBtn" class="px-4 py-2 rounded-lg bg-[#066a04] hover:bg-[#055503] text-white text-sm font-semibold transition-colors self-start">Gerar</button>
+                <p id="laudoError" class="hidden text-sm text-red-600 mt-3"></p>
+            </div>
+
+            <div id="talhoesLoading" class="text-sm text-slate-500">Carregando talhões...</div>
+
+            <div id="talhoesEmpty" class="hidden text-center py-8">
+                <p class="text-slate-600 mb-3">Você ainda não tem talhões cadastrados.</p>
+                <a href="mapa-fertilidade.html" class="inline-block px-5 py-2.5 rounded-lg bg-[#066a04] hover:bg-[#055503] text-white text-sm font-semibold transition-colors">
+                    Criar talhões no Mapa de Fertilidade
+                </a>
+            </div>
+
+            <div id="talhoesContent" class="hidden">
+                <label class="block text-sm font-medium text-slate-700 mb-2">Talhão</label>
+                <select id="talhaoSelect" class="w-full sm:w-80 border border-slate-300 rounded-lg px-3 py-2.5 text-sm mb-6"></select>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div class="gerar-card border-2 border-slate-200 rounded-xl p-5 flex flex-col">
+                        <h3 class="font-bold text-slate-900 mb-1">Nutricional do Solo</h3>
+                        <p class="text-xs text-slate-500 mb-4 flex-1">pH, matéria orgânica, macro/micro e status de cada parâmetro do solo.</p>
+                        <button type="button" data-tipo="nutricional" class="gerar-btn px-4 py-2 rounded-lg bg-[#066a04] hover:bg-[#055503] text-white text-sm font-semibold transition-colors">Gerar</button>
+                    </div>
+                    <div class="gerar-card border-2 border-slate-200 rounded-xl p-5 flex flex-col">
+                        <h3 class="font-bold text-slate-900 mb-1">Recomendação de Cultura</h3>
+                        <p class="text-xs text-slate-500 mb-4 flex-1">Qual cultura plantar na próxima safra e por quê, com projeção financeira.</p>
+                        <button type="button" data-tipo="recomendacao" class="gerar-btn px-4 py-2 rounded-lg bg-[#066a04] hover:bg-[#055503] text-white text-sm font-semibold transition-colors">Gerar</button>
+                    </div>
+                    <div class="gerar-card border-2 border-slate-200 rounded-xl p-5 flex flex-col">
+                        <h3 class="font-bold text-slate-900 mb-1">Rotação e Custos</h3>
+                        <p class="text-xs text-slate-500 mb-4 flex-1">Plano de rotação para os próximos 4 ciclos (2 anos), com receita/custo/lucro.</p>
+                        <button type="button" data-tipo="rotacao" class="gerar-btn px-4 py-2 rounded-lg bg-[#066a04] hover:bg-[#055503] text-white text-sm font-semibold transition-colors">Gerar</button>
+                    </div>
+                    <div class="gerar-card border-2 border-slate-200 rounded-xl p-5 flex flex-col">
+                        <h3 class="font-bold text-slate-900 mb-1">Produtividade</h3>
+                        <p class="text-xs text-slate-500 mb-4 flex-1">Evolução da produtividade por cultura, com gráficos e tendências.</p>
+                        <button type="button" data-tipo="produtividade" class="gerar-btn px-4 py-2 rounded-lg bg-[#066a04] hover:bg-[#055503] text-white text-sm font-semibold transition-colors">Gerar</button>
+                    </div>
+                    <div class="gerar-card border-2 border-slate-200 rounded-xl p-5 flex flex-col">
+                        <h3 class="font-bold text-slate-900 mb-1">Adubação e Calagem</h3>
+                        <p class="text-xs text-slate-500 mb-4 flex-1">Dose de calcário, N, P₂O₅ e K₂O pelo método SMP (CQFS-RS/SC), para a cultura e o rendimento esperado que você escolher.</p>
+                        <div class="mb-3">
+                            <label class="block text-xs font-medium text-slate-600 mb-1">Cultura</label>
+                            <select id="adubacaoCultura" class="w-full border border-slate-300 rounded-lg px-2 py-1.5 text-sm">
+                                <option value="Soja">Soja</option>
+                                <option value="Milho">Milho</option>
+                                <option value="Trigo">Trigo</option>
+                                <option value="Fumo">Fumo</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="block text-xs font-medium text-slate-600 mb-1">Rendimento esperado (<span id="adubacaoRendimentoUnidade">sc/ha</span>)</label>
+                            <input type="number" id="adubacaoRendimento" min="0" step="0.1" placeholder="Ex: 55" class="w-full border border-slate-300 rounded-lg px-2 py-1.5 text-sm">
+                        </div>
+                        <button type="button" id="adubacaoGerarBtn" class="px-4 py-2 rounded-lg bg-[#066a04] hover:bg-[#055503] text-white text-sm font-semibold transition-colors self-start">Gerar</button>
+                    </div>
+                </div>
+                <p id="gerarError" class="hidden text-sm text-red-600 mt-4"></p>
+            </div>
+        </section>
+
+        <!-- Relatórios salvos -->
+        <section class="bg-white border border-slate-200 rounded-2xl p-6 no-print">
+            <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
+                <h2 class="text-lg font-bold text-slate-900">Relatórios salvos</h2>
+                <div class="flex gap-2">
+                    <select id="filtroTipo" class="border border-slate-300 rounded-lg px-3 py-2 text-sm">
+                        <option value="">Todos os tipos</option>
+                        <option value="nutricional">Nutricional</option>
+                        <option value="recomendacao">Recomendação</option>
+                        <option value="rotacao">Rotação</option>
+                        <option value="produtividade">Produtividade</option>
+                        <option value="adubacao">Adubação e Calagem</option>
+                    </select>
+                    <select id="filtroTalhao" class="border border-slate-300 rounded-lg px-3 py-2 text-sm">
+                        <option value="">Todos os talhões</option>
+                    </select>
+                </div>
+            </div>
+
+            <div id="salvosLoading" class="text-sm text-slate-500">Carregando relatórios...</div>
+            <div id="salvosEmpty" class="hidden text-sm text-slate-500 text-center py-8">
+                Nenhum relatório gerado ainda. Selecione um talhão acima e gere seu primeiro relatório.
+            </div>
+            <div id="salvosList" class="hidden space-y-3"></div>
+        </section>
+
+        <!-- Área de visualização -->
+        <section id="reportViewer" class="scroll-mt-24"></section>
+
+        <p class="text-xs text-slate-400 text-center max-w-2xl mx-auto no-print">
+            Relatórios gerados automaticamente a partir de dados agronômicos de referência (Manual CQFS-RS/SC, Embrapa)
+            e não substituem a orientação de um engenheiro agrônomo — consulte um profissional (CREA/ART) para o
+            planejamento técnico completo da sua propriedade.
+        </p>
+    </main>
+
+    <div id="site-footer" class="no-print"></div>
+    <script src="footer.js"></script>
+    <script>
+        function toggleMenu(open) {
+            const menu = document.getElementById('slideMenu');
+            if (!menu) return;
+            menu.classList.toggle('hidden', !open);
+            document.body.style.overflow = open ? 'hidden' : '';
+        }
+    </script>
+    <script src="main.js"></script>
+    <script src="relatorios.js"></script>
+</body>
+</html>

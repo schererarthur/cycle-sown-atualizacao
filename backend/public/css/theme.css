@@ -1,0 +1,89 @@
+/* ============================================================================
+   Cycle Sown — tema visual compartilhado pelo site (exceto login.html /
+   register.html, que usam css/auth.css como referência original de design).
+   Define os tokens de cor e as classes reaproveitadas em várias páginas, para
+   não redeclarar a mesma paleta em cada uma. Fontes (Inter/JetBrains Mono)
+   continuam importadas por cada página via <link> do Google Fonts — este
+   arquivo só define cores e componentes, não faz @import de fonte.
+
+   Ordem de carregamento esperada em cada página: Tailwind CDN, depois este
+   arquivo, depois o <style> próprio da página (que só deve conter CSS
+   realmente específico daquela página — não mais um :root com cores).
+   ============================================================================ */
+
+:root {
+    /* Paleta oficial da marca — mesmos valores de css/auth.css (login/cadastro) */
+    --forest-green: #066a04;
+    --forest-green-dark: #043f03;
+    --forest-green-hover: #055503;
+    --sage-green: #5dc135;
+    --tint-bg: #eaf7e2;
+    --tint-border: #cdeab8;
+
+    /* Fundo/texto neutros. Nomes antigos mantidos (várias páginas os
+       referenciam via var()) mas apontando para os tons do login em vez dos
+       antigos "cream"/"charcoal" — nenhum CSS de página precisa mudar. */
+    --cream-white: #f4f7f2;
+    --charcoal-gray: #2f3a33;
+    --medium-gray: #6b756f;
+    --light-gray: #d7ddd4;
+    --light-border: #d7ddd4;
+
+    /* Severidade/status — mesma paleta de 3 níveis já usada em
+       relatorios.html (badge-bom/regular/ruim). --terracotta/--golden-wheat
+       eram cores fora da marca; agora apontam para o vermelho/âmbar já
+       usados no resto do site em vez de inventar uma paleta nova. */
+    --terracotta: #c62828;
+    --golden-wheat: #F9A825;
+    --danger: #c62828;
+    --warning: #F9A825;
+}
+
+/* ----------------------------------------------------------------------
+   Tipografia compartilhada
+   ---------------------------------------------------------------------- */
+
+.font-display {
+    font-family: 'Inter', sans-serif;
+    font-weight: 800;
+    letter-spacing: -0.3px;
+}
+
+.font-mono {
+    font-family: 'JetBrains Mono', monospace;
+}
+
+/* ----------------------------------------------------------------------
+   Cartões — hover discreto (substitui o antigo glow verde de 20px/0.15
+   opacidade por uma sombra neutra, no mesmo espírito de relatorios.html)
+   ---------------------------------------------------------------------- */
+
+.card-hover {
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.card-hover:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+}
+
+/* ----------------------------------------------------------------------
+   Faixa de cabeçalho de página — mesmo gradiente do painel esquerdo de
+   login.html. A página mantém suas próprias classes de padding/layout
+   (Tailwind) no elemento; esta classe só cuida de fundo e cor de texto.
+   ---------------------------------------------------------------------- */
+
+.page-header-band {
+    background: linear-gradient(135deg, var(--forest-green-dark) 0%, var(--forest-green) 100%);
+    color: #ffffff;
+}
+
+.page-header-band h1,
+.page-header-band .page-header-title {
+    color: #ffffff;
+}
+
+.page-header-band p,
+.page-header-band .page-header-subtitle {
+    color: rgba(255, 255, 255, 0.82);
+}

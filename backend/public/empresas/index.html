@@ -1,0 +1,435 @@
+<!-- ============================================================================
+     empresas/index.html — "Vender Produção": diretório de empresas
+     compradoras para o produtor encontrar contato e vender sua safra.
+     As empresas são fictícias (dado estático no HTML/JS, sem backend ainda),
+     cada uma com região, cidade, avaliação, culturas que compra e contato —
+     filtráveis por região, cidade e avaliação mínima. schema.sql já prevê
+     as tabelas `buying_companies` / `buying_company_crops` /
+     `buying_company_sellers` para o dia em que isso virar dado dinâmico
+     via API.
+     Vive em uma subpasta própria (empresas/) por isso os links do menu
+     usam "../" para apontar de volta para as páginas na raiz do site.
+     ============================================================================ -->
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Vender Produção - Cycle Sown</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../css/theme.css">
+    <style>
+        body { font-family: 'Inter', sans-serif; background: var(--cream-white); color: var(--charcoal-gray); }
+        .company-card {
+            transition: all 0.3s ease;
+            border: 1px solid var(--light-border);
+            background: white;
+        }
+        .company-card:hover {
+            border-color: var(--sage-green);
+            box-shadow: 0 10px 20px rgba(6, 106, 4, 0.05);
+        }
+        .crop-tag {
+            font-size: 0.65rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-weight: 700;
+        }
+        .logo-placeholder {
+            border: 2px dashed var(--light-border);
+            color: #9CA3AF;
+        }
+    </style>
+</head>
+<body class="pt-20">
+    <nav class="fixed top-0 w-full z-50 backdrop-blur-xl bg-white/80 border-b border-slate-200 shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center gap-3">
+                    <a href="../index.html" class="flex items-center shrink-0">
+                        <img src="../img/logo.png" alt="Cycle Sown" class="h-14 w-auto">
+                    </a>
+                    <button type="button" aria-label="Abrir menu" onclick="toggleMenu(true)" class="p-2 rounded-full text-slate-700 hover:bg-slate-100 transition-colors">
+                        <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" xmlns="http://www.w3.org/2000/svg">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+                        </svg>
+                    </button>
+                </div>
+                <div class="hidden md:block">
+                    <div class="ml-10 flex items-baseline space-x-8">
+                        <a href="../index.html#analysis" class="text-slate-800 hover:text-[#066a04] px-3 py-2 text-sm font-medium transition-colors">Análise</a>
+                        <a href="../recommendations.html" class="text-slate-600 hover:text-[#066a04] px-3 py-2 text-sm font-medium transition-colors">Recomendações</a>
+                        <a href="../relatorios.html" class="text-slate-600 hover:text-[#066a04] px-3 py-2 text-sm font-medium transition-colors">Relatórios</a>
+                        <a href="../profile.html" class="text-slate-600 hover:text-[#066a04] px-3 py-2 text-sm font-medium transition-colors">Perfil</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div id="slideMenu" class="fixed inset-0 z-[9998] hidden">
+        <div class="absolute inset-0 bg-black/40 z-[9998]" onclick="toggleMenu(false)"></div>
+        <div class="absolute left-0 top-0 h-full w-72 bg-white border-r shadow-xl overflow-y-auto z-[9999]">
+            <div class="flex items-center justify-between p-5 border-b border-gray-200">
+                <span class="flex items-center gap-2">
+                    <img src="../img/logo.png" alt="Cycle Sown" class="h-12 w-auto">
+                    <span class="text-lg font-semibold text-gray-900">Menu</span>
+                </span>
+                <button type="button" aria-label="Fechar menu" onclick="toggleMenu(false)" class="text-gray-600 hover:text-gray-900">
+                    <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" xmlns="http://www.w3.org/2000/svg">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+            <nav class="p-5 space-y-3">
+                <hr class="my-3">
+                <a href="../calendar.html" onclick="toggleMenu(false)" class="block text-gray-900 px-4 py-3 rounded-lg hover:bg-[#eaf7e2] transition-colors">Calendário</a>
+                <a href="../catalogo.html" onclick="toggleMenu(false)" class="block text-gray-900 px-4 py-3 rounded-lg hover:bg-[#eaf7e2] transition-colors">Catálogo</a>
+                <a href="../produtividade.html" onclick="toggleMenu(false)" class="block text-gray-900 px-4 py-3 rounded-lg hover:bg-[#eaf7e2] transition-colors">Produtividade</a>
+                <a href="../mapa-fertilidade.html" onclick="toggleMenu(false)" class="block text-gray-900 px-4 py-3 rounded-lg hover:bg-[#eaf7e2] transition-colors">Mapa de Fertilidade</a>
+                <a href="../cotacoes.html" onclick="toggleMenu(false)" class="block text-gray-900 px-4 py-3 rounded-lg hover:bg-[#eaf7e2] transition-colors">Cotações</a>
+                <a href="../rotacao.html" onclick="toggleMenu(false)" class="block text-gray-900 px-4 py-3 rounded-lg hover:bg-[#eaf7e2] transition-colors">Rotação</a>
+                <a href="../relatorios.html" onclick="toggleMenu(false)" class="block text-gray-900 px-4 py-3 rounded-lg hover:bg-[#eaf7e2] transition-colors">Relatórios</a>
+                <a href="index.html" onclick="toggleMenu(false)" class="block text-gray-900 px-4 py-3 rounded-lg hover:bg-[#eaf7e2] transition-colors">Vender Produção</a>
+                <a href="../profile.html" onclick="toggleMenu(false)" class="block text-[#066a04] font-semibold px-4 py-3 rounded-lg hover:bg-[#eaf7e2] transition-colors">Meu Perfil</a>
+            </nav>
+        </div>
+    </div>
+
+    <header class="py-12 page-header-band">
+        <div class="max-w-6xl mx-auto px-4 text-center">
+            <h2 class="font-display text-3xl font-bold">Vender Produção</h2>
+            <p class="mt-3 italic max-w-2xl mx-auto">Empresas compradoras de safra, com a cultura que cada uma procura e o contato para negociar diretamente.</p>
+        </div>
+    </header>
+
+    <main class="max-w-6xl mx-auto mt-8 pb-16 px-4">
+        <div class="relative">
+            <svg class="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" xmlns="http://www.w3.org/2000/svg">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-4.35-4.35m0 0A7.5 7.5 0 104.5 4.5a7.5 7.5 0 0012.15 12.15z" />
+            </svg>
+            <input type="text" id="searchInput" placeholder="Pesquisar empresa, cidade ou cultura..." class="w-full pl-10 pr-4 py-3 rounded-lg border border-gray-200 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-[#066a04]">
+        </div>
+
+        <div class="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-4 bg-white border border-gray-200 rounded-lg p-4">
+            <div>
+                <label for="regionFilter" class="block text-xs text-gray-400 uppercase font-bold mb-1">Região</label>
+                <select id="regionFilter" class="w-full rounded-lg border border-gray-200 bg-white px-4 py-2.5 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#066a04]">
+                    <option value="">Todas as regiões</option>
+                    <option value="norte">Norte</option>
+                    <option value="nordeste">Nordeste</option>
+                    <option value="centro-oeste">Centro-Oeste</option>
+                    <option value="sudeste">Sudeste</option>
+                    <option value="sul">Sul</option>
+                </select>
+            </div>
+            <div>
+                <label for="cityFilter" class="block text-xs text-gray-400 uppercase font-bold mb-1">Cidade</label>
+                <select id="cityFilter" class="w-full rounded-lg border border-gray-200 bg-white px-4 py-2.5 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#066a04]">
+                    <option value="">Todas as cidades</option>
+                </select>
+            </div>
+            <div>
+                <label for="ratingFilter" class="block text-xs text-gray-400 uppercase font-bold mb-1">Avaliação</label>
+                <select id="ratingFilter" class="w-full rounded-lg border border-gray-200 bg-white px-4 py-2.5 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#066a04]">
+                    <option value="0">Todas as avaliações</option>
+                    <option value="4.5">A partir de 4,5 ★</option>
+                    <option value="4">A partir de 4,0 ★</option>
+                    <option value="3.5">A partir de 3,5 ★</option>
+                </select>
+            </div>
+        </div>
+
+        <div id="companiesGrid" class="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-8">
+        </div>
+
+        <p id="noResults" class="hidden text-center text-gray-500 italic py-16">Nenhuma empresa encontrada para os filtros selecionados.</p>
+    </main>
+
+    <div id="companyModal" class="fixed inset-0 z-[9999] hidden">
+        <div class="absolute inset-0 bg-black/50" onclick="closeCompanyModal()"></div>
+        <div class="absolute inset-0 flex items-center justify-center p-4 pointer-events-none">
+            <div class="bg-white rounded-2xl max-w-2xl w-full max-h-[85vh] overflow-y-auto shadow-2xl pointer-events-auto">
+                <div class="p-6 sm:p-8">
+                    <div class="flex justify-between items-start gap-4 mb-6">
+                        <div class="flex items-center gap-4">
+                            <div class="logo-placeholder w-20 h-20 rounded-xl flex flex-col items-center justify-center shrink-0">
+                                <svg class="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14M14 8h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                                <span class="text-[10px] font-bold uppercase mt-1">Logo</span>
+                            </div>
+                            <div>
+                                <h3 id="modalCompanyName" class="font-display text-2xl font-bold"></h3>
+                                <p id="modalCompanyRegion" class="text-sm text-gray-500"></p>
+                            </div>
+                        </div>
+                        <button type="button" aria-label="Fechar" onclick="closeCompanyModal()" class="text-gray-400 hover:text-gray-700 shrink-0">
+                            <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" xmlns="http://www.w3.org/2000/svg">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                        </button>
+                    </div>
+
+                    <div class="flex items-center gap-2 mb-5">
+                        <span id="modalStars" class="text-amber-500 text-lg leading-none"></span>
+                        <span id="modalRatingText" class="text-sm text-gray-500"></span>
+                    </div>
+
+                    <div class="mb-6">
+                        <span class="text-xs text-gray-400 uppercase font-bold block mb-2">Sobre a empresa</span>
+                        <p id="modalHistory" class="text-gray-600"></p>
+                    </div>
+
+                    <div class="mb-6">
+                        <span class="text-xs text-gray-400 uppercase font-bold block mb-2">Compra</span>
+                        <div id="modalCrops" class="flex flex-wrap gap-2"></div>
+                    </div>
+
+                    <div class="grid sm:grid-cols-2 gap-4 mb-6">
+                        <div class="border rounded-lg p-4" style="border-color: var(--light-border);">
+                            <span class="text-xs text-gray-400 uppercase font-bold">Localização</span>
+                            <p id="modalAddress" class="text-sm text-gray-800 mt-1"></p>
+                            <p id="modalCity" class="text-sm text-gray-500"></p>
+                        </div>
+                        <div class="border rounded-lg p-4" style="border-color: var(--light-border);">
+                            <span class="text-xs text-gray-400 uppercase font-bold">Contato</span>
+                            <a id="modalPhone" href="#" class="flex items-center gap-2 text-sm text-gray-800 mt-1 hover:text-[#066a04]">
+                                <svg class="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" /></svg>
+                                <span id="modalPhoneText"></span>
+                            </a>
+                            <a id="modalEmail" href="#" class="flex items-center gap-2 text-sm text-gray-800 mt-1 hover:text-[#066a04] break-all">
+                                <svg class="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
+                                <span id="modalEmailText"></span>
+                            </a>
+                        </div>
+                    </div>
+
+                    <div>
+                        <span class="text-xs text-gray-400 uppercase font-bold block mb-3">Vendedores</span>
+                        <div id="modalSellers" class="space-y-3"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="site-footer" class="mt-12"></div>
+
+    <script src="../footer.js"></script>
+    <script>
+        function toggleMenu(open) {
+            const menu = document.getElementById('slideMenu');
+            if (!menu) return;
+            menu.classList.toggle('hidden', !open);
+            document.body.style.overflow = open ? 'hidden' : '';
+        }
+    </script>
+    <script>
+        (function() {
+            const REGION_LABELS = {
+                norte: 'Norte',
+                nordeste: 'Nordeste',
+                'centro-oeste': 'Centro-Oeste',
+                sudeste: 'Sudeste',
+                sul: 'Sul'
+            };
+
+            const CROP_TAG_CLASS = 'bg-blue-100 text-blue-800';
+
+            // Diretório fictício de compradores — sem nome de marca real,
+            // só "Empresa Fictícia N" (mesmo padrão usado no catálogo de
+            // insumos). Contato usa domínio de exemplo e DDD real da
+            // cidade, mas número de linha 0000 (nunca atribuído de verdade).
+            const companies = [
+                { id: 1, region: 'centro-oeste', city: 'Sorriso, MT', address: 'Rodovia BR-163, km 712 — Zona Rural', founded: 1998, crops: ['Milho', 'Soja'], rating: 4.6, reviewCount: 54, phone: '(66) 0000-1001', email: 'contato@empresaficticia1.exemplo.com.br',
+                    history: 'Fundada como uma pequena cerealista familiar em 1998, a Empresa Fictícia 1 cresceu junto com a expansão da fronteira agrícola em Sorriso e hoje recebe grãos de produtores de toda a região.',
+                    sellers: [{ name: 'Marcos Ferreira', role: 'Comprador de Grãos' }, { name: 'Juliana Rocha', role: 'Gerente Comercial' }] },
+                { id: 2, region: 'centro-oeste', city: 'Rio Verde, GO', address: 'Rodovia GO-174, km 8 — Distrito Industrial', founded: 2003, crops: ['Soja', 'Milho'], rating: 4.8, reviewCount: 91, phone: '(64) 0000-1002', email: 'contato@empresaficticia2.exemplo.com.br',
+                    history: 'A Empresa Fictícia 2 iniciou as operações em 2003 como armazém de grãos e hoje conta com estrutura própria de armazenagem e logística para atender produtores de Rio Verde e cidades vizinhas.',
+                    sellers: [{ name: 'Eduardo Lima', role: 'Comprador Regional' }, { name: 'Patrícia Souza', role: 'Atendimento ao Produtor' }] },
+                { id: 3, region: 'centro-oeste', city: 'Rondonópolis, MT', address: 'Av. Marechal Rondon, 1450', founded: 1995, crops: ['Soja', 'Algodão'], rating: 4.3, reviewCount: 36, phone: '(66) 0000-1003', email: 'contato@empresaficticia3.exemplo.com.br',
+                    history: 'Com atuação focada em soja e algodão desde 1995, a Empresa Fictícia 3 se consolidou como um dos principais pontos de recebimento de safra em Rondonópolis.',
+                    sellers: [{ name: 'Rafael Costa', role: 'Comprador de Grãos' }, { name: 'Camila Duarte', role: 'Gerente de Relacionamento' }] },
+                { id: 4, region: 'sul', city: 'Cascavel, PR', address: 'Rua das Indústrias, 320', founded: 1987, crops: ['Milho', 'Trigo'], rating: 4.3, reviewCount: 38, phone: '(45) 0000-1004', email: 'contato@empresaficticia4.exemplo.com.br',
+                    history: 'Presente no oeste do Paraná desde 1987, a Empresa Fictícia 4 nasceu como cooperativa local e hoje compra milho e trigo de pequenos e médios produtores da região de Cascavel.',
+                    sellers: [{ name: 'André Martins', role: 'Comprador de Grãos' }, { name: 'Fernanda Alves', role: 'Atendimento ao Produtor' }] },
+                { id: 5, region: 'sul', city: 'Chapecó, SC', address: 'Rodovia SC-480, km 15', founded: 2001, crops: ['Milho', 'Soja', 'Trigo'], rating: 4.5, reviewCount: 67, phone: '(49) 0000-1005', email: 'contato@empresaficticia5.exemplo.com.br',
+                    history: 'A Empresa Fictícia 5 começou em 2001 como um pequeno posto de recebimento em Chapecó e expandiu suas operações para atender três culturas diferentes ao longo do ano.',
+                    sellers: [{ name: 'Thiago Ramos', role: 'Gerente Comercial' }, { name: 'Bianca Teixeira', role: 'Comprador Regional' }] },
+                { id: 6, region: 'sul', city: 'Passo Fundo, RS', address: 'Av. Brasil Leste, 990', founded: 1978, crops: ['Trigo', 'Soja'], rating: 4.7, reviewCount: 58, phone: '(54) 0000-1006', email: 'contato@empresaficticia6.exemplo.com.br',
+                    history: 'Referência em trigo no norte do Rio Grande do Sul desde 1978, a Empresa Fictícia 6 mantém relação direta com produtores de Passo Fundo há mais de uma geração.',
+                    sellers: [{ name: 'Ricardo Nunes', role: 'Comprador de Grãos' }, { name: 'Vanessa Pires', role: 'Atendimento ao Produtor' }] },
+                { id: 7, region: 'sudeste', city: 'Uberlândia, MG', address: 'Rua Coronel Antônio, 210', founded: 2010, crops: ['Café', 'Milho'], rating: 4.1, reviewCount: 22, phone: '(34) 0000-1007', email: 'contato@empresaficticia7.exemplo.com.br',
+                    history: 'A Empresa Fictícia 7 nasceu em 2010 do interesse por cafés especiais e hoje também compra milho de produtores do Triângulo Mineiro.',
+                    sellers: [{ name: 'Gustavo Barros', role: 'Comprador de Café' }, { name: 'Larissa Moreira', role: 'Gerente Comercial' }] },
+                { id: 8, region: 'sudeste', city: 'Ribeirão Preto, SP', address: 'Rodovia Anhanguera, km 305', founded: 2005, crops: ['Café', 'Soja'], rating: 4.4, reviewCount: 49, phone: '(16) 0000-1008', email: 'contato@empresaficticia8.exemplo.com.br',
+                    history: 'Com sede em Ribeirão Preto desde 2005, a Empresa Fictícia 8 atua na compra de café e soja, priorizando parcerias de longo prazo com produtores da região.',
+                    sellers: [{ name: 'Diego Cardoso', role: 'Comprador de Café' }, { name: 'Renata Farias', role: 'Atendimento ao Produtor' }] },
+                { id: 9, region: 'nordeste', city: 'Balsas, MA', address: 'Rodovia BR-230, km 22', founded: 2012, crops: ['Soja', 'Milho'], rating: 4.0, reviewCount: 15, phone: '(99) 0000-1009', email: 'contato@empresaficticia9.exemplo.com.br',
+                    history: 'A Empresa Fictícia 9 se instalou em Balsas em 2012 acompanhando a expansão da soja no Matopiba e hoje é uma referência local para escoamento da safra.',
+                    sellers: [{ name: 'Bruno Azevedo', role: 'Comprador de Grãos' }, { name: 'Aline Guimarães', role: 'Gerente Comercial' }] },
+                { id: 10, region: 'nordeste', city: 'Luís Eduardo Magalhães, BA', address: 'Rodovia BA-458, km 5', founded: 2008, crops: ['Soja', 'Algodão'], rating: 4.4, reviewCount: 43, phone: '(77) 0000-1010', email: 'contato@empresaficticia10.exemplo.com.br',
+                    history: 'Localizada em Luís Eduardo Magalhães desde 2008, a Empresa Fictícia 10 atende produtores de soja e algodão do oeste baiano com estrutura própria de armazenagem.',
+                    sellers: [{ name: 'Felipe Correia', role: 'Comprador Regional' }, { name: 'Débora Nascimento', role: 'Atendimento ao Produtor' }] },
+                { id: 11, region: 'norte', city: 'Santarém, PA', address: 'Av. Tapajós, 780', founded: 2015, crops: ['Soja', 'Milho'], rating: 4.2, reviewCount: 19, phone: '(93) 0000-1011', email: 'contato@empresaficticia11.exemplo.com.br',
+                    history: 'A Empresa Fictícia 11 opera desde 2015 às margens do rio em Santarém, facilitando o escoamento fluvial da produção de soja e milho da região.',
+                    sellers: [{ name: 'Leandro Monteiro', role: 'Comprador de Grãos' }, { name: 'Priscila Andrade', role: 'Gerente Comercial' }] },
+                { id: 12, region: 'norte', city: 'Palmas, TO', address: 'Av. Teotônio Segurado, 1200', founded: 2009, crops: ['Milho', 'Arroz'], rating: 3.9, reviewCount: 12, phone: '(63) 0000-1012', email: 'contato@empresaficticia12.exemplo.com.br',
+                    history: 'Instalada em Palmas desde 2009, a Empresa Fictícia 12 compra milho e arroz de produtores do Tocantins, com foco em pequenas e médias propriedades.',
+                    sellers: [{ name: 'Vitor Aragão', role: 'Comprador Regional' }, { name: 'Sandra Melo', role: 'Atendimento ao Produtor' }] }
+            ];
+
+            const grid = document.getElementById('companiesGrid');
+            const noResults = document.getElementById('noResults');
+            const searchInput = document.getElementById('searchInput');
+            const regionFilter = document.getElementById('regionFilter');
+            const cityFilter = document.getElementById('cityFilter');
+            const ratingFilter = document.getElementById('ratingFilter');
+
+            const accentMap = { 'á':'a','à':'a','â':'a','ã':'a','é':'e','ê':'e','í':'i','ó':'o','ô':'o','õ':'o','ú':'u','ü':'u','ç':'c' };
+            function normalize(str) {
+                return str.toLowerCase().replace(/[áàâãéêíóôõúüç]/g, ch => accentMap[ch]);
+            }
+
+            function renderStars(rating) {
+                const full = Math.round(rating);
+                let html = '';
+                for (let i = 1; i <= 5; i++) {
+                    html += i <= full ? '★' : '<span class="text-gray-300">★</span>';
+                }
+                return html;
+            }
+
+            function companyCardHtml(c) {
+                const cropsHtml = c.crops.map(crop =>
+                    '<span class="crop-tag ' + CROP_TAG_CLASS + '">' + crop + '</span>'
+                ).join('');
+                return (
+                    '<div class="company-card rounded-xl p-6 cursor-pointer" data-region="' + c.region + '" data-city="' + c.city + '" data-rating="' + c.rating + '" data-company-id="' + c.id + '" role="button" tabindex="0">' +
+                        '<div class="flex justify-between items-start gap-3 mb-1">' +
+                            '<h3 class="font-display text-xl font-bold">Empresa Fictícia ' + c.id + '</h3>' +
+                            '<span class="text-xs text-gray-400 uppercase font-bold shrink-0 mt-1">' + REGION_LABELS[c.region] + '</span>' +
+                        '</div>' +
+                        '<p class="text-sm text-gray-500 mb-3">' + c.city + '</p>' +
+                        '<div class="flex items-center gap-2 mb-4">' +
+                            '<span class="text-amber-500 leading-none">' + renderStars(c.rating) + '</span>' +
+                            '<span class="text-sm text-gray-500">' + c.rating.toFixed(1) + ' (' + c.reviewCount + ' avaliações)</span>' +
+                        '</div>' +
+                        '<div class="mb-4">' +
+                            '<span class="text-xs text-gray-400 uppercase font-bold block mb-2">Compra</span>' +
+                            '<div class="flex flex-wrap gap-2">' + cropsHtml + '</div>' +
+                        '</div>' +
+                        '<div class="border-t pt-4 space-y-2">' +
+                            '<a href="tel:+55' + c.phone.replace(/\D/g, '') + '" class="flex items-center gap-2 text-sm text-gray-700 hover:text-[#066a04] transition-colors">' +
+                                '<svg class="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" /></svg>' +
+                                c.phone +
+                            '</a>' +
+                            '<a href="mailto:' + c.email + '" class="flex items-center gap-2 text-sm text-gray-700 hover:text-[#066a04] transition-colors break-all">' +
+                                '<svg class="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>' +
+                                c.email +
+                            '</a>' +
+                        '</div>' +
+                        '<span class="mt-4 inline-block text-sm font-semibold" style="color: var(--forest-green);">Ver perfil da empresa &rarr;</span>' +
+                    '</div>'
+                );
+            }
+
+            function buildCityOptions() {
+                const cities = Array.from(new Set(companies.map(c => c.city))).sort((a, b) => a.localeCompare(b, 'pt-BR'));
+                cityFilter.innerHTML = '<option value="">Todas as cidades</option>' +
+                    cities.map(city => '<option value="' + city + '">' + city + '</option>').join('');
+            }
+
+            function applyFilters() {
+                const query = normalize(searchInput.value.trim());
+                const region = regionFilter.value;
+                const city = cityFilter.value;
+                const minRating = parseFloat(ratingFilter.value);
+
+                let visibleCount = 0;
+                Array.from(grid.children).forEach(card => {
+                    const text = normalize(card.textContent);
+                    const matches = (!query || text.includes(query)) &&
+                        (!region || card.dataset.region === region) &&
+                        (!city || card.dataset.city === city) &&
+                        (parseFloat(card.dataset.rating) >= minRating);
+                    card.classList.toggle('hidden', !matches);
+                    if (matches) visibleCount++;
+                });
+
+                noResults.classList.toggle('hidden', visibleCount > 0);
+            }
+
+            grid.innerHTML = companies.map(companyCardHtml).join('');
+            buildCityOptions();
+
+            searchInput.addEventListener('input', applyFilters);
+            regionFilter.addEventListener('change', applyFilters);
+            cityFilter.addEventListener('change', applyFilters);
+            ratingFilter.addEventListener('change', applyFilters);
+
+            grid.addEventListener('click', function(e) {
+                if (e.target.closest('a')) return;
+                const card = e.target.closest('.company-card');
+                if (card) openCompanyModal(parseInt(card.dataset.companyId, 10));
+            });
+            grid.addEventListener('keydown', function(e) {
+                if ((e.key === 'Enter' || e.key === ' ') && e.target.classList.contains('company-card')) {
+                    e.preventDefault();
+                    openCompanyModal(parseInt(e.target.dataset.companyId, 10));
+                }
+            });
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape') closeCompanyModal();
+            });
+
+            window.openCompanyModal = function(id) {
+                const c = companies.find(function(item) { return item.id === id; });
+                if (!c) return;
+
+                document.getElementById('modalCompanyName').textContent = 'Empresa Fictícia ' + c.id;
+                document.getElementById('modalCompanyRegion').textContent = c.city + ' · ' + REGION_LABELS[c.region];
+                document.getElementById('modalStars').innerHTML = renderStars(c.rating);
+                document.getElementById('modalRatingText').textContent = c.rating.toFixed(1) + ' (' + c.reviewCount + ' avaliações) · desde ' + c.founded;
+                document.getElementById('modalHistory').textContent = c.history;
+                document.getElementById('modalCrops').innerHTML = c.crops.map(function(crop) {
+                    return '<span class="crop-tag ' + CROP_TAG_CLASS + '">' + crop + '</span>';
+                }).join('');
+                document.getElementById('modalAddress').textContent = c.address;
+                document.getElementById('modalCity').textContent = c.city;
+
+                const phoneLink = document.getElementById('modalPhone');
+                phoneLink.href = 'tel:+55' + c.phone.replace(/\D/g, '');
+                document.getElementById('modalPhoneText').textContent = c.phone;
+
+                const emailLink = document.getElementById('modalEmail');
+                emailLink.href = 'mailto:' + c.email;
+                document.getElementById('modalEmailText').textContent = c.email;
+
+                document.getElementById('modalSellers').innerHTML = c.sellers.map(function(s) {
+                    return '<div class="flex items-center gap-3">' +
+                        '<div class="w-9 h-9 rounded-full bg-[#eaf7e2] flex items-center justify-center text-[#066a04] font-bold text-sm shrink-0">' +
+                            s.name.charAt(0) +
+                        '</div>' +
+                        '<div>' +
+                            '<p class="text-sm font-semibold text-gray-800">' + s.name + '</p>' +
+                            '<p class="text-xs text-gray-500">' + s.role + '</p>' +
+                        '</div>' +
+                    '</div>';
+                }).join('');
+
+                document.getElementById('companyModal').classList.remove('hidden');
+                document.body.style.overflow = 'hidden';
+            };
+
+            window.closeCompanyModal = function() {
+                document.getElementById('companyModal').classList.add('hidden');
+                document.body.style.overflow = '';
+            };
+        })();
+    </script>
+</body>
+</html>
