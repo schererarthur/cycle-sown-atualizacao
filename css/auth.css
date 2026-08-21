@@ -103,6 +103,13 @@ body {
     max-width: 420px;
 }
 
+.panel-logo {
+    height: 160px;
+    width: auto;
+    margin-bottom: 28px;
+    display: block;
+}
+
 .panel-title {
     margin: 0;
     font-size: 38px;
@@ -161,7 +168,7 @@ body {
 }
 
 .logo-img {
-    height: 40px;
+    height: 48px;
     width: auto;
 }
 
@@ -385,6 +392,11 @@ body {
 
     .panel-left-content {
         max-width: none;
+    }
+
+    .panel-logo {
+        height: 88px;
+        margin-bottom: 16px;
     }
 
     .panel-title {

@@ -3,10 +3,10 @@
 // <div id="site-footer"></div> and this script fills it in, so the
 // markup only needs to be edited here instead of on every page.
 //
-// Placeholders to fill in with real data:
-//   [usuario_do_instagram]  -> Instagram handle (used in both the link and the label)
-//   [email@exemplo.com]     -> contact e-mail (used in both the mailto: link and the label)
-//   [Nome do Fundador 1/2]  -> founders' names
+// Real contact data:
+//   Instagram: @cyclesown_oficial
+//   E-mail:    cyclesown@gmail.com
+//   Criador:   Arthur Gustavo Scherer
 (function () {
     // footer.js always lives at the site root next to img/, but pages that
     // include it sit at different depths (e.g. empresas/index.html uses
@@ -24,7 +24,7 @@
                     <h3 id="footer-contact-heading" class="font-display text-xl font-semibold mb-4">Contato</h3>
                     <ul class="space-y-3">
                         <li>
-                            <a href="https://instagram.com/[usuario_do_instagram]" target="_blank" rel="noopener noreferrer"
+                            <a href="https://www.instagram.com/cyclesown_oficial/" target="_blank" rel="noopener noreferrer"
                                aria-label="Instagram da Cycle Sown, abre em nova aba"
                                class="inline-flex items-center gap-2 text-white/80 hover:text-white transition-colors">
                                 <!-- Recent lucide releases dropped brand/logo icons from the core
@@ -36,25 +36,24 @@
                                     <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path>
                                     <line x1="17.5" x2="17.51" y1="6.5" y2="6.5"></line>
                                 </svg>
-                                <span>@[usuario_do_instagram]</span>
+                                <span>@cyclesown_oficial</span>
                             </a>
                         </li>
                         <li>
-                            <a href="mailto:[email@exemplo.com]"
+                            <a href="mailto:cyclesown@gmail.com"
                                aria-label="Enviar e-mail para a Cycle Sown"
                                class="inline-flex items-center gap-2 text-white/80 hover:text-white transition-colors">
                                 <i data-lucide="mail" class="w-5 h-5" aria-hidden="true"></i>
-                                <span>[email@exemplo.com]</span>
+                                <span>cyclesown@gmail.com</span>
                             </a>
                         </li>
                     </ul>
                 </section>
 
                 <section aria-labelledby="footer-founders-heading">
-                    <h3 id="footer-founders-heading" class="font-display text-xl font-semibold mb-4">Fundadores</h3>
+                    <h3 id="footer-founders-heading" class="font-display text-xl font-semibold mb-4">Criador</h3>
                     <ul class="space-y-2 text-white/80">
-                        <li>[Nome do Fundador 1]</li>
-                        <li>[Nome do Fundador 2]</li>
+                        <li>Arthur Gustavo Scherer</li>
                     </ul>
                 </section>
             </div>

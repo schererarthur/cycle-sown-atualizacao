@@ -8,6 +8,7 @@
 
 require('dotenv').config();
 
+const path = require('path');
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
@@ -30,8 +31,12 @@ const app = express();
 // API — com o padrão "same-origin" do Helmet, o navegador bloqueia a
 // resposta mesmo com CORS liberado (curl não reproduz esse bloqueio,
 // só navegadores aplicam essa política).
+// contentSecurityPolicy fica desligado porque as páginas HTML do site usam
+// script/style inline e atributos onclick — a CSP padrão do Helmet bloquearia
+// tudo isso no navegador.
 app.use(helmet({
-    crossOriginResourcePolicy: { policy: 'cross-origin' }
+    crossOriginResourcePolicy: { policy: 'cross-origin' },
+    contentSecurityPolicy: false
 }));
 
 // CORS: por padrão, um navegador bloqueia chamadas de um site (frontend)
@@ -51,6 +56,11 @@ app.use(cors({
 
 // Faz o Express entender corpo de requisição em JSON (req.body)
 app.use(express.json());
+
+// Serve os arquivos estáticos do frontend (index.html, login.html, css/, js/, img/...)
+// que ficam na pasta pai de backend/.
+const FRONTEND_DIR = path.join(__dirname, '..');
+app.use(express.static(FRONTEND_DIR));
 
 // Todas as rotas de autenticação ficam sob /api/auth/...
 app.use('/api/auth', authRoutes);
@@ -74,7 +84,14 @@ app.get('/api/health', (req, res) => {
     res.json({ status: 'ok' });
 });
 
-// Qualquer rota não encontrada cai aqui
+// Qualquer rota GET que não seja /api/... e não bateu em nenhum arquivo
+// estático cai aqui e recebe a página inicial (ex: acessar a raiz do domínio).
+app.get('*', (req, res, next) => {
+    if (req.path.startsWith('/api/')) return next();
+    res.sendFile(path.join(FRONTEND_DIR, 'index.html'));
+});
+
+// Qualquer rota não encontrada (sobrou só /api/... sem match) cai aqui
 app.use((req, res) => {
     res.status(404).json({ error: 'Rota não encontrada' });
 });
