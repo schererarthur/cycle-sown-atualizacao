@@ -3,12 +3,9 @@
 // do formulário de index.html via IA (backend: POST /api/parse-laudo).
 // ============================================================================
 
-// Mesmo endereço de API usado em js/auth.js: backend local em desenvolvimento,
-// backend publicado (Railway) em produção.
-const LAUDO_API_BASE_URL = (window.location.protocol === 'file:' ||
-    ['localhost', '127.0.0.1'].includes(window.location.hostname))
-    ? 'http://localhost:3000/api'
-    : 'https://backend-production-2af81.up.railway.app/api';
+// Mesmo endereço de API usado em js/auth.js: caminho relativo, já que o
+// backend serve o frontend a partir da mesma origem.
+const LAUDO_API_BASE_URL = '/api';
 
 const LAUDO_MAX_FILE_SIZE = 20 * 1024 * 1024; // 20 MB
 const LAUDO_ALLOWED_TYPES = ['application/pdf', 'image/png', 'image/jpeg', 'image/webp'];

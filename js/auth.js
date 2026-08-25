@@ -3,14 +3,10 @@
 // Este arquivo é usado tanto por login.html quanto por register.html.
 // ============================================================================
 
-// Endereço da API. Abrindo o arquivo direto (file://) ou em localhost/127.0.0.1
-// usa o backend local (dev); qualquer outro host (ex: GitHub Pages) usa o
-// backend publicado na Railway.
-const isLocalDev = window.location.protocol === 'file:' ||
-    ['localhost', '127.0.0.1'].includes(window.location.hostname);
-const API_BASE_URL = isLocalDev
-    ? 'http://localhost:3000/api'
-    : 'https://backend-production-2af81.up.railway.app/api';
+// Endereço da API. O backend serve o frontend a partir da mesma origem
+// (backend/public/), então basta um caminho relativo — funciona tanto
+// local (npm start) quanto em produção (Render).
+const API_BASE_URL = '/api';
 
 // ---------------------------------------------------------------------------
 // Validações (mesmas regras aplicadas no backend, aqui só para dar feedback

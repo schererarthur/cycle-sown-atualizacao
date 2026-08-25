@@ -7,11 +7,7 @@
 // ============================================================================
 
 (function () {
-    const isLocalDev = window.location.protocol === 'file:' ||
-        ['localhost', '127.0.0.1'].includes(window.location.hostname);
-    const API_BASE_URL = isLocalDev
-        ? 'http://localhost:3000/api'
-        : 'https://backend-production-2af81.up.railway.app/api';
+    const API_BASE_URL = '/api';
 
     // Paleta categórica só para distinguir culturas nos gráficos — não faz
     // parte do esquema de status (bom/regular/ruim) do resto do site, que
