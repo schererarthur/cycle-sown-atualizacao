@@ -119,6 +119,12 @@ const cropDatabase = {
 // no relatório. `options`/`default` aqui são a fonte única de verdade: os
 // <select id="{campo}_unit"> em index.html começam vazios e são preenchidos
 // por initUnitSelectors().
+// Exceção: calcularComplexoSortivo() (Ca/Mg/K/Al/H+Al) e o preenchimento
+// automático via laudo (js/laudo-parser-client.js) SÃO unit-aware — usam
+// valorCanonico()/toCanonical() (js/units.js) para converter antes de
+// calcular/gravar. O restante do site (classificação de adequação, score de
+// saúde do solo etc.) ainda assume que o valor exibido já está na unidade
+// canônica.
 // ----------------------------------------------------------------------------
 const fieldUnitConfig = {
     organicMatter: { options: ['%', 'g/kg', 'g/dm³'], default: '%' },
@@ -131,7 +137,7 @@ const fieldUnitConfig = {
     siltContent: { options: ['g/kg', '%', 'g/dm³'], default: 'g/kg' },
     clayContent: { options: ['g/kg', '%', 'g/dm³'], default: 'g/kg' },
     phosphorus: { options: ['ppm (mg/dm³)', 'mg/kg'], default: 'ppm (mg/dm³)' },
-    potassium: { options: ['ppm (mg/dm³)', 'mg/kg', 'cmolc/dm³'], default: 'ppm (mg/dm³)' },
+    potassium: { options: ['ppm (mg/dm³)', 'mg/kg', 'cmolc/dm³', 'mmolc/dm³'], default: 'ppm (mg/dm³)' },
     calcium: { options: ['cmolc/dm³', 'mmolc/dm³', 'mg/dm³'], default: 'cmolc/dm³' },
     magnesium: { options: ['cmolc/dm³', 'mmolc/dm³', 'mg/dm³'], default: 'cmolc/dm³' },
     sulfur: { options: ['ppm (mg/dm³)', 'mg/kg'], default: 'ppm (mg/dm³)' },
@@ -172,6 +178,21 @@ function getFieldUnit(field) {
     if (!config) return null;
     const select = document.getElementById(`${field}_unit`);
     return select ? select.value : config.default;
+}
+
+// Lê um campo numérico e devolve o valor já convertido para a unidade
+// canônica do campo (mg/dm³ ou cmolc/dm³, ver js/units.js), a partir da
+// unidade atualmente selecionada no <select> ao lado. Usado por
+// calcularComplexoSortivo() para nunca somar Ca/Mg (cmolc/dm³) com K ou
+// Al ainda em mmolc/dm³ ou mg/dm³ sem converter antes.
+function valorCanonico(field, valorBruto) {
+    if (!Number.isFinite(valorBruto)) return 0;
+    const unidade = getFieldUnit(field);
+    if (window.CycleSownUnits) {
+        const convertido = window.CycleSownUnits.toCanonical(field, valorBruto, unidade);
+        if (Number.isFinite(convertido)) return convertido;
+    }
+    return valorBruto;
 }
 
 // ----------------------------------------------------------------------------
@@ -624,7 +645,16 @@ function updateSoilChemistryIndicators() {
             textureSum.textContent = '';
         } else {
             const total = (sand || 0) + (silt || 0) + (clay || 0);
-            textureSum.textContent = `Soma: ${total} g/kg (ideal ≈ 1000 g/kg)`;
+            // Areia/silte/argila têm seletor de unidade próprio
+            // (fieldUnitConfig.sandContent/siltContent/clayContent) — a soma
+            // só faz sentido comparada ao "ideal" na MESMA unidade escolhida
+            // (100% ou 1000 g/kg / g/dm³), então o texto fixo em g/kg estava
+            // errado sempre que o agricultor selecionava %. Usa a unidade de
+            // argila como referência (campo mais comum em laudos ROLAS); os
+            // três campos devem estar na mesma unidade para a soma ter sentido.
+            const unit = getFieldUnit('clayContent') || 'g/kg';
+            const ideal = unit === '%' ? '100 %' : `1000 ${unit}`;
+            textureSum.textContent = `Soma: ${total} ${unit} (ideal ≈ ${ideal})`;
         }
     }
 }
@@ -636,13 +666,20 @@ function updateSoilChemistryIndicators() {
 // uma correção manual no SB/CTC/V%/m% não é sobrescrita até a próxima mudança
 // nesses campos-fonte.
 function calcularComplexoSortivo() {
-    const Ca = parseFloat(document.getElementById('calcium')?.value) || 0;
-    const Mg = parseFloat(document.getElementById('magnesium')?.value) || 0;
-    const K_mgdm3 = parseFloat(document.getElementById('potassium')?.value) || 0;
-    const Al = parseFloat(document.getElementById('aluminum')?.value) || 0;
-    const HAl = parseFloat(document.getElementById('potentialAcidity')?.value) || 0;
+    // Cada campo é lido na unidade atualmente selecionada no <select> ao
+    // lado (fieldUnitConfig) e convertido para a unidade canônica antes de
+    // entrar nas somas abaixo — antes desta correção, um laudo em
+    // mmolc/dm³ (Ca/Mg/Al/H+Al) ou cmolc/mmolc/dm³ (K) era somado como se
+    // já estivesse em cmolc/dm³/mg/dm³, errando por um fator de 10x/391x.
+    const Ca = valorCanonico('calcium', parseFloat(document.getElementById('calcium')?.value));
+    const Mg = valorCanonico('magnesium', parseFloat(document.getElementById('magnesium')?.value));
+    const K_mgdm3 = valorCanonico('potassium', parseFloat(document.getElementById('potassium')?.value));
+    const Al = valorCanonico('aluminum', parseFloat(document.getElementById('aluminum')?.value));
+    const HAl = valorCanonico('potentialAcidity', parseFloat(document.getElementById('potentialAcidity')?.value));
 
-    // Converte K de mg/dm³ (ppm) para cmolc/dm³ (massa molar do K / valência)
+    // Converte K de mg/dm³ (ppm, unidade canônica) para cmolc/dm³ (massa
+    // molar do K / valência) — só aqui, porque SB soma cargas (cmolc/dm³),
+    // não massa.
     const K_cmolc = K_mgdm3 / 391;
 
     const SB = Ca + Mg + K_cmolc;
@@ -883,11 +920,20 @@ function computeCropCompatibility(soil, cropKey) {
                 if (maybe !== undefined) soilVal = maybe && maybe.val !== undefined ? maybe.val : maybe;
             }
         }
-        const score = (soilVal !== null && soilVal !== undefined) ? calculateNutrientScore(nutr, soilVal, crop) : 0;
         const weight = macroKeys.includes(nutr) ? 1.5 : 1.0;
-        nutrientScores[nutr] = { score: Math.round(score), value: soilVal };
-        weightedSum += score * weight;
-        weightSum += weight;
+        if (soilVal !== null && soilVal !== undefined) {
+            const score = calculateNutrientScore(nutr, soilVal, crop);
+            nutrientScores[nutr] = { score: Math.round(score), value: soilVal };
+            weightedSum += score * weight;
+            weightSum += weight;
+        } else {
+            // Nutriente não informado no laudo: fica de fora do cálculo (nem
+            // soma peso nem score) em vez de contar como score 0 — antes, um
+            // laudo incompleto (comum: nem todo laudo mede os 10 nutrientes)
+            // derrubava a compatibilidade da cultura por "falta de dado",
+            // como se o solo realmente tivesse esse nutriente zerado.
+            nutrientScores[nutr] = { score: null, value: null };
+        }
     });
 
     const nutrientAvg = weightSum > 0 ? Math.round(weightedSum / weightSum) : 0;

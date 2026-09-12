@@ -257,13 +257,25 @@
                     <div class="grid grid-cols-2 gap-3">
                         <div>
                             <label class="block text-sm font-medium text-slate-700 mb-1">Cultura plantada</label>
+                            <!-- Os valores (exceto "—" e "Pousio", que não são cultura) precisam
+                                 bater exatamente com as chaves de backend/data/culturas.js — é
+                                 contra esse nome que routes/rotacao.js e utils/rotacaoEngine.js
+                                 buscam (CULTURAS[cultura_nome]) pra saber a família botânica da
+                                 cultura atual do talhão e aplicar as regras de evitar_apos/
+                                 ideal_apos. "Aveia" (antes) não batia com a chave real "Aveia
+                                 Preta" — o lookup falhava silenciosamente (virava null) e a
+                                 recomendação de rotação ignorava a cultura atual. "Pousio" (solo
+                                 em descanso) não é uma cultura real, então intencionalmente NÃO
+                                 tem entrada em CULTURAS — o mesmo lookup falha, mas aí o
+                                 resultado (null = sem restrição de família) é o comportamento
+                                 correto pra solo em pousio. Ver CULTURA_ALIAS abaixo. -->
                             <select name="cultura_nome" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm">
                                 <option value="">—</option>
                                 <option>Soja</option>
                                 <option>Milho</option>
                                 <option>Trigo</option>
                                 <option>Fumo</option>
-                                <option>Aveia</option>
+                                <option>Aveia Preta</option>
                                 <option>Pousio</option>
                             </select>
                         </div>
@@ -317,6 +329,7 @@
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.js"></script>
+    <script src="js/units.js"></script>
     <script>
         function toggleMenu(open) {
             const menu = document.getElementById('slideMenu');
@@ -416,7 +429,16 @@
             const solo = talhao.solo || {};
             switch (layer) {
                 case 'fertilidade': return talhao.fertilidade;
-                case 'ph': return solo.ph != null ? ((solo.ph - 4) / 3) * 100 : null;
+                // A fórmula linear antiga ((ph-4)/3)*100 tratava pH mais alto
+                // como sempre melhor (pH 8,5 pontuava mais que o pH 6,0
+                // ideal) — solo alcalino é tão ruim quanto ácido para a
+                // maioria das culturas, então agora o score penaliza a
+                // distância até 6,0 pros dois lados.
+                case 'ph': {
+                    if (solo.ph == null) return null;
+                    const distance = Math.abs(solo.ph - 6.0);
+                    return Math.max(0, 100 - distance * 40);
+                }
                 case 'K': return solo.K != null ? (solo.K / 200) * 100 : null;
                 case 'P': return solo.P != null ? (solo.P / 30) * 100 : null;
                 case 'V': return solo.V != null ? solo.V : null;
@@ -775,7 +797,25 @@
             { formField: 'solo_ca', get: (r) => r.soilData.nutrients && r.soilData.nutrients.calcium, unitField: 'calcium', expectedUnit: 'cmolc/dm³' },
             { formField: 'solo_mg', get: (r) => r.soilData.nutrients && r.soilData.nutrients.magnesium, unitField: 'magnesium', expectedUnit: 'cmolc/dm³' },
             { formField: 'solo_v', get: (r) => r.soilData.vPercent },
-            { formField: 'solo_smp', get: (r) => r.soilData.indiceSMP }
+            { formField: 'solo_smp', get: (r) => r.soilData.indiceSMP },
+            { formField: 'solo_ctc', get: (r) => r.soilData.ctcPH7, unitField: 'ctcPH7', expectedUnit: 'cmolc/dm³' },
+            // Argila é sempre convertida (não só avisada) porque o padrão do
+            // formulário de análise (fieldUnitConfig.clayContent em main.js) é
+            // g/kg, diferente da unidade que este campo espera aqui (%) — sem
+            // isso, um valor típico de ~350 g/kg seria gravado como "350%".
+            {
+                formField: 'solo_argila',
+                get: (r) => {
+                    const raw = r.soilData.texture && r.soilData.texture.clay;
+                    if (raw === null || raw === undefined || raw === '') return raw;
+                    const unit = r.soilData.units && r.soilData.units.clayContent;
+                    if (window.CycleSownUnits && unit) {
+                        const converted = window.CycleSownUnits.toCanonical('clay', raw, unit);
+                        if (Number.isFinite(converted)) return converted;
+                    }
+                    return raw;
+                }
+            }
         ];
 
         function applySoilReportToForm(report) {
@@ -810,6 +850,24 @@
             if (report) applySoilReportToForm(report);
         });
 
+        // Nomes de cultura vêm de lugares com convenções diferentes: o
+        // <select> deste formulário usa Título (mesmas chaves de
+        // backend/data/culturas.js, ver comentário no <select> acima),
+        // mas main.js/cropDatabase (index.html, recommendations.html,
+        // relatórios) usa chaves minúsculas — 'tabaco' em vez de 'Fumo',
+        // por exemplo. CULTURA_ALIAS normaliza qualquer uma dessas formas
+        // para o nome canônico esperado por CULTURAS/adubacaoEngine, para
+        // que um talhão nunca fique com um cultura_nome que o backend não
+        // reconhece (e a recomendação de rotação silenciosamente ignore a
+        // cultura atual, como acontecia com "Aveia" — ver acima).
+        const CULTURA_ALIAS = { 'milho': 'Milho', 'soja': 'Soja', 'trigo': 'Trigo', 'tabaco': 'Fumo', 'fumo': 'Fumo' };
+
+        function normalizeCulturaNome(nome) {
+            if (!nome) return nome;
+            const alias = CULTURA_ALIAS[String(nome).trim().toLowerCase()];
+            return alias || nome;
+        }
+
         // --- Modal de criação/edição ---
         function openTalhaoModal(talhao) {
             const modal = document.getElementById('talhaoModal');
@@ -825,7 +883,7 @@
                 title.textContent = `Editar ${talhao.nome}`;
                 form.nome.value = talhao.nome || '';
                 form.area_ha.value = talhao.area_ha ?? '';
-                form.cultura_nome.value = (talhao.cultura && talhao.cultura.nome) || '';
+                form.cultura_nome.value = normalizeCulturaNome(talhao.cultura && talhao.cultura.nome) || '';
                 form.cultura_estagio.value = (talhao.cultura && talhao.cultura.estagio) || '';
                 const solo = talhao.solo || {};
                 form.solo_ph.value = solo.ph ?? '';
@@ -860,7 +918,7 @@
                 const raw = fd.get(key);
                 out[key] = raw !== '' ? Number(raw) : null;
             });
-            out.cultura_nome = fd.get('cultura_nome') || null;
+            out.cultura_nome = normalizeCulturaNome(fd.get('cultura_nome')) || null;
             out.cultura_estagio = fd.get('cultura_estagio') || null;
             return out;
         }

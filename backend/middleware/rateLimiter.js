@@ -1,7 +1,8 @@
 // ============================================================================
-// Proteção contra tentativas de login em excesso (força bruta).
+// Limitadores de requisição (express-rate-limit) usados pelas rotas.
 //
-// Usamos duas camadas, uma em cima da outra:
+// Login — proteção contra tentativas em excesso (força bruta), em duas
+// camadas, uma em cima da outra:
 //
 // 1) `loginRateLimiter` — um limite genérico (biblioteca express-rate-limit)
 //    que barra QUALQUER IP que faça requisições demais em pouco tempo.
@@ -11,6 +12,8 @@
 //    o login: consultamos a própria tabela `login_attempts` e, se esse IP
 //    teve mais de 5 tentativas malsucedidas na última hora, bloqueamos
 //    novas tentativas por 15 minutos a partir da última falha.
+//
+// Laudo por IA — `laudoParseRateLimiter`, ver comentário ao lado dela.
 // ============================================================================
 
 const rateLimit = require('express-rate-limit');
@@ -22,6 +25,21 @@ const loginRateLimiter = rateLimit({
     standardHeaders: true,
     legacyHeaders: false,
     message: { error: 'Muitas requisições. Tente novamente em alguns minutos.' }
+});
+
+// Limite de uso da IA (Anthropic) para leitura de laudo — POST
+// /api/parse-laudo. Cada chamada custa dinheiro (API do Claude) e sobe um
+// arquivo, então limitamos por USUÁRIO (não por IP, ao contrário de
+// `loginRateLimiter` acima) — precisa rodar DEPOIS de authMiddleware, que
+// preenche req.user. Se por algum motivo req.user não existir ainda,
+// cai para IP como uma segunda camada de proteção.
+const laudoParseRateLimiter = rateLimit({
+    windowMs: 60 * 60 * 1000, // janela de 1 hora
+    max: 10,                  // no máximo 10 leituras de laudo por usuário nessa janela
+    standardHeaders: true,
+    legacyHeaders: false,
+    keyGenerator: (req) => (req.user && req.user.userId) ? `user:${req.user.userId}` : req.ip,
+    message: { error: 'Limite de 10 leituras de laudo por hora atingido. Tente novamente mais tarde ou preencha o formulário manualmente.' }
 });
 
 async function loginAttemptGuard(req, res, next) {
@@ -58,4 +76,4 @@ async function loginAttemptGuard(req, res, next) {
     }
 }
 
-module.exports = { loginRateLimiter, loginAttemptGuard };
+module.exports = { loginRateLimiter, loginAttemptGuard, laudoParseRateLimiter };

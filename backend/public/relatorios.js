@@ -254,7 +254,16 @@
                 </div>
                 <h4 class="text-lg font-bold text-slate-900 mb-1">${escapeHtml(alt.cultura)}</h4>
                 <p class="text-sm text-slate-600 mb-1">${alt.cobertura ? `Cobertura — custo ${money(alt.custo_estimado_ha)}/ha` : `Lucro estimado: ${money(alt.lucro_estimado_ha)}/ha`}</p>
-                ${(() => { const j = alt.justificativas.find((x) => !x.startsWith('')); return j ? `<p class="text-xs text-slate-500">${escapeHtml(j)}</p>` : ''; })()}
+                ${(() => {
+                    // montarJustificativas() (rotacaoEngine.js) prefixa os motivos
+                    // positivos com "✓ " e deixa os alertas de correção de solo sem
+                    // prefixo ("Solo precisa correção: ...") — aqui queremos só o
+                    // primeiro motivo positivo como resumo de uma linha. O código
+                    // antigo (`!x.startsWith('')`) nunca era verdadeiro (toda string
+                    // começa com ''), então essa linha nunca aparecia.
+                    const j = alt.justificativas.find((x) => x.startsWith('✓'));
+                    return j ? `<p class="text-xs text-slate-500">${escapeHtml(j)}</p>` : '';
+                })()}
                 ${alt.alertas.length ? `<p class="text-xs text-amber-600 mt-1">${alt.alertas.map(escapeHtml).join(' · ')}</p>` : ''}
             </div>
         `).join('');
@@ -592,10 +601,23 @@
         copper: 'Cobre (Cu)', boron: 'Boro (B)'
     };
     const LAUDO_MACRO_KEYS = ['Fósforo (P)', 'Potássio (K)', 'Cálcio (Ca)', 'Magnésio (Mg)', 'Enxofre (S)'];
+    // Cálcio e Magnésio são canônicos em cmolc/dm³ (ver backend/utils/units.js
+    // e fieldUnitConfig em main.js), não mg/dm³ — as referências antigas
+    // (1000 e 120) tratavam um Ca/Mg típico de ~4/~1 cmolc/dm³ como se fosse
+    // uma fração de mg/dm³, fazendo o card sempre marcar "Muito Ruim" mesmo
+    // com o solo em nível ótimo.
     const LAUDO_REFERENCE_VALUES = {
-        'Fósforo (P)': 20, 'Potássio (K)': 150, 'Cálcio (Ca)': 1000,
-        'Magnésio (Mg)': 120, 'Enxofre (S)': 15, 'Ferro (Fe)': 50, 'Manganês (Mn)': 25,
+        'Fósforo (P)': 20, 'Potássio (K)': 150, 'Cálcio (Ca)': 4.0,
+        'Magnésio (Mg)': 1.0, 'Enxofre (S)': 15, 'Ferro (Fe)': 50, 'Manganês (Mn)': 25,
         'Zinco (Zn)': 2.0, 'Cobre (Cu)': 1.0, 'Boro (B)': 1.0
+    };
+    // Unidade de exibição por nutriente (canônica, ver units.js) — antes o
+    // card mostrava "ppm" fixo para todos, inclusive Ca/Mg (cmolc/dm³).
+    const LAUDO_NUTRIENT_UNITS = {
+        'Fósforo (P)': 'mg/dm³', 'Potássio (K)': 'mg/dm³', 'Enxofre (S)': 'mg/dm³',
+        'Ferro (Fe)': 'mg/dm³', 'Manganês (Mn)': 'mg/dm³', 'Zinco (Zn)': 'mg/dm³',
+        'Cobre (Cu)': 'mg/dm³', 'Boro (B)': 'mg/dm³',
+        'Cálcio (Ca)': 'cmolc/dm³', 'Magnésio (Mg)': 'cmolc/dm³'
     };
     const LAUDO_CROP_LABELS = { milho: 'Milho', soja: 'Soja', trigo: 'Trigo', tabaco: 'Tabaco' };
 
@@ -631,6 +653,7 @@
         }
         const percent = Math.min((Number(info.val) / info.ref) * 100, 100);
         const status = percent >= 90 ? 'bom' : (percent < 60 ? 'ruim' : 'regular');
+        const unidade = LAUDO_NUTRIENT_UNITS[name] || 'mg/dm³';
         return `
             <div class="border border-slate-200 rounded-xl p-4 report-section">
                 <div class="flex items-center justify-between gap-3 mb-2">
@@ -639,7 +662,7 @@
                 </div>
                 <div class="flex items-baseline gap-1.5 mb-2">
                     <span class="text-2xl font-black text-slate-900">${info.val}</span>
-                    <span class="text-xs text-slate-400">ppm</span>
+                    <span class="text-xs text-slate-400">${unidade}</span>
                 </div>
                 <div class="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
                     <div class="h-full" style="width:${percent}%; background:${barColor(status)}"></div>
@@ -663,8 +686,9 @@
             const ref = parseFloat(info.ref) || 1;
             if (Number.isNaN(val)) return;
             const short = label.split(' (')[0];
-            if (val < ref * 0.6) recs.push(`${short}: nível muito baixo (${val} ppm). Recomenda-se correção pontual antes do plantio.`);
-            else if (val < ref * 0.9) recs.push(`${short}: nível moderadamente baixo (${val} ppm). Monitorar e, se necessário, corrigir.`);
+            const unidade = LAUDO_NUTRIENT_UNITS[label] || 'mg/dm³';
+            if (val < ref * 0.6) recs.push(`${short}: nível muito baixo (${val} ${unidade}). Recomenda-se correção pontual antes do plantio.`);
+            else if (val < ref * 0.9) recs.push(`${short}: nível moderadamente baixo (${val} ${unidade}). Monitorar e, se necessário, corrigir.`);
         });
         return recs;
     }

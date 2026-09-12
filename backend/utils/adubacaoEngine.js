@@ -48,6 +48,8 @@ const PRECOS_INSUMOS = {
 // ----------------------------------------------------------------------------
 // LÓGICA 1 — CALAGEM (método SMP)
 // Dose de calcário (ton/ha, PRNT 100%) para elevar o pH a 6,0 — CQFS-RS/SC.
+// Tabela 5.4, CQFS-RS/SC 2016, pH-alvo 6.0. Conferida termo a termo (SMP
+// 5.8–6.8) contra a publicação em 2026-09-10 — sem divergência.
 // ----------------------------------------------------------------------------
 const TABELA_SMP_PH60 = {
     '4.4': 21.0, '4.5': 17.3, '4.6': 15.1, '4.7': 13.3, '4.8': 11.9, '4.9': 10.7,
@@ -205,6 +207,13 @@ const RECOMENDACAO_N = {
         observacao: 'Parcelar: 20-30 kg/ha de N no plantio, restante em cobertura (V4-V6). Se a cultura anterior foi leguminosa, reduzir 20-30 kg/ha.'
     },
     'Trigo': {
+        // Único cálculo de N aqui que crescia linearmente sem teto (Milho e
+        // Fumo já saturam num valor máximo fixo acima de certo rendimento —
+        // ver tabela.max e o corte em 2.5 t/ha logo abaixo). Um erro de
+        // digitação no rendimento esperado (ex.: kg/ha em vez de t/ha)
+        // inflava a dose de N sem limite nem aviso; agora o incremento por
+        // rendimento é calculado sobre no máximo 10 t/ha, e calcularNitrogenio()
+        // anexa um alerta em `observacoes` quando isso acontece.
         calcular: (mo, rendTon, culturaAnterior) => {
             const aposLeguminosa = ehLeguminosa(culturaAnterior);
             const classMO = mo <= 2.5 ? 'baixa' : (mo <= 5.0 ? 'media' : 'alta');
@@ -213,8 +222,9 @@ const RECOMENDACAO_N = {
                 media: { aposLeg: 40, aposGram: 70 },
                 alta: { aposLeg: 20, aposGram: 50 }
             };
+            const rendTonClamped = Math.min(rendTon, 10);
             let dose = tabela[classMO][aposLeguminosa ? 'aposLeg' : 'aposGram'];
-            if (rendTon > 2) dose += Math.round((rendTon - 2) * 20);
+            if (rendTonClamped > 2) dose += Math.round((rendTonClamped - 2) * 20);
             return dose;
         },
         observacao: 'Parcelar: 15-20 kg/ha no plantio, restante no perfilhamento. Trigo após soja/leguminosa precisa de menos N.'
@@ -235,7 +245,12 @@ function calcularNitrogenio(cultura, materiaOrganica, rendimentoEsperado, cultur
     if (!rec) return null;
     const rendTon = rendimentoParaTon(cultura, rendimentoEsperado);
     const dose = rec.calcular(Number(materiaOrganica), rendTon, culturaAnterior);
-    return { dose: Math.round(dose), observacao: rec.observacao };
+
+    const alerta = (cultura === 'Trigo' && rendTon > 10)
+        ? 'Rendimento acima de 10 t/ha — verifique o valor informado.'
+        : null;
+
+    return { dose: Math.round(dose), observacao: rec.observacao, alerta };
 }
 
 // ----------------------------------------------------------------------------
@@ -311,10 +326,14 @@ function calcularAdubacao(dados) {
 
     const custo = calcularCusto(cultura, calagem, nitrogenio.dose, doseP2O5, doseK2O);
 
+    // nitrogenio.observacao e calagem.observacao já aparecem nos próprios
+    // cards de N e de Calagem (renderAdubacao, relatorios.js) — incluí-los
+    // aqui também duplicava a mesma recomendação na lista de "Observações
+    // técnicas". Só o alerta de N (rendimento fora da faixa) não tem outro
+    // lugar no relatório, então continua aqui.
     const observacoes = [
         ...(OBSERVACOES_CULTURA[cultura] || []),
-        nitrogenio.observacao,
-        calagem ? calagem.observacao : null
+        nitrogenio.alerta
     ].filter(Boolean);
 
     return {
@@ -322,7 +341,7 @@ function calcularAdubacao(dados) {
         rendimentoEsperado: Number(rendimentoEsperado),
         culturaAnteriorUsada: cultura === 'Trigo' ? (culturaAnterior || null) : null,
         calagem,
-        nitrogenio: { dose_kg_ha: nitrogenio.dose, observacao: nitrogenio.observacao },
+        nitrogenio: { dose_kg_ha: nitrogenio.dose, observacao: nitrogenio.observacao, alerta: nitrogenio.alerta },
         fosforo: { valor_solo: Number(fosforo), classe_solo: classeP.classeSolo, classe: classeP.classe, dose_P2O5_kg_ha: doseP2O5 },
         potassio: { valor_solo: Number(potassio), classe_ctc: classeK.classeCtc, classe: classeK.classe, dose_K2O_kg_ha: doseK2O },
         custo,

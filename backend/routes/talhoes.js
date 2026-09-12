@@ -8,6 +8,7 @@ const express = require('express');
 
 const pool = require('../config/db');
 const authMiddleware = require('../middleware/authMiddleware');
+const { toCanonical } = require('../utils/units');
 
 const router = express.Router();
 
@@ -130,6 +131,100 @@ function toNumberOrNull(value) {
     return Number.isFinite(n) ? n : null;
 }
 
+// Família de conversão (units.js) de cada coluna solo_* que tem unidade de
+// laudo — solo_ph, solo_v, solo_m e solo_smp ficam de fora (pH e índices
+// adimensionais, V%/m% sempre em %, sem unidade de laudo).
+const SOLO_FIELD_UNIT_FAMILY = {
+    solo_mo: 'organicMatter',
+    solo_p: 'phosphorus',
+    solo_k: 'potassium',
+    solo_ca: 'calcium',
+    solo_mg: 'magnesium',
+    solo_ctc: 'ctc',
+    solo_al: 'aluminum',
+    solo_argila: 'clay'
+};
+
+// Converte um campo solo_* para a unidade canônica do motor de cálculo
+// (adubacaoEngine, rotacaoEngine, calcularFertilidade acima) ANTES de
+// gravar no banco — assim todo motor recebe sempre a mesma unidade,
+// independente de em qual unidade o laudo original informava o valor. Se o
+// cliente mandar `${campo}_unit` (ex.: "mmolc/dm³"), converte a partir
+// dela; sem essa chave, assume que o valor já está na unidade canônica
+// (comportamento anterior, mantido por compatibilidade — o formulário
+// atual de mapa-fertilidade.html já pede os valores diretamente nas
+// unidades canônicas, sem seletor de unidade).
+function convertSoloField(field, rawValue, rawUnit) {
+    const numero = toNumberOrNull(rawValue);
+    if (numero === null) return null;
+    const familia = SOLO_FIELD_UNIT_FAMILY[field];
+    if (!familia || !rawUnit) return numero;
+    const convertido = toCanonical(familia, numero, rawUnit);
+    return Number.isFinite(convertido) ? convertido : numero;
+}
+
+// ----------------------------------------------------------------------------
+// Validação de faixa — roda DEPOIS de toNumberOrNull()/convertSoloField(),
+// ou seja, sobre o valor já numérico e já na unidade canônica. Pega tanto
+// erro de digitação (ex.: pH 55) quanto uma conversão de unidade que "sobrou"
+// errada (ex.: K ainda em cmolc/dm³ virando um mg/dm³ de milhares por engano
+// do cliente) — sem isso, um valor absurdo passava direto para o banco e
+// contaminava score de fertilidade, adubação e rotação calculados a partir
+// dele. calcario_prnt entra na mesma tabela por conveniência, mesmo não
+// sendo uma leitura de solo (ver comentário de CALCARIO_FIELDS acima).
+// solo_m (m%) não foi pedida explicitamente, mas é a mesma faixa 0-100 de
+// solo_v (m% = Al / (SB+Al) × 100), então ficaria inconsistente deixar de
+// fora.
+const SOLO_FIELD_RANGES = {
+    solo_ph: [3.0, 10.0],
+    solo_smp: [4.0, 7.5],
+    solo_mo: [0, 15],
+    solo_p: [0, 500],
+    solo_k: [0, 2000],
+    solo_ca: [0, 50],
+    solo_mg: [0, 50],
+    solo_v: [0, 100],
+    solo_ctc: [0, 100],
+    solo_al: [0, 30],
+    solo_m: [0, 100],
+    solo_argila: [0, 100],
+    calcario_prnt: [1, 130]
+};
+
+const SOLO_FIELD_LABELS = {
+    solo_ph: 'pH',
+    solo_mo: 'Matéria orgânica (%)',
+    solo_p: 'Fósforo (mg/dm³)',
+    solo_k: 'Potássio (mg/dm³)',
+    solo_ca: 'Cálcio (cmolc/dm³)',
+    solo_mg: 'Magnésio (cmolc/dm³)',
+    solo_v: 'Saturação por bases (V%)',
+    solo_ctc: 'CTC a pH 7,0',
+    solo_al: 'Alumínio (cmolc/dm³)',
+    solo_m: 'Saturação por alumínio (m%)',
+    solo_smp: 'Índice SMP',
+    solo_argila: 'Argila (%)',
+    calcario_prnt: 'PRNT do calcário (%)'
+};
+
+// Valida um conjunto {campo: valor} contra SOLO_FIELD_RANGES. Ignora
+// null/undefined (campo não informado — nada a validar). Devolve a
+// mensagem de erro do primeiro campo fora da faixa, ou null se todos os
+// campos informados estiverem dentro do esperado.
+function validarFaixasSolo(valores) {
+    for (const [field, value] of Object.entries(valores)) {
+        if (value === null || value === undefined) continue;
+        const range = SOLO_FIELD_RANGES[field];
+        if (!range) continue;
+        const [min, max] = range;
+        if (value < min || value > max) {
+            const label = SOLO_FIELD_LABELS[field] || field;
+            return `${label} fora da faixa esperada (${min}–${max}): valor informado ${value}.`;
+        }
+    }
+    return null;
+}
+
 function rowToTalhao(row) {
     return {
         id: row.id,
@@ -198,12 +293,17 @@ router.post('/', async (req, res) => {
 
     const soloValores = {};
     SOLO_FIELDS.forEach((field) => {
-        soloValores[field] = toNumberOrNull(body[field]);
+        soloValores[field] = convertSoloField(field, body[field], body[`${field}_unit`]);
     });
     const calcarioValores = {};
     CALCARIO_FIELDS.forEach((field) => {
         calcarioValores[field] = toNumberOrNull(body[field]);
     });
+
+    const erroFaixa = validarFaixasSolo({ ...soloValores, ...calcarioValores });
+    if (erroFaixa) {
+        return res.status(400).json({ error: erroFaixa });
+    }
 
     const fertilidadeScore = calcularFertilidade({
         solo_ph: soloValores.solo_ph,
@@ -280,7 +380,7 @@ router.put('/:id', async (req, res) => {
         const soloValores = {};
         SOLO_FIELDS.forEach((field) => {
             soloValores[field] = body[field] !== undefined
-                ? toNumberOrNull(body[field])
+                ? convertSoloField(field, body[field], body[`${field}_unit`])
                 : existing[field];
         });
         const calcarioValores = {};
@@ -289,6 +389,22 @@ router.put('/:id', async (req, res) => {
                 ? toNumberOrNull(body[field])
                 : existing[field];
         });
+
+        // Valida só os campos que vieram NESTA requisição — não os que
+        // caíram no fallback `existing[field]` acima. Assim, um talhão
+        // antigo com um valor fora da faixa (criado antes desta validação
+        // existir) não trava a edição de um campo não relacionado (ex.:
+        // renomear o talhão) até o agricultor corrigir o dado legado.
+        const valoresEnviados = {};
+        [...SOLO_FIELDS, ...CALCARIO_FIELDS].forEach((field) => {
+            if (body[field] !== undefined) {
+                valoresEnviados[field] = field in soloValores ? soloValores[field] : calcarioValores[field];
+            }
+        });
+        const erroFaixa = validarFaixasSolo(valoresEnviados);
+        if (erroFaixa) {
+            return res.status(400).json({ error: erroFaixa });
+        }
 
         const areaHa = body.area_ha !== undefined ? toNumberOrNull(body.area_ha) : existing.area_ha;
         const culturaNome = body.cultura_nome !== undefined

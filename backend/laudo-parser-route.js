@@ -4,6 +4,11 @@
 // frontend preencher o formulário de análise sozinho.
 //
 // POST /api/parse-laudo  (multipart/form-data, campo "laudo")
+//
+// Exige login (authMiddleware) e é limitada a 10 requisições/hora por
+// usuário (laudoParseRateLimiter) — cada leitura custa uma chamada à API
+// do Claude, então sem essas duas camadas qualquer visitante anônimo podia
+// gastar a cota da IA à vontade.
 // ============================================================================
 
 const os = require('os');
@@ -11,6 +16,9 @@ const fs = require('fs/promises');
 const express = require('express');
 const multer = require('multer');
 const Anthropic = require('@anthropic-ai/sdk');
+
+const authMiddleware = require('./middleware/authMiddleware');
+const { laudoParseRateLimiter } = require('./middleware/rateLimiter');
 
 const router = express.Router();
 
@@ -142,7 +150,7 @@ function parseJsonFromModelText(text) {
     }
 }
 
-router.post('/parse-laudo', (req, res) => {
+router.post('/parse-laudo', authMiddleware, laudoParseRateLimiter, (req, res) => {
     upload.single('laudo')(req, res, async (uploadError) => {
         if (uploadError) {
             const message = uploadError.code === 'LIMIT_FILE_SIZE'
@@ -164,7 +172,10 @@ router.post('/parse-laudo', (req, res) => {
 
             const response = await anthropic.messages.create({
                 model: 'claude-sonnet-5',
-                max_tokens: 2048,
+                // Um laudo com várias páginas (histórico, metodologia etc., não só
+                // a página de resultados) podia estourar os 2048 tokens antigos
+                // antes da IA terminar o JSON, quebrando o parse silenciosamente.
+                max_tokens: 4096,
                 thinking: { type: 'disabled' },
                 system: SYSTEM_PROMPT,
                 messages: [
@@ -177,6 +188,17 @@ router.post('/parse-laudo', (req, res) => {
                     }
                 ]
             });
+
+            // Checa POR QUE o modelo parou antes de tentar parsear — um JSON
+            // cortado no meio (max_tokens) ou uma recusa (refusal) não são
+            // "resposta em formato inválido" genérico: dá pra dizer ao
+            // agricultor exatamente o que fazer em cada caso.
+            if (response.stop_reason === 'max_tokens') {
+                return res.status(502).json({ error: 'Laudo muito extenso. Envie apenas a página com os resultados.' });
+            }
+            if (response.stop_reason === 'refusal') {
+                return res.status(502).json({ error: 'Não foi possível processar. Tente com foto mais nítida.' });
+            }
 
             const textBlock = response.content.find((block) => block.type === 'text');
             if (!textBlock) {

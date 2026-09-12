@@ -22,6 +22,7 @@ const relatoriosRoutes = require('./routes/relatorios');
 const laudoParserRoutes = require('./laudo-parser-route');
 
 const app = express();
+app.set('trust proxy', 1);
 
 const fs = require('fs');
 const FRONTEND_DIR = path.join(__dirname, 'public');

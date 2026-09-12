@@ -19,58 +19,59 @@ const LAUDO_ALLOWED_TYPES = ['application/pdf', 'image/png', 'image/jpeg', 'imag
 // se o laudo trouxer SB/CTC/V%/m% já calculados, eles sobrescrevem o valor
 // recalculado; se não trouxer, o valor calculado automaticamente permanece.
 // ----------------------------------------------------------------------------
+// Campos com `unitElementId` são pares valor+unidade no JSON da IA
+// (ex.: data.potassium = { value, unit }); `canonicalField` é o nome de
+// família usado por units.js (backend/utils/units.js, também servido ao
+// frontend como js/units.js) para converter o valor para a unidade
+// canônica dos motores de cálculo ANTES de gravar no campo — ver
+// laudoFillFormFromData() abaixo. Campos sem `unitElementId` (pH, SMP,
+// V%, m%) não têm unidade de laudo e são gravados como vieram.
 const LAUDO_FIELD_MAP = [
     { path: 'phWater', elementId: 'soilPH' },
     { path: 'phCaCl2', elementId: 'soilPHCaCl2' },
     { path: 'smpIndex', elementId: 'indiceSMP' },
 
-    { path: 'organicMatter.value', elementId: 'organicMatter' },
-    { path: 'organicMatter.unit', elementId: 'organicMatter_unit', isUnit: true },
+    { path: 'organicMatter', elementId: 'organicMatter', unitElementId: 'organicMatter_unit', canonicalField: 'organicMatter' },
 
-    { path: 'clay.value', elementId: 'clayContent' },
-    { path: 'clay.unit', elementId: 'clayContent_unit', isUnit: true },
-    { path: 'sand.value', elementId: 'sandContent' },
-    { path: 'sand.unit', elementId: 'sandContent_unit', isUnit: true },
-    { path: 'silt.value', elementId: 'siltContent' },
-    { path: 'silt.unit', elementId: 'siltContent_unit', isUnit: true },
+    { path: 'clay', elementId: 'clayContent', unitElementId: 'clayContent_unit', canonicalField: 'clay' },
+    { path: 'sand', elementId: 'sandContent', unitElementId: 'sandContent_unit', canonicalField: 'sand' },
+    { path: 'silt', elementId: 'siltContent', unitElementId: 'siltContent_unit', canonicalField: 'silt' },
 
-    { path: 'phosphorus.value', elementId: 'phosphorus' },
-    { path: 'phosphorus.unit', elementId: 'phosphorus_unit', isUnit: true },
-    { path: 'potassium.value', elementId: 'potassium' },
-    { path: 'potassium.unit', elementId: 'potassium_unit', isUnit: true },
-    { path: 'calcium.value', elementId: 'calcium' },
-    { path: 'calcium.unit', elementId: 'calcium_unit', isUnit: true },
-    { path: 'magnesium.value', elementId: 'magnesium' },
-    { path: 'magnesium.unit', elementId: 'magnesium_unit', isUnit: true },
-    { path: 'sulfur.value', elementId: 'sulfur' },
-    { path: 'sulfur.unit', elementId: 'sulfur_unit', isUnit: true },
+    { path: 'phosphorus', elementId: 'phosphorus', unitElementId: 'phosphorus_unit', canonicalField: 'phosphorus' },
+    { path: 'potassium', elementId: 'potassium', unitElementId: 'potassium_unit', canonicalField: 'potassium' },
+    { path: 'calcium', elementId: 'calcium', unitElementId: 'calcium_unit', canonicalField: 'calcium' },
+    { path: 'magnesium', elementId: 'magnesium', unitElementId: 'magnesium_unit', canonicalField: 'magnesium' },
+    { path: 'sulfur', elementId: 'sulfur', unitElementId: 'sulfur_unit', canonicalField: 'sulfur' },
 
-    { path: 'aluminum.value', elementId: 'aluminum' },
-    { path: 'aluminum.unit', elementId: 'aluminum_unit', isUnit: true },
-    { path: 'potentialAcidity.value', elementId: 'potentialAcidity' },
-    { path: 'potentialAcidity.unit', elementId: 'potentialAcidity_unit', isUnit: true },
+    { path: 'aluminum', elementId: 'aluminum', unitElementId: 'aluminum_unit', canonicalField: 'aluminum' },
+    { path: 'potentialAcidity', elementId: 'potentialAcidity', unitElementId: 'potentialAcidity_unit', canonicalField: 'potentialAcidity' },
 
-    { path: 'iron.value', elementId: 'iron' },
-    { path: 'iron.unit', elementId: 'iron_unit', isUnit: true },
-    { path: 'manganese.value', elementId: 'manganese' },
-    { path: 'manganese.unit', elementId: 'manganese_unit', isUnit: true },
-    { path: 'zinc.value', elementId: 'zinc' },
-    { path: 'zinc.unit', elementId: 'zinc_unit', isUnit: true },
-    { path: 'copper.value', elementId: 'copper' },
-    { path: 'copper.unit', elementId: 'copper_unit', isUnit: true },
-    { path: 'boron.value', elementId: 'boron' },
-    { path: 'boron.unit', elementId: 'boron_unit', isUnit: true },
+    { path: 'iron', elementId: 'iron', unitElementId: 'iron_unit', canonicalField: 'iron' },
+    { path: 'manganese', elementId: 'manganese', unitElementId: 'manganese_unit', canonicalField: 'manganese' },
+    { path: 'zinc', elementId: 'zinc', unitElementId: 'zinc_unit', canonicalField: 'zinc' },
+    { path: 'copper', elementId: 'copper', unitElementId: 'copper_unit', canonicalField: 'copper' },
+    { path: 'boron', elementId: 'boron', unitElementId: 'boron_unit', canonicalField: 'boron' },
 
     // Complexo sortivo — preenchidos por último de propósito (ver comentário acima).
-    { path: 'sb.value', elementId: 'sb' },
-    { path: 'sb.unit', elementId: 'sb_unit', isUnit: true },
-    { path: 'ctcEffective.value', elementId: 'ctcEfetiva' },
-    { path: 'ctcEffective.unit', elementId: 'ctcEfetiva_unit', isUnit: true },
-    { path: 'ctcPH7.value', elementId: 'ctcPH7' },
-    { path: 'ctcPH7.unit', elementId: 'ctcPH7_unit', isUnit: true },
+    { path: 'sb', elementId: 'sb', unitElementId: 'sb_unit', canonicalField: 'ctc' },
+    { path: 'ctcEffective', elementId: 'ctcEfetiva', unitElementId: 'ctcEfetiva_unit', canonicalField: 'ctc' },
+    { path: 'ctcPH7', elementId: 'ctcPH7', unitElementId: 'ctcPH7_unit', canonicalField: 'ctc' },
     { path: 'vPercentage', elementId: 'vPercent' },
     { path: 'mPercentage', elementId: 'mPercent' }
 ];
+
+// Código curto (mesmo formato que a IA devolve em `*.unit`, ver
+// LAUDO_UNIT_CANDIDATES abaixo) da unidade CANÔNICA de cada família — usado
+// para selecionar, no <select> do campo, a opção que corresponde à unidade
+// canônica depois da conversão (o valor gravado no campo é sempre
+// convertido para essa unidade, então o <select> precisa refletir isso).
+const CANONICAL_UNIT_CODE = {
+    organicMatter: 'percentage', clay: 'percentage', sand: 'percentage', silt: 'percentage',
+    phosphorus: 'mgdm3', potassium: 'mgdm3', sulfur: 'mgdm3',
+    iron: 'mgdm3', manganese: 'mgdm3', zinc: 'mgdm3', copper: 'mgdm3', boron: 'mgdm3',
+    calcium: 'cmolcdm3', magnesium: 'cmolcdm3', aluminum: 'cmolcdm3',
+    potentialAcidity: 'cmolcdm3', ctc: 'cmolcdm3'
+};
 
 // Cada select de unidade em index.html usa o texto literal do laudo como
 // value (ex.: "cmolc/dm³", "ppm (mg/dm³)", "%"), não um código curto. A IA
@@ -144,12 +145,51 @@ function laudoSetFieldValue(entry) {
 
 function laudoFillFormFromData(data) {
     let filledCount = 0;
-    LAUDO_FIELD_MAP.forEach(({ path, elementId, isUnit }) => {
-        const rawValue = laudoGetNestedValue(data, path);
+
+    LAUDO_FIELD_MAP.forEach(({ path, elementId, unitElementId, canonicalField }) => {
+        // Campo sem unidade de laudo (pH, SMP, V%, m%) — grava como veio.
+        if (!unitElementId) {
+            const rawValue = laudoGetNestedValue(data, path);
+            if (rawValue === null || rawValue === undefined || rawValue === '') return;
+            if (laudoSetFieldValue({ elementId, rawValue })) filledCount++;
+            return;
+        }
+
+        const rawUnitCode = laudoGetNestedValue(data, `${path}.unit`);
+        const rawValue = laudoGetNestedValue(data, `${path}.value`);
         if (rawValue === null || rawValue === undefined || rawValue === '') return;
-        const applied = laudoSetFieldValue({ elementId, rawValue, isUnit });
-        if (applied) filledCount++;
+
+        // A unidade é processada ANTES do valor: o <select> já precisa
+        // mostrar a unidade canônica no momento em que o campo numérico
+        // dispara seu evento "input" — calcularComplexoSortivo (main.js) lê
+        // a unidade selecionada NA HORA para converter K/Ca/Mg/Al/H+Al.
+        const unitSelectEl = document.getElementById(unitElementId);
+        if (unitSelectEl) {
+            const targetCode = CANONICAL_UNIT_CODE[canonicalField] || rawUnitCode;
+            const optionValue = laudoFindSelectValueForUnit(unitSelectEl, targetCode);
+            if (optionValue !== null) {
+                unitSelectEl.value = optionValue;
+                unitSelectEl.classList.add('ai-filled');
+                laudoClearHighlightOnEdit(unitSelectEl);
+                unitSelectEl.dispatchEvent(new Event('change', { bubbles: true }));
+                filledCount++;
+            }
+        }
+
+        // Converte para a unidade canônica ANTES de gravar no campo — um
+        // laudo em mmolc/dm³, g/kg ou g/dm³ não pode entrar direto num
+        // motor que espera cmolc/dm³ ou % (ver backend/utils/units.js,
+        // também servido ao frontend como js/units.js).
+        const numericValue = Number(rawValue);
+        let valueToSet = rawValue;
+        if (Number.isFinite(numericValue) && window.CycleSownUnits) {
+            const converted = window.CycleSownUnits.toCanonical(canonicalField, numericValue, rawUnitCode);
+            if (Number.isFinite(converted)) valueToSet = converted;
+        }
+
+        if (laudoSetFieldValue({ elementId, rawValue: valueToSet })) filledCount++;
     });
+
     return filledCount;
 }
 
@@ -199,8 +239,14 @@ async function laudoUploadFile(file) {
         const formData = new FormData();
         formData.append('laudo', file);
 
+        // /api/parse-laudo exige login (authMiddleware, backend) — sem o
+        // header, a API responde 401 antes mesmo de chamar a IA.
+        const token = localStorage.getItem('cycleSownToken');
+        const headers = token ? { Authorization: `Bearer ${token}` } : {};
+
         const response = await fetch(`${LAUDO_API_BASE_URL}/parse-laudo`, {
             method: 'POST',
+            headers,
             body: formData
         });
 

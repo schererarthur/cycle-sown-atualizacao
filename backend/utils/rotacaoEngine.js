@@ -192,6 +192,14 @@ function montarJustificativas({ dados, nomeCultura, ultimaCulturaNome, ultimaCul
 function gerarRecomendacao(talhao, historico, precosPorCultura, dataRef) {
     const proximaSafra = determinarProximaSafra(dataRef);
 
+    // CULTURAS[ultimaCulturaNome] undefined vira null aqui de propósito para
+    // "Pousio" (solo em descanso não é uma cultura, então não tem restrição
+    // de família a herdar — comportamento correto). Para qualquer outro
+    // nome, undefined significa que cultura_nome não bate com uma chave
+    // real de CULTURAS (ver comentário do <select> em mapa-fertilidade.html
+    // e CULTURA_ALIAS lá) — nesse caso o efeito é o mesmo (nenhuma
+    // restrição aplicada), mas silenciosamente ignora a cultura anterior
+    // de verdade em vez de usá-la.
     const ultimaCulturaNome = (historico[0] && historico[0].cultura_nome) || talhao.cultura_nome || null;
     const ultimaCulturaDados = ultimaCulturaNome ? CULTURAS[ultimaCulturaNome] : null;
 
