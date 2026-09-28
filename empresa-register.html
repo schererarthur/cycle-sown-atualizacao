@@ -1,0 +1,260 @@
+<!-- ============================================================================
+     empresa-register.html — cadastro de empresa (mesmo layout split-panel
+     de register.html). O tipo de empresa vem pré-selecionado por
+     ?tipo=insumos|compradora (link de empresa-select.html) e pode ser
+     trocado pelo seletor no topo do formulário — os campos extras
+     (#insumosFields / #compradoraFields) aparecem/desaparecem de acordo.
+     Toda a lógica (máscaras de CNPJ/telefone/CEP, busca de endereço via
+     ViaCEP, validação e chamada à API) está em js/empresa-auth.js, que
+     reaproveita helpers genéricos de js/auth.js — por isso os dois scripts
+     são carregados, nessa ordem.
+     ============================================================================ -->
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cadastro de Empresa - Cycle Sown</title>
+    <link rel="stylesheet" href="css/auth.css">
+</head>
+<body>
+    <div class="container">
+        <aside class="panel-left">
+            <svg class="panel-decor" viewBox="0 0 600 800" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false">
+                <defs>
+                    <g id="plusMark">
+                        <line x1="-6" y1="0" x2="6" y2="0" stroke="rgba(255,255,255,0.18)" stroke-width="1.5" stroke-linecap="round"/>
+                        <line x1="0" y1="-6" x2="0" y2="6" stroke="rgba(255,255,255,0.18)" stroke-width="1.5" stroke-linecap="round"/>
+                    </g>
+                </defs>
+
+                <path d="M-50,120 C100,80 200,160 350,110 C450,80 550,140 650,100" fill="none" stroke="rgba(255,255,255,0.10)" stroke-width="1.8"/>
+                <path d="M-50,260 C120,220 220,300 340,250 C460,200 560,280 650,240" fill="none" stroke="rgba(255,255,255,0.10)" stroke-width="1.8"/>
+                <path d="M-50,420 C110,470 230,390 340,440 C460,490 560,410 650,450" fill="none" stroke="rgba(255,255,255,0.09)" stroke-width="1.6"/>
+                <path d="M-50,600 C130,560 240,640 360,590 C470,550 570,610 650,580" fill="none" stroke="rgba(255,255,255,0.09)" stroke-width="1.6"/>
+
+                <use href="#plusMark" x="90" y="180"/>
+                <use href="#plusMark" x="480" y="90"/>
+                <use href="#plusMark" x="520" y="500"/>
+                <use href="#plusMark" x="70" y="640"/>
+                <use href="#plusMark" x="330" y="30"/>
+
+                <circle cx="180" cy="100" r="4" fill="rgba(255,255,255,0.15)"/>
+                <circle cx="420" cy="240" r="3" fill="rgba(255,255,255,0.15)"/>
+                <circle cx="90" cy="480" r="5" fill="rgba(255,255,255,0.12)"/>
+                <circle cx="540" cy="640" r="3.5" fill="rgba(255,255,255,0.15)"/>
+                <circle cx="260" cy="700" r="4" fill="rgba(255,255,255,0.13)"/>
+
+                <g transform="translate(470,70)">
+                    <g class="decor-rotate" fill="rgba(255,255,255,0.12)">
+                        <circle cx="0" cy="0" r="2"/><circle cx="16" cy="0" r="2"/><circle cx="32" cy="0" r="2"/><circle cx="48" cy="0" r="2"/><circle cx="64" cy="0" r="2"/><circle cx="80" cy="0" r="2"/>
+                        <circle cx="0" cy="16" r="2"/><circle cx="16" cy="16" r="2"/><circle cx="32" cy="16" r="2"/><circle cx="48" cy="16" r="2"/><circle cx="64" cy="16" r="2"/><circle cx="80" cy="16" r="2"/>
+                        <circle cx="0" cy="32" r="2"/><circle cx="16" cy="32" r="2"/><circle cx="32" cy="32" r="2"/><circle cx="48" cy="32" r="2"/><circle cx="64" cy="32" r="2"/><circle cx="80" cy="32" r="2"/>
+                        <circle cx="0" cy="48" r="2"/><circle cx="16" cy="48" r="2"/><circle cx="32" cy="48" r="2"/><circle cx="48" cy="48" r="2"/><circle cx="64" cy="48" r="2"/><circle cx="80" cy="48" r="2"/>
+                        <circle cx="0" cy="64" r="2"/><circle cx="16" cy="64" r="2"/><circle cx="32" cy="64" r="2"/><circle cx="48" cy="64" r="2"/><circle cx="64" cy="64" r="2"/><circle cx="80" cy="64" r="2"/>
+                        <circle cx="0" cy="80" r="2"/><circle cx="16" cy="80" r="2"/><circle cx="32" cy="80" r="2"/><circle cx="48" cy="80" r="2"/><circle cx="64" cy="80" r="2"/><circle cx="80" cy="80" r="2"/>
+                    </g>
+                </g>
+
+                <g transform="translate(290,470) scale(1.4)">
+                    <g class="decor-drift">
+                        <path d="M100,10 C140,40 165,90 155,140 C147,182 110,205 70,195 C35,186 12,155 15,115 C18,72 55,30 100,10 Z" fill="rgba(255,255,255,0.06)"/>
+                        <path d="M100,20 C90,70 75,140 55,190" stroke="rgba(255,255,255,0.09)" stroke-width="2" fill="none"/>
+                    </g>
+                </g>
+            </svg>
+
+            <div class="panel-left-content">
+                <img src="img/logo-footer-branca.png" alt="Cycle Sown" class="panel-logo">
+                <h1 class="panel-title">Sua empresa,<br>mais perto do produtor.</h1>
+                <p class="panel-subtitle">Cadastre-se e apareça para agricultores que precisam do que você oferece.</p>
+            </div>
+        </aside>
+
+        <section class="panel-right">
+            <div class="form-box">
+                <div class="logo">
+                    <img src="img/logo.png" alt="Cycle Sown" class="logo-img">
+                </div>
+
+                <h2>Cadastro de Empresa</h2>
+                <p class="form-subtitle">Crie a conta da sua empresa na Cycle Sown</p>
+
+                <div id="authMessage" class="auth-message" role="alert"></div>
+
+                <form id="empresaRegisterForm" class="auth-form" novalidate>
+                    <input type="hidden" id="tipo" name="tipo" value="insumos">
+
+                    <div class="auth-field">
+                        <label>Tipo de empresa</label>
+                        <div class="type-toggle">
+                            <button type="button" data-tipo="insumos">Vendo insumos</button>
+                            <button type="button" data-tipo="compradora">Compro produção</button>
+                        </div>
+                    </div>
+
+                    <h3 class="form-section-title">Dados da empresa</h3>
+
+                    <div class="auth-field">
+                        <label for="razaoSocial">Razão Social</label>
+                        <input type="text" id="razaoSocial" name="razaoSocial" autocomplete="organization" required>
+                    </div>
+
+                    <div class="auth-field">
+                        <label for="nomeFantasia">Nome Fantasia</label>
+                        <input type="text" id="nomeFantasia" name="nomeFantasia" autocomplete="organization" required>
+                    </div>
+
+                    <div class="auth-field">
+                        <label for="cnpj">CNPJ</label>
+                        <div class="field-status-wrap">
+                            <input type="text" id="cnpj" name="cnpj" inputmode="numeric" placeholder="00.000.000/0000-00" required>
+                            <span id="cnpjStatus" class="field-status"></span>
+                        </div>
+                    </div>
+
+                    <div class="auth-field">
+                        <label for="inscricaoEstadual">Inscrição Estadual (opcional)</label>
+                        <input type="text" id="inscricaoEstadual" name="inscricaoEstadual" autocomplete="off">
+                    </div>
+
+                    <h3 class="form-section-title">Acesso</h3>
+
+                    <div class="auth-field">
+                        <label for="email">E-mail corporativo</label>
+                        <input type="email" id="email" name="email" autocomplete="email" required>
+                    </div>
+
+                    <div class="auth-field">
+                        <label for="telefone">Telefone/WhatsApp</label>
+                        <input type="tel" id="telefone" name="telefone" inputmode="numeric" placeholder="(00) 90000-0000" required>
+                    </div>
+
+                    <div class="auth-field">
+                        <label for="password">Senha</label>
+                        <div class="password-wrap">
+                            <input type="password" id="password" name="password" autocomplete="new-password" required>
+                            <button type="button" class="toggle-password" data-target="password" aria-label="Mostrar senha">
+                                <svg class="icon-eye" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg>
+                                <svg class="icon-eye-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.94 10.94 0 0 1 12 19c-7 0-11-7-11-7a21.8 21.8 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 7 11 7a21.77 21.77 0 0 1-2.16 3.19"/><path d="M14.12 14.12a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+                            </button>
+                        </div>
+                        <p class="auth-hint">Mínimo 8 caracteres, com letras e números.</p>
+                    </div>
+
+                    <div class="auth-field">
+                        <label for="confirmPassword">Confirmar senha</label>
+                        <div class="password-wrap">
+                            <input type="password" id="confirmPassword" name="confirmPassword" autocomplete="new-password" required>
+                            <button type="button" class="toggle-password" data-target="confirmPassword" aria-label="Mostrar senha">
+                                <svg class="icon-eye" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg>
+                                <svg class="icon-eye-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.94 10.94 0 0 1 12 19c-7 0-11-7-11-7a21.8 21.8 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 7 11 7a21.77 21.77 0 0 1-2.16 3.19"/><path d="M14.12 14.12a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+                            </button>
+                        </div>
+                    </div>
+
+                    <h3 class="form-section-title">Endereço</h3>
+
+                    <div class="form-grid-2">
+                        <div class="auth-field">
+                            <label for="cep">CEP</label>
+                            <input type="text" id="cep" name="cep" inputmode="numeric" placeholder="00000-000">
+                        </div>
+                        <div class="auth-field">
+                            <label for="numero">Número</label>
+                            <input type="text" id="numero" name="numero">
+                        </div>
+                    </div>
+                    <p id="cepStatus" class="field-hint-inline"></p>
+
+                    <div class="auth-field">
+                        <label for="logradouro">Rua/Logradouro</label>
+                        <input type="text" id="logradouro" name="logradouro" autocomplete="address-line1">
+                    </div>
+
+                    <div class="auth-field">
+                        <label for="complemento">Complemento (opcional)</label>
+                        <input type="text" id="complemento" name="complemento" autocomplete="address-line2">
+                    </div>
+
+                    <div class="auth-field">
+                        <label for="bairro">Bairro</label>
+                        <input type="text" id="bairro" name="bairro">
+                    </div>
+
+                    <div class="form-grid-2">
+                        <div class="auth-field">
+                            <label for="cidade">Cidade</label>
+                            <input type="text" id="cidade" name="cidade" autocomplete="address-level2">
+                        </div>
+                        <div class="auth-field">
+                            <label for="estado">Estado</label>
+                            <select id="estado" name="estado" autocomplete="address-level1">
+                                <option value="">Selecione</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="auth-field">
+                        <label for="areaAtuacao">Área de atuação / Região de cobertura</label>
+                        <input type="text" id="areaAtuacao" name="areaAtuacao" placeholder="Ex.: Vale do Taquari, Serra Gaúcha">
+                    </div>
+
+                    <div id="insumosFields">
+                        <h3 class="form-section-title">Insumos que vende</h3>
+                        <div class="auth-field">
+                            <div class="checkbox-grid">
+                                <label class="checkbox-item"><input type="checkbox" name="tiposInsumos" value="calcario"> Calcário</label>
+                                <label class="checkbox-item"><input type="checkbox" name="tiposInsumos" value="fertilizantes"> Fertilizantes</label>
+                                <label class="checkbox-item"><input type="checkbox" name="tiposInsumos" value="sementes"> Sementes</label>
+                                <label class="checkbox-item"><input type="checkbox" name="tiposInsumos" value="defensivos"> Defensivos</label>
+                                <label class="checkbox-item"><input type="checkbox" name="tiposInsumos" value="outros"> Outros</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="compradoraFields">
+                        <h3 class="form-section-title">Culturas que compra</h3>
+                        <div class="auth-field">
+                            <div class="checkbox-grid">
+                                <label class="checkbox-item"><input type="checkbox" name="culturasCompra" value="soja"> Soja</label>
+                                <label class="checkbox-item"><input type="checkbox" name="culturasCompra" value="milho"> Milho</label>
+                                <label class="checkbox-item"><input type="checkbox" name="culturasCompra" value="trigo"> Trigo</label>
+                                <label class="checkbox-item"><input type="checkbox" name="culturasCompra" value="fumo"> Fumo</label>
+                                <label class="checkbox-item"><input type="checkbox" name="culturasCompra" value="feijao"> Feijão</label>
+                                <label class="checkbox-item"><input type="checkbox" name="culturasCompra" value="outros"> Outros</label>
+                            </div>
+                        </div>
+                        <div class="auth-field">
+                            <label for="capacidadeRecebimento">Capacidade de recebimento</label>
+                            <input type="text" id="capacidadeRecebimento" name="capacidadeRecebimento" placeholder="Ex.: 500 toneladas/mês">
+                        </div>
+                    </div>
+
+                    <button type="submit" class="auth-button">Cadastrar Empresa</button>
+                </form>
+
+                <div class="auth-links">
+                    <p>Já tem conta? <a href="empresa-login.html">Entrar</a></p>
+                    <p>É agricultor? <a href="register.html">Cadastre-se aqui</a></p>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <script src="js/auth.js"></script>
+    <script src="js/empresa-auth.js"></script>
+    <script>
+        document.querySelectorAll('.toggle-password').forEach((btn) => {
+            btn.addEventListener('click', () => {
+                const input = document.getElementById(btn.dataset.target);
+                if (!input) return;
+                const willShow = input.type === 'password';
+                input.type = willShow ? 'text' : 'password';
+                btn.classList.toggle('is-visible', willShow);
+                btn.setAttribute('aria-label', willShow ? 'Esconder senha' : 'Mostrar senha');
+            });
+        });
+    </script>
+</body>
+</html>

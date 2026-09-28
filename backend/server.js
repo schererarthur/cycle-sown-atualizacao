@@ -14,6 +14,7 @@ const cors = require('cors');
 const helmet = require('helmet');
 
 const authRoutes = require('./routes/auth');
+const empresasRoutes = require('./routes/empresas');
 const talhoesRoutes = require('./routes/talhoes');
 const rotacaoRoutes = require('./routes/rotacao');
 const historicoRoutes = require('./routes/historico');
@@ -75,6 +76,9 @@ app.use(express.static(FRONTEND_DIR));
 
 // Todas as rotas de autenticação ficam sob /api/auth/...
 app.use('/api/auth', authRoutes);
+
+// Contas de empresa (insumos e compradoras), sob /api/empresas/...
+app.use('/api/empresas', empresasRoutes);
 
 // Talhões (parcelas) do Mapa de Fertilidade, sob /api/talhoes/...
 app.use('/api/talhoes', talhoesRoutes);

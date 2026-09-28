@@ -148,9 +148,12 @@ router.post('/login', loginRateLimiter, loginAttemptGuard, async (req, res) => {
 
         await logAttempt({ email: normalizedEmail, userId: user.id, success: true, ipAddress, userAgent });
 
-        // Token JWT: guarda só o essencial (id e e-mail), nunca dados sensíveis.
+        // Token JWT: guarda só o essencial (id, e-mail e o tipo de conta),
+        // nunca dados sensíveis. `role: 'agricultor'` existe para diferenciar
+        // este token do de empresas (routes/empresas.js, role: 'empresa') —
+        // ver authMiddleware.requireRole.
         const token = jwt.sign(
-            { userId: user.id, email: user.email },
+            { userId: user.id, email: user.email, role: 'agricultor' },
             process.env.JWT_SECRET,
             { expiresIn: TOKEN_EXPIRATION }
         );

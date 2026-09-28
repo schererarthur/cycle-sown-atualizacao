@@ -1,15 +1,16 @@
 <!-- ============================================================================
-     login.html — tela de login (layout split-panel). Formulário puro; toda
-     a lógica (validação, chamada à API, salvar sessão) está em js/auth.js
-     (initLoginPage), compartilhado com register.html. Os ids/names dos
-     campos e o id do form NÃO mudam — só o visual.
+     empresa-login.html — login de empresa (mesmo layout split-panel de
+     login.html). Aceita CNPJ ou e-mail no mesmo campo. Toda a lógica está
+     em js/empresa-auth.js (initEmpresaLoginPage), que reaproveita os
+     helpers genéricos de js/auth.js (apiRequest, showMessage...) — por
+     isso os dois scripts são carregados, nessa ordem.
      ============================================================================ -->
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Entrar - Cycle Sown</title>
+    <title>Entrar (Empresa) - Cycle Sown</title>
     <link rel="stylesheet" href="css/auth.css">
 </head>
 <body>
@@ -23,13 +24,11 @@
                     </g>
                 </defs>
 
-                <!-- curvas de nível (mapa de solo) -->
                 <path d="M-50,120 C100,80 200,160 350,110 C450,80 550,140 650,100" fill="none" stroke="rgba(255,255,255,0.10)" stroke-width="1.8"/>
                 <path d="M-50,260 C120,220 220,300 340,250 C460,200 560,280 650,240" fill="none" stroke="rgba(255,255,255,0.10)" stroke-width="1.8"/>
                 <path d="M-50,420 C110,470 230,390 340,440 C460,490 560,410 650,450" fill="none" stroke="rgba(255,255,255,0.09)" stroke-width="1.6"/>
                 <path d="M-50,600 C130,560 240,640 360,590 C470,550 570,610 650,580" fill="none" stroke="rgba(255,255,255,0.09)" stroke-width="1.6"/>
 
-                <!-- marcas de interface/mapa -->
                 <use href="#plusMark" x="90" y="180"/>
                 <use href="#plusMark" x="480" y="90"/>
                 <use href="#plusMark" x="520" y="500"/>
@@ -42,10 +41,6 @@
                 <circle cx="540" cy="640" r="3.5" fill="rgba(255,255,255,0.15)"/>
                 <circle cx="260" cy="700" r="4" fill="rgba(255,255,255,0.13)"/>
 
-                <!-- grid de pontos (grupo externo só posiciona via atributo;
-                     a animação CSS fica no grupo interno — misturar as duas
-                     no mesmo <g> faz o transform da animação substituir o
-                     translate() do atributo) -->
                 <g transform="translate(470,70)">
                     <g class="decor-rotate" fill="rgba(255,255,255,0.12)">
                         <circle cx="0" cy="0" r="2"/><circle cx="16" cy="0" r="2"/><circle cx="32" cy="0" r="2"/><circle cx="48" cy="0" r="2"/><circle cx="64" cy="0" r="2"/><circle cx="80" cy="0" r="2"/>
@@ -57,8 +52,6 @@
                     </g>
                 </g>
 
-                <!-- folha/broto estilizado (mesmo motivo: posição no grupo
-                     externo, animação no interno) -->
                 <g transform="translate(290,470) scale(1.4)">
                     <g class="decor-drift">
                         <path d="M100,10 C140,40 165,90 155,140 C147,182 110,205 70,195 C35,186 12,155 15,115 C18,72 55,30 100,10 Z" fill="rgba(255,255,255,0.06)"/>
@@ -69,22 +62,26 @@
 
             <div class="panel-left-content">
                 <img src="img/logo-footer-branca.png" alt="Cycle Sown" class="panel-logo">
-                <h1 class="panel-title">O solo fala.<br>Nós traduzimos.</h1>
-                <p class="panel-subtitle">Transforme a análise de solo em decisões de lucro para sua lavoura.</p>
+                <h1 class="panel-title">O campo espera<br>pelo seu negócio.</h1>
+                <p class="panel-subtitle">Acesse sua conta de empresa e continue conectado aos produtores.</p>
             </div>
         </aside>
 
         <section class="panel-right">
             <div class="form-box">
+                <div class="logo">
+                    <img src="img/logo.png" alt="Cycle Sown" class="logo-img">
+                </div>
+
                 <h2>Entrar</h2>
-                <p class="form-subtitle">Análise inteligente de solo para o seu campo</p>
+                <p class="form-subtitle">Acesso para empresas parceiras</p>
 
                 <div id="authMessage" class="auth-message" role="alert"></div>
 
-                <form id="loginForm" class="auth-form" novalidate>
+                <form id="empresaLoginForm" class="auth-form" novalidate>
                     <div class="auth-field">
-                        <label for="email">E-mail</label>
-                        <input type="email" id="email" name="email" autocomplete="email" required>
+                        <label for="identifier">CNPJ ou e-mail</label>
+                        <input type="text" id="identifier" name="identifier" autocomplete="username" required>
                     </div>
 
                     <div class="auth-field">
@@ -105,17 +102,16 @@
                 </form>
 
                 <div class="auth-links">
-                    <p>Não tem conta? <a href="register.html">Criar conta</a></p>
-                    <p>É empresa? <a href="empresa-login.html">Entre aqui</a></p>
+                    <p>Não tem conta? <a href="empresa-select.html">Cadastre-se</a></p>
+                    <p>É agricultor? <a href="login.html">Entre aqui</a></p>
                 </div>
             </div>
         </section>
     </div>
 
     <script src="js/auth.js"></script>
+    <script src="js/empresa-auth.js"></script>
     <script>
-        // Alterna visibilidade da senha — puramente visual, não mexe na
-        // lógica de autenticação em js/auth.js.
         document.querySelectorAll('.toggle-password').forEach((btn) => {
             btn.addEventListener('click', () => {
                 const input = document.getElementById(btn.dataset.target);

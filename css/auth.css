@@ -422,3 +422,200 @@ body {
         font-size: 22px;
     }
 }
+
+/* ============================================================================
+   Empresas — cadastro/login/seleção de tipo (empresa-*.html).
+   Reaproveita todas as classes acima (auth-form, auth-field, auth-button,
+   auth-links, auth-message, password-wrap...) e só soma o que essas telas
+   têm de diferente: mais campos por linha, checkboxes, um seletor de tipo
+   de conta e o indicador de CNPJ válido/inválido.
+   ============================================================================ */
+
+.auth-form select {
+    width: 100%;
+    padding: 12px 14px;
+    border: 1.5px solid var(--cinza-borda);
+    border-radius: 10px;
+    font-size: 14px;
+    font-family: inherit;
+    color: var(--texto);
+    background: var(--branco);
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.auth-form select:focus {
+    outline: none;
+    border-color: var(--verde-principal);
+    box-shadow: 0 0 0 3px rgba(6, 106, 4, 0.12);
+}
+
+.form-grid-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+}
+
+.form-section-title {
+    margin: 26px 0 16px;
+    padding-top: 20px;
+    border-top: 1px solid var(--cinza-borda);
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--texto-suave);
+}
+
+.form-section-title:first-child {
+    margin-top: 0;
+    padding-top: 0;
+    border-top: none;
+}
+
+/* Seletor "Insumos / Compradora" dentro do próprio cadastro (pode trocar
+   o que veio pré-selecionado de empresa-select.html). */
+.type-toggle {
+    display: flex;
+    gap: 10px;
+}
+
+.type-toggle button {
+    flex: 1;
+    padding: 12px 10px;
+    border: 1.5px solid var(--cinza-borda);
+    border-radius: 10px;
+    background: var(--branco);
+    color: var(--texto-suave);
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.type-toggle button:hover {
+    border-color: var(--verde-principal);
+}
+
+.type-toggle button.is-active {
+    border-color: var(--verde-principal);
+    background: var(--tint-bg);
+    color: var(--verde-principal-escuro);
+}
+
+.checkbox-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px 16px;
+}
+
+.checkbox-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    color: var(--texto);
+}
+
+.checkbox-item input[type="checkbox"] {
+    width: 17px;
+    height: 17px;
+    accent-color: var(--verde-principal);
+    flex-shrink: 0;
+}
+
+/* Indicador ✓/✗ ao lado do campo de CNPJ, dentro do próprio input. */
+.field-status-wrap {
+    position: relative;
+}
+
+.field-status-wrap input {
+    padding-right: 40px;
+}
+
+.field-status {
+    position: absolute;
+    right: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 15px;
+    font-weight: 700;
+    display: none;
+}
+
+.field-status.is-valid {
+    display: block;
+    color: var(--sucesso);
+}
+
+.field-status.is-invalid {
+    display: block;
+    color: var(--erro);
+}
+
+/* Texto de status do CEP (ViaCEP) — reserva um respiro fixo entre a linha
+   de CEP/Número e o próximo campo, com ou sem texto preenchido. */
+.field-hint-inline {
+    margin: -6px 0 16px;
+    font-size: 12px;
+    color: var(--texto-suave);
+    min-height: 14px;
+}
+
+/* ----------------------------------------------------------------------
+   empresa-select.html — dois cards de escolha de tipo de conta
+   ---------------------------------------------------------------------- */
+
+.type-select-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 18px;
+    margin-top: 8px;
+}
+
+.type-card {
+    display: block;
+    padding: 30px 22px;
+    text-align: center;
+    text-decoration: none;
+    color: inherit;
+    background: var(--branco);
+    border: 1.5px solid var(--cinza-borda);
+    border-radius: 16px;
+    transition: all 0.2s ease;
+}
+
+.type-card:hover {
+    border-color: var(--verde-principal);
+    box-shadow: 0 12px 28px rgba(6, 106, 4, 0.1);
+    transform: translateY(-2px);
+}
+
+.type-card .type-card-icon {
+    width: 46px;
+    height: 46px;
+    margin: 0 auto 16px;
+    color: var(--verde-principal);
+}
+
+.type-card h3 {
+    margin: 0 0 8px;
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--texto);
+}
+
+.type-card p {
+    margin: 0;
+    font-size: 13px;
+    line-height: 1.5;
+    color: var(--texto-suave);
+}
+
+@media (max-width: 480px) {
+    .form-grid-2,
+    .checkbox-grid,
+    .type-select-grid {
+        grid-template-columns: 1fr;
+    }
+}

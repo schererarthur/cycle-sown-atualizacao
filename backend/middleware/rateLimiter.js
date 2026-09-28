@@ -42,6 +42,18 @@ const laudoParseRateLimiter = rateLimit({
     message: { error: 'Limite de 10 leituras de laudo por hora atingido. Tente novamente mais tarde ou preencha o formulário manualmente.' }
 });
 
+// Cadastro de empresas — POST /api/empresas/register. Limite mais restrito
+// que o login porque é uma rota pública (sem token) e cada cadastro grava
+// uma linha nova em `empresas`: sem isso, um script poderia inundar a
+// tabela ou testar CNPJs em sequência.
+const empresaRegisterRateLimiter = rateLimit({
+    windowMs: 60 * 60 * 1000, // janela de 1 hora
+    max: 5,                   // no máximo 5 cadastros de empresa por IP nessa janela
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { error: 'Muitos cadastros a partir deste endereço. Tente novamente mais tarde.' }
+});
+
 async function loginAttemptGuard(req, res, next) {
     const ipAddress = req.ip;
 
@@ -76,4 +88,4 @@ async function loginAttemptGuard(req, res, next) {
     }
 }
 
-module.exports = { loginRateLimiter, loginAttemptGuard, laudoParseRateLimiter };
+module.exports = { loginRateLimiter, loginAttemptGuard, laudoParseRateLimiter, empresaRegisterRateLimiter };

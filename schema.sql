@@ -40,7 +40,18 @@ CREATE TABLE users (
 ) ENGINE=InnoDB;
 
 -- Registra cada tentativa de login (sucesso ou falha) — usada pelo
--- backend/middleware/rateLimiter.js para bloquear IPs com muitas falhas.
+-- backend/middleware/rateLimiter.js para bloquear IPs com muitas falhas
+-- (loginAttemptGuard filtra só por ip_address, nunca por user_id).
+--
+-- DRIFT CONHECIDO (achado em 2026-09-27, ao integrar o login de empresas):
+-- o banco em uso já tem uma FK `fk_login_attempt_user` em user_id ->
+-- users(id) que este CREATE TABLE abaixo não declara. Isso significa que
+-- só tentativas de agricultor podem gravar um user_id não-nulo aqui —
+-- routes/empresas.js sempre grava user_id = NULL por causa disso. Rodar
+-- este schema.sql do zero cria a tabela SEM essa FK; num banco que já
+-- existe (como o de produção), ela permanece. Não sabemos a origem exata
+-- do drift — provavelmente uma ALTER TABLE aplicada direto no banco, sem
+-- atualizar este arquivo.
 CREATE TABLE login_attempts (
   id            BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   email         VARCHAR(190) NOT NULL,
@@ -493,6 +504,47 @@ CREATE TABLE relatorios (
     REFERENCES talhoes(id) ON DELETE CASCADE,
   INDEX idx_relatorios_user (user_id),
   INDEX idx_relatorios_talhao (talhao_id)
+) ENGINE=InnoDB;
+
+-- =================================================================
+-- 12. EMPRESAS — contas com login próprio (empresa-select/register/
+--     login.html, backend/routes/empresas.js). Duas variantes na mesma
+--     tabela, diferenciadas por `tipo`: 'insumos' (agropecuárias que
+--     vendem calcário/adubo/sementes/defensivos) e 'compradora'
+--     (tradings/cerealistas/cooperativas que compram a produção do
+--     agricultor). `tipos_insumos`/`culturas_compra` só é preenchida
+--     para o tipo correspondente (a outra fica NULL).
+--
+--     Diferente de `buying_companies` (seção 8) — aquela é um diretório
+--     estático só de leitura, sem login, para o agricultor achar contato;
+--     esta aqui é conta de plataforma com senha e JWT próprios.
+-- =================================================================
+
+CREATE TABLE empresas (
+  id                      INT AUTO_INCREMENT PRIMARY KEY,
+  tipo                    ENUM('insumos', 'compradora') NOT NULL,
+  razao_social            VARCHAR(255) NOT NULL,
+  nome_fantasia           VARCHAR(255) NOT NULL,
+  cnpj                    VARCHAR(18) NOT NULL UNIQUE,
+  inscricao_estadual      VARCHAR(20),
+  email                   VARCHAR(255) NOT NULL UNIQUE,
+  telefone                VARCHAR(20) NOT NULL,
+  senha_hash              VARCHAR(255) NOT NULL,
+  cep                     VARCHAR(10),
+  logradouro              VARCHAR(255),
+  numero                  VARCHAR(20),
+  complemento             VARCHAR(100),
+  bairro                  VARCHAR(100),
+  cidade                  VARCHAR(100),
+  estado                  CHAR(2),
+  area_atuacao            TEXT,
+  tipos_insumos           JSON,
+  culturas_compra         JSON,
+  capacidade_recebimento  VARCHAR(100),
+  ativo                   BOOLEAN DEFAULT true,
+  created_at              TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at              TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  INDEX idx_empresas_tipo (tipo)
 ) ENGINE=InnoDB;
 
 -- =================================================================

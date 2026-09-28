@@ -1,15 +1,17 @@
 <!-- ============================================================================
-     login.html — tela de login (layout split-panel). Formulário puro; toda
-     a lógica (validação, chamada à API, salvar sessão) está em js/auth.js
-     (initLoginPage), compartilhado com register.html. Os ids/names dos
-     campos e o id do form NÃO mudam — só o visual.
+     empresa-select.html — tela de escolha do tipo de conta de empresa,
+     antes do cadastro. Mesmo layout split-panel de login.html/register.html
+     (ver css/auth.css); painel direito mostra dois cards em vez de um
+     formulário. Cada card leva para empresa-register.html?tipo=... , que
+     usa esse parâmetro para pré-selecionar o tipo (mas o usuário ainda
+     pode trocar lá).
      ============================================================================ -->
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Entrar - Cycle Sown</title>
+    <title>Conta de Empresa - Cycle Sown</title>
     <link rel="stylesheet" href="css/auth.css">
 </head>
 <body>
@@ -23,13 +25,11 @@
                     </g>
                 </defs>
 
-                <!-- curvas de nível (mapa de solo) -->
                 <path d="M-50,120 C100,80 200,160 350,110 C450,80 550,140 650,100" fill="none" stroke="rgba(255,255,255,0.10)" stroke-width="1.8"/>
                 <path d="M-50,260 C120,220 220,300 340,250 C460,200 560,280 650,240" fill="none" stroke="rgba(255,255,255,0.10)" stroke-width="1.8"/>
                 <path d="M-50,420 C110,470 230,390 340,440 C460,490 560,410 650,450" fill="none" stroke="rgba(255,255,255,0.09)" stroke-width="1.6"/>
                 <path d="M-50,600 C130,560 240,640 360,590 C470,550 570,610 650,580" fill="none" stroke="rgba(255,255,255,0.09)" stroke-width="1.6"/>
 
-                <!-- marcas de interface/mapa -->
                 <use href="#plusMark" x="90" y="180"/>
                 <use href="#plusMark" x="480" y="90"/>
                 <use href="#plusMark" x="520" y="500"/>
@@ -42,10 +42,6 @@
                 <circle cx="540" cy="640" r="3.5" fill="rgba(255,255,255,0.15)"/>
                 <circle cx="260" cy="700" r="4" fill="rgba(255,255,255,0.13)"/>
 
-                <!-- grid de pontos (grupo externo só posiciona via atributo;
-                     a animação CSS fica no grupo interno — misturar as duas
-                     no mesmo <g> faz o transform da animação substituir o
-                     translate() do atributo) -->
                 <g transform="translate(470,70)">
                     <g class="decor-rotate" fill="rgba(255,255,255,0.12)">
                         <circle cx="0" cy="0" r="2"/><circle cx="16" cy="0" r="2"/><circle cx="32" cy="0" r="2"/><circle cx="48" cy="0" r="2"/><circle cx="64" cy="0" r="2"/><circle cx="80" cy="0" r="2"/>
@@ -57,8 +53,6 @@
                     </g>
                 </g>
 
-                <!-- folha/broto estilizado (mesmo motivo: posição no grupo
-                     externo, animação no interno) -->
                 <g transform="translate(290,470) scale(1.4)">
                     <g class="decor-drift">
                         <path d="M100,10 C140,40 165,90 155,140 C147,182 110,205 70,195 C35,186 12,155 15,115 C18,72 55,30 100,10 Z" fill="rgba(255,255,255,0.06)"/>
@@ -69,63 +63,48 @@
 
             <div class="panel-left-content">
                 <img src="img/logo-footer-branca.png" alt="Cycle Sown" class="panel-logo">
-                <h1 class="panel-title">O solo fala.<br>Nós traduzimos.</h1>
-                <p class="panel-subtitle">Transforme a análise de solo em decisões de lucro para sua lavoura.</p>
+                <h1 class="panel-title">Conecte-se com<br>o campo.</h1>
+                <p class="panel-subtitle">Alcance produtores que precisam do seu insumo ou querem vender a produção diretamente para você.</p>
             </div>
         </aside>
 
         <section class="panel-right">
             <div class="form-box">
-                <h2>Entrar</h2>
-                <p class="form-subtitle">Análise inteligente de solo para o seu campo</p>
+                <div class="logo">
+                    <img src="img/logo.png" alt="Cycle Sown" class="logo-img">
+                </div>
 
-                <div id="authMessage" class="auth-message" role="alert"></div>
+                <h2>Conta de Empresa</h2>
+                <p class="form-subtitle">Escolha o tipo de conta para continuar o cadastro</p>
 
-                <form id="loginForm" class="auth-form" novalidate>
-                    <div class="auth-field">
-                        <label for="email">E-mail</label>
-                        <input type="email" id="email" name="email" autocomplete="email" required>
-                    </div>
+                <div class="type-select-grid">
+                    <a href="empresa-register.html?tipo=insumos" class="type-card">
+                        <svg class="type-card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M6 8h12l1.5 12a2 2 0 0 1-2 2.2H6.5A2 2 0 0 1 4.5 20L6 8Z"/>
+                            <path d="M9 8a3 3 0 1 1 6 0"/>
+                        </svg>
+                        <h3>Vendo insumos agrícolas</h3>
+                        <p>Calcário, fertilizantes, sementes, defensivos e mais.</p>
+                    </a>
 
-                    <div class="auth-field">
-                        <div class="field-label-row">
-                            <label for="password">Senha</label>
-                            <a href="#" id="forgotPasswordLink">Esqueceu a senha?</a>
-                        </div>
-                        <div class="password-wrap">
-                            <input type="password" id="password" name="password" autocomplete="current-password" required>
-                            <button type="button" class="toggle-password" data-target="password" aria-label="Mostrar senha">
-                                <svg class="icon-eye" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg>
-                                <svg class="icon-eye-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.94 10.94 0 0 1 12 19c-7 0-11-7-11-7a21.8 21.8 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 7 11 7a21.77 21.77 0 0 1-2.16 3.19"/><path d="M14.12 14.12a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
-                            </button>
-                        </div>
-                    </div>
-
-                    <button type="submit" class="auth-button">Entrar</button>
-                </form>
+                    <a href="empresa-register.html?tipo=compradora" class="type-card">
+                        <svg class="type-card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M12 3v18"/>
+                            <path d="M12 6c-2 0-3.5 1.5-3.5 3.5S10 12 12 12s3.5-1.5 3.5-3.5S14 6 12 6Z"/>
+                            <path d="M12 12c-2 0-3.5 1.5-3.5 3.5S10 18 12 18s3.5-1.5 3.5-3.5S14 12 12 12Z"/>
+                            <path d="M8 21h8"/>
+                        </svg>
+                        <h3>Compro produção agrícola</h3>
+                        <p>Soja, milho, trigo, fumo e outras culturas.</p>
+                    </a>
+                </div>
 
                 <div class="auth-links">
-                    <p>Não tem conta? <a href="register.html">Criar conta</a></p>
-                    <p>É empresa? <a href="empresa-login.html">Entre aqui</a></p>
+                    <p>Já tem conta? <a href="empresa-login.html">Entrar</a></p>
+                    <p>É agricultor? <a href="register.html">Cadastre-se aqui</a></p>
                 </div>
             </div>
         </section>
     </div>
-
-    <script src="js/auth.js"></script>
-    <script>
-        // Alterna visibilidade da senha — puramente visual, não mexe na
-        // lógica de autenticação em js/auth.js.
-        document.querySelectorAll('.toggle-password').forEach((btn) => {
-            btn.addEventListener('click', () => {
-                const input = document.getElementById(btn.dataset.target);
-                if (!input) return;
-                const willShow = input.type === 'password';
-                input.type = willShow ? 'text' : 'password';
-                btn.classList.toggle('is-visible', willShow);
-                btn.setAttribute('aria-label', willShow ? 'Esconder senha' : 'Mostrar senha');
-            });
-        });
-    </script>
 </body>
 </html>
