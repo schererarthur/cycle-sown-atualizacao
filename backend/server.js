@@ -15,6 +15,10 @@ const helmet = require('helmet');
 
 const authRoutes = require('./routes/auth');
 const empresasRoutes = require('./routes/empresas');
+const empresaInsumosRoutes = require('./routes/empresaInsumos');
+// Carregar este arquivo já exige TRACKING_SECRET (config/tracking.js): sem
+// ela, o servidor para aqui mesmo, na subida, com a mensagem do erro.
+const produtoEventosRoutes = require('./routes/produtoEventos');
 const talhoesRoutes = require('./routes/talhoes');
 const rotacaoRoutes = require('./routes/rotacao');
 const historicoRoutes = require('./routes/historico');
@@ -23,6 +27,12 @@ const relatoriosRoutes = require('./routes/relatorios');
 const laudoParserRoutes = require('./laudo-parser-route');
 
 const app = express();
+
+// Em produção o app roda atrás do proxy da hospedagem: sem esta linha,
+// req.ip seria o IP do proxy para TODO visitante — os limites por IP
+// (login, cadastro, rastreamento) bloqueariam todo mundo junto e o hash de
+// sessão do rastreamento juntaria todos os anônimos numa pessoa só. O 1 =
+// confiar em exatamente 1 proxy à frente do app (o da hospedagem).
 app.set('trust proxy', 1);
 
 const fs = require('fs');
@@ -79,6 +89,12 @@ app.use('/api/auth', authRoutes);
 
 // Contas de empresa (insumos e compradoras), sob /api/empresas/...
 app.use('/api/empresas', empresasRoutes);
+
+// Área logada da empresa de insumos (dashboard-empresa.html), sob /api/empresa/...
+app.use('/api/empresa', empresaInsumosRoutes);
+
+// Rastreamento público de visualizações/cliques de produtos, sob /api/produtos/...
+app.use('/api/produtos', produtoEventosRoutes);
 
 // Talhões (parcelas) do Mapa de Fertilidade, sob /api/talhoes/...
 app.use('/api/talhoes', talhoesRoutes);

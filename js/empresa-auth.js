@@ -308,10 +308,17 @@ function initEmpresaLoginPage() {
         try {
             const data = await apiRequest('/empresas/login', 'POST', { identifier, password });
             saveEmpresaSession(data.token, data.empresa);
-            // Ainda não existe uma área logada própria para empresas — fica
-            // aqui mesmo, com a confirmação, em vez de redirecionar para
-            // index.html (que é a área do agricultor e bloquearia a
-            // sessão de empresa de volta para o login).
+
+            // Empresa de insumos tem área logada própria: vai direto para o painel.
+            if (data.empresa.tipo === 'insumos') {
+                window.location.href = 'dashboard-empresa.html';
+                return;
+            }
+
+            // Compradora ainda não tem área logada — fica aqui mesmo, com a
+            // confirmação, em vez de redirecionar para index.html (que é a
+            // área do agricultor e bloquearia a sessão de empresa de volta
+            // para o login).
             showMessage(messageEl, `Login realizado com sucesso, ${data.empresa.nomeFantasia}!`, 'success');
             setLoading(submitButton, false, 'Entrando...', 'Entrar');
         } catch (err) {

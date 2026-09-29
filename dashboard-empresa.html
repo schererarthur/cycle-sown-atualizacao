@@ -1,0 +1,297 @@
+<!-- ============================================================================
+     dashboard-empresa.html — Painel da EMPRESA DE INSUMOS, a única página da
+     área logada desse tipo de conta. A empresa cadastra seus produtos e
+     acompanha quantos produtores viram os detalhes e clicaram para comprar.
+     Mesmo esqueleto visual de produtividade.html (nav branca fixa, faixa
+     verde de título, cards, card de gráfico, tabela) — Tailwind CDN +
+     css/theme.css, como as outras páginas internas. Gráfico em ECharts
+     (mesma versão de produtividade.html/index.html). Toda a lógica está em
+     js/dashboard-empresa.js.
+     ============================================================================ -->
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Painel da Empresa - Cycle Sown</title>
+    <script>
+        // Guarda de rota — roda antes de a página aparecer. Só entra quem tem
+        // sessão de EMPRESA DE INSUMOS (chaves salvas por js/empresa-auth.js)
+        // com o token ainda dentro da validade. Isto é só para não mostrar a
+        // página à toa: quem garante a segurança de verdade é o backend, que
+        // confere o token em toda requisição (middleware/empresaInsumosAuth.js).
+        (function () {
+            function lerPayloadDoToken(token) {
+                try {
+                    const base64 = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
+                    const comPadding = base64 + '=='.slice(0, (4 - (base64.length % 4)) % 4);
+                    return JSON.parse(atob(comPadding));
+                } catch (err) {
+                    return null;
+                }
+            }
+
+            let payload = null;
+            try {
+                const token = localStorage.getItem('cycleSownEmpresaToken');
+                payload = token ? lerPayloadDoToken(token) : null;
+            } catch (err) {
+                payload = null;
+            }
+
+            const sessaoValida = payload
+                && payload.role === 'empresa'
+                && payload.tipo === 'insumos'
+                && typeof payload.exp === 'number'
+                && payload.exp * 1000 > Date.now();
+
+            if (!sessaoValida) {
+                window.location.replace('empresa-login.html');
+            }
+        })();
+    </script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/theme.css">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--cream-white);
+            color: var(--charcoal-gray);
+        }
+
+        .stat-card {
+            background: white;
+            border: 1px solid var(--light-border);
+        }
+
+        /* Recarregando (troca de período, depois de salvar): mantém o que já
+           estava na tela, só mais apagado — sem piscar nem pular layout. */
+        .atualizando {
+            opacity: 0.5;
+            transition: opacity 0.15s ease;
+        }
+
+        /* Traço curto na cor da série do gráfico, ao lado do rótulo do card
+           — liga o número do card à linha correspondente no gráfico. */
+        .chave-serie {
+            display: inline-block;
+            width: 14px;
+            height: 3px;
+            border-radius: 2px;
+            vertical-align: middle;
+            margin-right: 6px;
+        }
+
+        .periodo-btn[aria-pressed="true"] {
+            background-color: var(--forest-green);
+            color: #ffffff;
+        }
+
+        .periodo-btn[aria-pressed="false"]:hover {
+            background-color: var(--tint-bg);
+        }
+    </style>
+</head>
+<body class="pt-20">
+    <nav class="fixed top-0 w-full z-50 backdrop-blur-xl bg-white/80 border-b border-slate-200 shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16 gap-4">
+                <a href="dashboard-empresa.html" class="flex items-center shrink-0">
+                    <img src="img/logo.png" alt="Cycle Sown" class="h-14 w-auto">
+                </a>
+                <div class="flex items-center gap-4 min-w-0">
+                    <span id="navEmpresaNome" class="hidden sm:block text-sm font-semibold text-slate-700 truncate"></span>
+                    <button type="button" id="sairBtn" class="shrink-0 px-4 py-2 rounded-lg border border-gray-200 bg-white text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors">Sair</button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <header class="py-12 page-header-band">
+        <div class="max-w-7xl mx-auto px-4 text-center">
+            <p id="headerEmpresaNome" class="page-header-subtitle text-sm font-semibold uppercase tracking-wide mb-2"></p>
+            <h1 class="font-display text-4xl font-bold mb-4">Painel da Empresa</h1>
+            <p class="max-w-2xl mx-auto italic">Cadastre seus produtos e acompanhe quantos produtores viram os detalhes e clicaram para comprar.</p>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-4 py-12 space-y-8">
+
+        <!-- Período: vale para os cards de visualizações/cliques/conversão,
+             para o gráfico e para os números da tabela de produtos. -->
+        <section aria-labelledby="desempenhoTitulo">
+            <h2 id="desempenhoTitulo" class="font-display text-2xl font-bold mb-4" style="color: var(--forest-green);">Desempenho</h2>
+            <div class="flex flex-wrap items-center gap-x-4 gap-y-2">
+                <div role="group" aria-label="Período" class="inline-flex rounded-lg border border-gray-200 bg-white p-1">
+                    <button type="button" class="periodo-btn px-4 py-2 rounded-md text-sm font-semibold text-gray-700 transition-colors" data-periodo="7d" aria-pressed="false">7 dias</button>
+                    <button type="button" class="periodo-btn px-4 py-2 rounded-md text-sm font-semibold text-gray-700 transition-colors" data-periodo="30d" aria-pressed="true">30 dias</button>
+                    <button type="button" class="periodo-btn px-4 py-2 rounded-md text-sm font-semibold text-gray-700 transition-colors" data-periodo="90d" aria-pressed="false">90 dias</button>
+                </div>
+                <p id="periodoTexto" class="text-sm text-gray-600" aria-live="polite">Últimos 30 dias</p>
+            </div>
+        </section>
+
+        <section id="cardsResumo" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6" aria-label="Resumo">
+            <div class="stat-card rounded-xl p-5">
+                <span class="text-sm font-semibold text-gray-500">Produtos cadastrados</span>
+                <div id="cardProdutos" class="text-3xl font-bold text-gray-900 mt-2">—</div>
+                <div class="text-xs text-gray-500 mt-1">ativos agora</div>
+            </div>
+            <div class="stat-card rounded-xl p-5">
+                <span class="text-sm font-semibold text-gray-500"><span class="chave-serie" style="background-color: #5dc135;"></span>Visualizações</span>
+                <div id="cardVisualizacoes" class="text-3xl font-bold text-gray-900 mt-2">—</div>
+                <div class="text-xs text-gray-500 mt-1" data-texto-periodo>nos últimos 30 dias</div>
+            </div>
+            <div class="stat-card rounded-xl p-5">
+                <span class="text-sm font-semibold text-gray-500"><span class="chave-serie" style="background-color: #066a04;"></span>Cliques para compra</span>
+                <div id="cardCliques" class="text-3xl font-bold text-gray-900 mt-2">—</div>
+                <div class="text-xs text-gray-500 mt-1" data-texto-periodo>nos últimos 30 dias</div>
+            </div>
+            <div class="stat-card rounded-xl p-5">
+                <span class="text-sm font-semibold text-gray-500">Taxa de conversão</span>
+                <div id="cardConversao" class="text-3xl font-bold text-gray-900 mt-2">—</div>
+                <div id="cardConversaoNota" class="text-xs text-gray-500 mt-1">cliques ÷ visualizações</div>
+            </div>
+        </section>
+
+        <section class="stat-card rounded-xl p-6" aria-labelledby="graficoTitulo">
+            <h3 id="graficoTitulo" class="font-display text-lg font-bold text-gray-900">Visualizações e cliques por dia</h3>
+            <p class="text-xs text-gray-500 mt-1">Dias no horário de Brasília.</p>
+
+            <div class="relative mt-4" id="graficoArea">
+                <div id="grafico" class="invisible" role="img" aria-label="Gráfico de visualizações e cliques por dia" style="width: 100%; height: 320px;"></div>
+                <div id="graficoMensagem" class="absolute inset-0 flex flex-col items-center justify-center gap-3 text-center px-6">
+                    <p class="text-sm text-gray-500">Carregando dados…</p>
+                </div>
+            </div>
+
+            <details id="graficoTabelaWrap" class="mt-4 hidden">
+                <summary class="text-sm font-semibold cursor-pointer" style="color: var(--forest-green);">Ver dados do gráfico em tabela</summary>
+                <div class="mt-3 max-h-80 overflow-y-auto overflow-x-auto border border-gray-100 rounded-lg">
+                    <table class="w-full text-sm text-left">
+                        <thead class="bg-gray-50 sticky top-0">
+                            <tr class="text-xs text-gray-500 uppercase font-bold">
+                                <th scope="col" class="px-4 py-2">Dia</th>
+                                <th scope="col" class="px-4 py-2 text-right">Visualizações</th>
+                                <th scope="col" class="px-4 py-2 text-right">Cliques</th>
+                            </tr>
+                        </thead>
+                        <tbody id="graficoTabelaCorpo" class="tabular-nums"></tbody>
+                    </table>
+                </div>
+            </details>
+        </section>
+
+        <section aria-labelledby="produtosTitulo">
+            <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-6">
+                <div>
+                    <h2 id="produtosTitulo" class="font-display text-2xl font-bold" style="color: var(--forest-green);">Meus produtos</h2>
+                    <p class="text-sm text-gray-600 mt-1">Visualizações, cliques e conversão <span data-texto-periodo>nos últimos 30 dias</span>. Ordenados pelo número de cliques.</p>
+                </div>
+                <button type="button" id="novoProdutoBtn" class="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-lg text-white font-semibold text-sm transition-colors hover:opacity-90" style="background-color: var(--forest-green);">
+                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M12 5v14M5 12h14"/></svg>
+                    Adicionar novo produto
+                </button>
+            </div>
+
+            <div id="feedback" role="status" class="hidden mb-4 rounded-lg px-4 py-3 text-sm border"></div>
+
+            <div id="produtosCarregando" class="text-center py-16 bg-white border border-gray-200 rounded-xl">
+                <p class="text-sm text-gray-500">Carregando produtos…</p>
+            </div>
+
+            <div id="produtosErro" class="hidden text-center py-16 bg-white border border-gray-200 rounded-xl">
+                <p class="text-sm text-gray-600 mb-4">Não foi possível carregar seus produtos.</p>
+                <button type="button" id="produtosTentarDeNovo" class="px-5 py-2.5 rounded-lg border border-gray-200 bg-white text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors">Tentar novamente</button>
+            </div>
+
+            <div id="produtosVazio" class="hidden text-center py-16 px-6 bg-white border border-gray-200 rounded-xl">
+                <p class="font-semibold text-gray-800">Você ainda não cadastrou nenhum produto.</p>
+                <p class="text-sm text-gray-500 mt-1 mb-6">Cadastre o primeiro para ele aparecer para os produtores e começar a acompanhar visualizações e cliques.</p>
+                <button type="button" id="primeiroProdutoBtn" class="px-6 py-3 rounded-lg text-white font-semibold text-sm transition-colors hover:opacity-90" style="background-color: var(--forest-green);">Adicionar primeiro produto</button>
+            </div>
+
+            <div id="produtosLista" class="hidden">
+                <!-- Telas médias/grandes: tabela -->
+                <div class="hidden md:block stat-card rounded-xl overflow-x-auto">
+                    <table class="w-full text-sm text-left">
+                        <thead>
+                            <tr class="border-b border-gray-100 text-xs text-gray-500 uppercase font-bold">
+                                <th scope="col" class="px-5 py-3">Produto</th>
+                                <th scope="col" class="px-5 py-3">Tipo</th>
+                                <th scope="col" class="px-5 py-3">Composição</th>
+                                <th scope="col" class="px-5 py-3 text-right">Visualizações</th>
+                                <th scope="col" class="px-5 py-3 text-right">Cliques</th>
+                                <th scope="col" class="px-5 py-3 text-right">Conversão</th>
+                                <th scope="col" class="px-5 py-3 text-right"><span class="sr-only">Ações</span></th>
+                            </tr>
+                        </thead>
+                        <tbody id="produtosTabelaCorpo"></tbody>
+                    </table>
+                </div>
+                <!-- Celular: um card por produto -->
+                <ul id="produtosCards" class="md:hidden space-y-4"></ul>
+            </div>
+        </section>
+    </main>
+
+    <!-- Modal de cadastro/edição de produto (mesmo padrão do modal de
+         mapa-fertilidade.html) -->
+    <div id="produtoModal" class="fixed inset-0 z-[2000] hidden">
+        <div class="absolute inset-0 bg-black/50" data-fechar-modal></div>
+        <div class="absolute inset-0 flex items-center justify-center p-4 pointer-events-none">
+            <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto pointer-events-auto" role="dialog" aria-modal="true" aria-labelledby="produtoModalTitulo">
+                <div class="flex items-center justify-between px-6 py-4 border-b border-slate-200">
+                    <h2 class="text-lg font-bold text-slate-900" id="produtoModalTitulo">Novo produto</h2>
+                    <button type="button" data-fechar-modal aria-label="Fechar" class="text-slate-500 hover:text-slate-800">
+                        <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                    </button>
+                </div>
+                <form id="produtoForm" class="px-6 py-5 space-y-4" novalidate>
+                    <div>
+                        <label for="produtoNome" class="block text-sm font-medium text-slate-700 mb-1">Nome do produto *</label>
+                        <input type="text" id="produtoNome" name="nome" maxlength="150" required placeholder="Ex.: Calcário Dolomítico Filler" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#066a04]">
+                    </div>
+                    <div>
+                        <label for="produtoComposicao" class="block text-sm font-medium text-slate-700 mb-1">Composição *</label>
+                        <textarea id="produtoComposicao" name="composicao" rows="3" maxlength="1000" required placeholder="Ex.: NPK 05-20-20 · PRNT 90%, CaO 32%, MgO 14%" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#066a04]"></textarea>
+                    </div>
+                    <div>
+                        <label for="produtoTipo" class="block text-sm font-medium text-slate-700 mb-1">Tipo *</label>
+                        <select id="produtoTipo" name="tipo" required class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#066a04]">
+                            <option value="">Selecione…</option>
+                            <option value="corretivo">Corretivo</option>
+                            <option value="fertilizante">Fertilizante</option>
+                            <option value="substrato">Substrato</option>
+                            <option value="defensivo">Defensivo</option>
+                            <option value="semente">Semente</option>
+                            <option value="inoculante">Inoculante</option>
+                            <option value="outro">Outro</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="produtoLink" class="block text-sm font-medium text-slate-700 mb-1">Link de compra</label>
+                        <input type="text" id="produtoLink" name="linkCompra" inputmode="url" maxlength="500" autocomplete="url" placeholder="https://www.suaempresa.com.br/produto" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#066a04]">
+                        <p class="text-xs text-slate-500 mt-1">Opcional. Página do produto no site da sua empresa. Sem link, o produto não mostra o botão de compra e não recebe cliques.</p>
+                    </div>
+
+                    <p id="produtoModalErro" class="hidden text-sm text-red-700 bg-red-50 border border-red-200 rounded-lg px-3 py-2" role="alert"></p>
+
+                    <div class="flex justify-end gap-2 pt-2">
+                        <button type="button" data-fechar-modal class="px-4 py-2 rounded-lg border border-slate-300 text-sm font-medium hover:bg-slate-50">Cancelar</button>
+                        <button type="submit" id="produtoSalvarBtn" class="px-4 py-2 rounded-lg bg-[#066a04] hover:bg-[#055503] text-white text-sm font-semibold disabled:opacity-70 disabled:cursor-not-allowed">Salvar produto</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div id="site-footer"></div>
+
+    <script src="footer.js"></script>
+    <script src="js/dashboard-empresa.js"></script>
+</body>
+</html>

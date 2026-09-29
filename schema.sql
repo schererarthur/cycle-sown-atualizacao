@@ -548,6 +548,54 @@ CREATE TABLE empresas (
 ) ENGINE=InnoDB;
 
 -- =================================================================
+-- 13. PRODUTOS DAS EMPRESAS DE INSUMOS  (dashboard-empresa.html,
+--     backend/routes/empresaInsumos.js e routes/produtoEventos.js)
+--     Num banco que já existe (ex.: produção), aplique via
+--     migrations/2026-09-28_producao_completa.sql — cria as seções 12
+--     e 13 e completa talhoes/relatorios com o que entrou em 13/08.
+--     `produtos_insumo` é o catálogo de cada empresa — "remover" no
+--     painel só marca ativo = FALSE (soft delete), para não perder o
+--     histórico de eventos. `produto_eventos` guarda visualizações e
+--     cliques para comprar feitos pelos produtores; `sessao_hash` é um
+--     HMAC (chave TRACKING_SECRET) de "u:<id>" ou de IP + navegador —
+--     nunca o IP puro.
+--
+--     empresa_id é INT com sinal porque empresas.id é INT (não
+--     UNSIGNED) — a chave estrangeira exige tipos idênticos.
+--     usuario_id não tem chave estrangeira de propósito: um evento
+--     nunca deve falhar por causa de uma conta de produtor removida.
+-- =================================================================
+
+CREATE TABLE produtos_insumo (
+  id             INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  empresa_id     INT NOT NULL,
+  nome           VARCHAR(150) NOT NULL,
+  composicao     TEXT NOT NULL,
+  tipo           ENUM('corretivo', 'fertilizante', 'substrato', 'defensivo',
+                      'semente', 'inoculante', 'outro') NOT NULL,
+  link_compra    VARCHAR(500) NULL,
+  ativo          BOOLEAN NOT NULL DEFAULT TRUE,
+  criado_em      TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  atualizado_em  TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+                   ON UPDATE CURRENT_TIMESTAMP,
+  CONSTRAINT fk_produtos_insumo_empresa FOREIGN KEY (empresa_id)
+    REFERENCES empresas(id) ON DELETE CASCADE,
+  INDEX idx_produtos_insumo_empresa (empresa_id)
+) ENGINE=InnoDB;
+
+CREATE TABLE produto_eventos (
+  id           BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  produto_id   INT UNSIGNED NOT NULL,
+  tipo_evento  ENUM('visualizacao', 'clique_compra') NOT NULL,
+  usuario_id   INT UNSIGNED NULL,
+  sessao_hash  VARCHAR(64) NOT NULL,
+  criado_em    TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT fk_produto_eventos_produto FOREIGN KEY (produto_id)
+    REFERENCES produtos_insumo(id) ON DELETE CASCADE,
+  INDEX idx_produto_eventos_produto_tipo_data (produto_id, tipo_evento, criado_em)
+) ENGINE=InnoDB;
+
+-- =================================================================
 -- NOTAS / DECISÕES QUE PRECISAM DE CONFIRMAÇÃO — ver mensagem de
 -- acompanhamento com a lista de pontos em aberto antes de aplicar.
 -- =================================================================

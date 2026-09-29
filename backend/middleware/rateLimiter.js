@@ -14,6 +14,7 @@
 //    novas tentativas por 15 minutos a partir da última falha.
 //
 // Laudo por IA — `laudoParseRateLimiter`, ver comentário ao lado dela.
+// Rastreamento de produtos — `produtoEventoRateLimiter`, idem.
 // ============================================================================
 
 const rateLimit = require('express-rate-limit');
@@ -54,6 +55,22 @@ const empresaRegisterRateLimiter = rateLimit({
     message: { error: 'Muitos cadastros a partir deste endereço. Tente novamente mais tarde.' }
 });
 
+// Rastreamento público de produtos — POST /api/produtos/:id/visualizacao e
+// /clique (routes/produtoEventos.js). A regra principal contra números
+// inflados (não contar o mesmo evento da mesma sessão duas vezes em 30
+// minutos) fica na própria rota, consultando o banco. Este limite por IP é
+// a segunda camada: barra um script que troque de navegador (User-Agent) a
+// cada chamada para parecer uma "sessão" nova. Depende de
+// app.set('trust proxy', 1) no server.js — sem isso, atrás do proxy da
+// hospedagem, todo mundo teria o mesmo IP e seria bloqueado junto.
+const produtoEventoRateLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // janela de 15 minutos
+    max: 60,                  // no máximo 60 eventos (visualizações + cliques) por IP nessa janela
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { error: 'Muitas requisições. Tente novamente em alguns minutos.' }
+});
+
 async function loginAttemptGuard(req, res, next) {
     const ipAddress = req.ip;
 
@@ -88,4 +105,7 @@ async function loginAttemptGuard(req, res, next) {
     }
 }
 
-module.exports = { loginRateLimiter, loginAttemptGuard, laudoParseRateLimiter, empresaRegisterRateLimiter };
+module.exports = {
+    loginRateLimiter, loginAttemptGuard, laudoParseRateLimiter,
+    empresaRegisterRateLimiter, produtoEventoRateLimiter
+};

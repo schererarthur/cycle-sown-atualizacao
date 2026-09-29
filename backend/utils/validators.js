@@ -66,7 +66,26 @@ function isValidPhone(phone) {
     return digits.length === 10 || digits.length === 11;
 }
 
+// Link de compra de produto: só http:// ou https://, com um domínio de
+// verdade (ex.: "loja.com.br"). O mais importante é barrar `javascript:` e
+// `data:` — esse texto vira o href do botão "Comprar" na vitrine, e um
+// `javascript:...` ali executaria código no navegador do produtor (XSS).
+// Também recusa usuário/senha embutidos (https://site.com@golpe.com), um
+// truque comum de phishing para disfarçar o destino real do link.
+function isValidHttpUrl(value) {
+    if (typeof value !== 'string') return false;
+    let url;
+    try {
+        url = new URL(value.trim());
+    } catch (err) {
+        return false;
+    }
+    return (url.protocol === 'http:' || url.protocol === 'https:')
+        && url.hostname.includes('.')
+        && !url.username && !url.password;
+}
+
 module.exports = {
     isValidEmail, isValidPassword, isValidName,
-    onlyDigits, isValidCNPJ, formatCNPJ, isValidPhone
+    onlyDigits, isValidCNPJ, formatCNPJ, isValidPhone, isValidHttpUrl
 };
