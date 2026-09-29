@@ -15,6 +15,7 @@
 //
 // Laudo por IA — `laudoParseRateLimiter`, ver comentário ao lado dela.
 // Rastreamento de produtos — `produtoEventoRateLimiter`, idem.
+// Vitrine de produtos (leitura) — `produtoLeituraRateLimiter`, idem.
 // ============================================================================
 
 const rateLimit = require('express-rate-limit');
@@ -71,6 +72,17 @@ const produtoEventoRateLimiter = rateLimit({
     message: { error: 'Muitas requisições. Tente novamente em alguns minutos.' }
 });
 
+// Leitura pública da vitrine — GET /api/produtos (routes/produtosPublicos.js).
+// Bem mais folgado que o de rastreamento (cada busca/filtro do catálogo é
+// uma leitura), só para barrar um script raspando a vitrine em loop.
+const produtoLeituraRateLimiter = rateLimit({
+    windowMs: 60 * 1000,      // janela de 1 minuto
+    max: 120,                 // no máximo 120 leituras por IP nessa janela
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { error: 'Muitas requisições. Tente novamente em alguns instantes.' }
+});
+
 async function loginAttemptGuard(req, res, next) {
     const ipAddress = req.ip;
 
@@ -107,5 +119,5 @@ async function loginAttemptGuard(req, res, next) {
 
 module.exports = {
     loginRateLimiter, loginAttemptGuard, laudoParseRateLimiter,
-    empresaRegisterRateLimiter, produtoEventoRateLimiter
+    empresaRegisterRateLimiter, produtoEventoRateLimiter, produtoLeituraRateLimiter
 };

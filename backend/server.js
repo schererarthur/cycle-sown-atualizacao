@@ -19,6 +19,7 @@ const empresaInsumosRoutes = require('./routes/empresaInsumos');
 // Carregar este arquivo já exige TRACKING_SECRET (config/tracking.js): sem
 // ela, o servidor para aqui mesmo, na subida, com a mensagem do erro.
 const produtoEventosRoutes = require('./routes/produtoEventos');
+const produtosPublicosRoutes = require('./routes/produtosPublicos');
 const talhoesRoutes = require('./routes/talhoes');
 const rotacaoRoutes = require('./routes/rotacao');
 const historicoRoutes = require('./routes/historico');
@@ -93,7 +94,9 @@ app.use('/api/empresas', empresasRoutes);
 // Área logada da empresa de insumos (dashboard-empresa.html), sob /api/empresa/...
 app.use('/api/empresa', empresaInsumosRoutes);
 
-// Rastreamento público de visualizações/cliques de produtos, sob /api/produtos/...
+// Vitrine pública de produtos (GET /api/produtos, catalogo.html) e
+// rastreamento público de visualizações/cliques (POST /api/produtos/:id/...)
+app.use('/api/produtos', produtosPublicosRoutes);
 app.use('/api/produtos', produtoEventosRoutes);
 
 // Talhões (parcelas) do Mapa de Fertilidade, sob /api/talhoes/...
